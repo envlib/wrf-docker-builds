@@ -1,10 +1,15 @@
 FROM mullenkamp/wrf-base-debian:1.0
 
-# Compile WRF and WRF-Hydro
-## WRF/linux vars
+# Compile WRF-Hydro
+## linux vars
 ARG WRF_VERSION=4.6.1
-ARG WPS_VERSION=4.6.0
 ARG HYDRO_VERSION=5.4.0
+
+# setup environment
+ENV NETCDF=/usr/local
+ENV NCDIR=/usr/local
+ENV NETCDF_LIB=/usr/local/lib
+ENV NETCDF_INC=/usr/local/include
 
 ## WRF-Hydro vars
 ### This is a WRF environment variable. Always set to 1=On for compiling WRF-Hydro.
@@ -46,18 +51,18 @@ RUN wget https://github.com/NCAR/wrf_hydro_nwm_public/archive/v${HYDRO_VERSION}.
     && mv wrf_hydro_nwm_public-${HYDRO_VERSION}/src /WRF/hydro \
 	&& rm v${HYDRO_VERSION}.tar.gz
 
-## Compile WRF with Hydro
-WORKDIR /WRF
-RUN sed -i 's#$NETCDF/lib#$NETCDF/lib/x86_64-linux-gnu#g' configure && ( echo 34 ; echo 1 ) | ./configure
-RUN sed -i 's#-L/usr/lib -lnetcdff -lnetcdf#-L/usr/lib/x86_64-linux-gnu -lnetcdff -lnetcdf#g' configure.wrf && gfortversion=$(gfortran -dumpversion | cut -d '.' -f 1) && ./compile -j "$(nproc)" em_real
+## Compile Hydro as a stand alone app
+# WORKDIR /WRF/hydro
+# RUN sed -i 's#$NETCDF/lib#$NETCDF/lib/x86_64-linux-gnu#g' configure && ( echo 34 ; echo 1 ) | ./configure
+# RUN sed -i 's#-L/usr/lib -lnetcdff -lnetcdf#-L/usr/lib/x86_64-linux-gnu -lnetcdff -lnetcdf#g' configure.wrf && gfortversion=$(gfortran -dumpversion | cut -d '.' -f 1) && ./compile -j "$(nproc)" em_real
 
-# Compile WPS   
-RUN wget https://github.com/wrf-model/WPS/archive/v${WPS_VERSION}.tar.gz \
-	&& tar -zxf v${WPS_VERSION}.tar.gz \
-    && mv WPS-${WPS_VERSION} /WPS \
-	&& rm v${WPS_VERSION}.tar.gz
+# # Compile WPS   
+# RUN wget https://github.com/wrf-model/WPS/archive/v${WPS_VERSION}.tar.gz \
+# 	&& tar -zxf v${WPS_VERSION}.tar.gz \
+#     && mv WPS-${WPS_VERSION} /WPS \
+# 	&& rm v${WPS_VERSION}.tar.gz
 
-WORKDIR /WPS
-RUN sed -i '163s/.*/    NETCDFF="-lnetcdff"/' configure && echo 1 | ./configure --build-grib2-libs && ./compile
+# WORKDIR /WPS
+# RUN sed -i '163s/.*/    NETCDFF="-lnetcdff"/' configure && echo 1 | ./configure --build-grib2-libs && ./compile
 
 CMD ["/bin/bash"]

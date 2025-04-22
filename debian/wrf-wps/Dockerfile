@@ -1,35 +1,7 @@
-FROM debian:12-slim
+FROM mullenkamp/wrf-base-debian:1.0
 
 ARG WRF_VERSION=4.6.1
 ARG WPS_VERSION=4.6.0
-ARG TYPE=ARW
-ARG TARGETARCH
-
-RUN apt update && apt-get install -y build-essential csh gfortran m4 curl perl mpich libhdf5-mpich-dev libpng-dev netcdf-bin libnetcdff-dev ncl-ncarg wget cmake nano tcsh gcc g++ bash zlib1g zlib1g-dev git
-# RUN apt update && apt install -y git gcc g++ glibc time tcsh wget gfortran libcurl-devel libpng-devel m4 nano cmake jasper jasper-devel zlib zlib-devel bash
-# RUN apt update && apt install -y csh gfortran m4 mpich libhdf5-mpich-dev libpng-dev libnetcdff-dev netcdf-bin ncl-ncarg build-essential wget m4 cmake nano tcsh gcc g++ bash zlib1g zlib1g-dev perl
-
-# RUN yum -y update
-# RUN yum -y install scl file gcc gcc-gfortran gcc-c++ glibc.i686 libgcc.i686 libpng-devel jasper \
-#   jasper-devel hostname m4 make perl tar bash tcsh time wget which zlib zlib-devel \
-#   openssh-clients openssh-server net-tools fontconfig libgfortran libXext libXrender \
-#   ImageMagick sudo epel-release git
-
-# # Newer version of GNU compiler, required for WRF 2003 and 2008 Fortran constructs
-
-# RUN yum -y install centos-release-scl \
-#  && yum -y install devtoolset-8 \
-#  && yum -y install devtoolset-8-gcc devtoolset-8-gcc-gfortran devtoolset-8-gcc-c++ \
-#  && scl enable devtoolset-8 bash \
-#  && scl enable devtoolset-8 tcsh 
-
-# RUN groupadd wrf -g 9999
-# RUN useradd -u 9999 -g wrf -G wheel -M -d /wrf wrfuser
-# RUN mkdir /wrf \
-#  &&  chown -R wrfuser:wrf /wrf \
-#  &&  chmod 6755 /wrf
-
-SHELL ["/bin/bash", "-c"]
 
 # WORKDIR /tmp/sources
 
