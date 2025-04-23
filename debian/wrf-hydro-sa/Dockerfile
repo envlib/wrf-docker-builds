@@ -1,17 +1,58 @@
-FROM mullenkamp/wrf-base-debian:1.0
+FROM debian:12-slim
 
-# Compile WRF-Hydro
-## linux vars
-ARG WRF_VERSION=4.6.1
+# WRF-Hydro dependencies
+RUN apt-get update \
+    && apt-get install -yq --no-install-recommends \
+    cmake \
+    curl \
+    emacs-nox \
+    bzip2 \
+    ca-certificates \
+    g++ \
+    gfortran \
+    git \
+    less \
+    libhdf5-dev \
+    libhdf5-openmpi-dev \
+    libnetcdf-pnetcdf-19 \
+    libnetcdf-dev \
+    libnetcdff-dev \
+    libnetcdff7 \
+    libopenmpi-dev \
+    make \
+    nano \
+    netcdf-bin \
+    openmpi-bin \
+    tcsh \
+    wget \
+    vim \
+    ncl-ncarg \
+    bash \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && update-alternatives --config csh
+    
+# install nccmp manually instead of with conda to save space
+ENV NCCMP=1.9.1.0
+WORKDIR /tmp
+RUN wget -q https://gitlab.com/remikz/nccmp/-/archive/${NCCMP}/nccmp-${NCCMP}.tar.gz \
+    && tar -zxf nccmp-${NCCMP}.tar.gz \
+    && mv nccmp-${NCCMP} /nccmp \
+    && cmake -B /nccmp/build -S /nccmp \
+    && make -C /nccmp/build -j install
+
+# cleanup
+RUN rm -rf /tmp/*
+
+## WRF-Hydro vars
+### linux vars
 ARG HYDRO_VERSION=5.4.0
 
-# setup environment
 ENV NETCDF=/usr/local
 ENV NCDIR=/usr/local
 ENV NETCDF_LIB=/usr/local/lib
 ENV NETCDF_INC=/usr/local/include
 
-## WRF-Hydro vars
 ### This is a WRF environment variable. Always set to 1=On for compiling WRF-Hydro.
 ENV WRF_HYDRO=1
 
@@ -36,33 +77,21 @@ ENV WRF_HYDRO_NUDGING=0
 ### Coupling with NUOPC: 0=Off, 1=On. Option 1 is not currently supported.
 ENV DWRF_HYDRO_RAPID=0
 
-## Get WRF source code - must get the release file instead of the archive like in WPS due to NoahMP not contained in the archive
-RUN wget https://github.com/wrf-model/WRF/releases/download/v${WRF_VERSION}/v${WRF_VERSION}.tar.gz \
-        && tar -zxf v${WRF_VERSION}.tar.gz \
-        && mv WRFV${WRF_VERSION} /WRF \
-        && rm v${WRF_VERSION}.tar.gz
+RUN wget https://github.com/NCAR/wrf_hydro_nwm_public/archive/refs/tags/v${HYDRO_VERSION}.tar.gz \
+    && tar -zxf v${HYDRO_VERSION}.tar.gz \
+    && mv wrf_hydro_nwm_public-${HYDRO_VERSION} /wrf_hydro \
+    && rm v${HYDRO_VERSION}.tar.gz
+    
+WORKDIR /wrf_hydro    
 
-### Remove existing hydro folder - DO NOT DO THIS! There seems to be some reliance on existing files.
-# RUN rm -r -f /WRF/hydro
+## Compile hydro
+RUN cmake -B build \
+    && make -C build -j
 
-## Get WRF-Hydro source code
-RUN wget https://github.com/NCAR/wrf_hydro_nwm_public/archive/v${HYDRO_VERSION}.tar.gz \
-	&& tar -zxf v${HYDRO_VERSION}.tar.gz \
-    && mv wrf_hydro_nwm_public-${HYDRO_VERSION}/src /WRF/hydro \
-	&& rm v${HYDRO_VERSION}.tar.gz
+## Setup test data
+WORKDIR /wrf_hydro/build
+RUN make croton
 
-## Compile Hydro as a stand alone app
-# WORKDIR /WRF/hydro
-# RUN sed -i 's#$NETCDF/lib#$NETCDF/lib/x86_64-linux-gnu#g' configure && ( echo 34 ; echo 1 ) | ./configure
-# RUN sed -i 's#-L/usr/lib -lnetcdff -lnetcdf#-L/usr/lib/x86_64-linux-gnu -lnetcdff -lnetcdf#g' configure.wrf && gfortversion=$(gfortran -dumpversion | cut -d '.' -f 1) && ./compile -j "$(nproc)" em_real
-
-# # Compile WPS   
-# RUN wget https://github.com/wrf-model/WPS/archive/v${WPS_VERSION}.tar.gz \
-# 	&& tar -zxf v${WPS_VERSION}.tar.gz \
-#     && mv WPS-${WPS_VERSION} /WPS \
-# 	&& rm v${WPS_VERSION}.tar.gz
-
-# WORKDIR /WPS
-# RUN sed -i '163s/.*/    NETCDFF="-lnetcdff"/' configure && echo 1 | ./configure --build-grib2-libs && ./compile
+WORKDIR /wrf_hydro/build/Run
 
 CMD ["/bin/bash"]

@@ -21,6 +21,7 @@ There are many sources that I drew from to create these builds. It shouldn't be 
 - https://pratiman-91.github.io/2020/07/28/Installing-WRF-4.2.1-on-Ubuntu-LTS-20.04.html
 
 ### Docker scripts
+- https://ncar-hpc-docs.readthedocs.io/en/latest/environment-and-software/user-environment/containers/examples/#building-and-running-containerized-wrf-under-mpi
 - https://gitee.com/openeuler/openeuler-docker-images/tree/master/HPC/wrf
 
 ## Debian builds
