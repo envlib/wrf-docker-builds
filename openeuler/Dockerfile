@@ -111,3 +111,5 @@ RUN git clone --recursive https://github.com/mullenkamp/WPS.git /WPS  && ./confi
 #         ./configure <<< $'4\r1\r'; \
 #     fi; \
 #     ./compile -j "$(nproc)" em_real
+
+# git clone -b release-v4.7.0 --recursive https://github.com/wrf-model/WRF.git /WRF

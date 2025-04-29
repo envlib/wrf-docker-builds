@@ -46,4 +46,6 @@ A build with WRF Hydro coupled with WRF and WPS. This is contained in the folder
 ### wrf-hydro-sa-debian
 A build with a stand alone WRF-Hydro installation. This is contained in the folder /debian/wrf-hydro-sa.
 
+# Others
+https://jiririchter.github.io/WRFDomainWizard/
 
