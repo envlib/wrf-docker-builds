@@ -49,3 +49,9 @@ A build with a stand alone WRF-Hydro installation. This is contained in the fold
 # Others
 https://jiririchter.github.io/WRFDomainWizard/
 
+min lat: -21
+max lat: -58
+min lon: 145
+max lon: 193
+
+ncks -O -4 -L 3 -d latitude,-58.0,-21.0 -d longitude,145.0,193.0 e5.oper.an.sfc.128_134_sp.ll025sc.2019050100_2019053123.nc test1.nc
