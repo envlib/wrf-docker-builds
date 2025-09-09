@@ -22,4 +22,23 @@ RUN wget https://github.com/wrf-model/WPS/archive/v${WPS_VERSION}.tar.gz \
 WORKDIR /WPS
 RUN sed -i '163s/.*/    NETCDFF="-lnetcdff"/' configure && echo 1 | ./configure --build-grib2-libs && ./compile
 
+# Install python env for era5_to_int.py
+# RUN apt-get update && apt-get install -y python3 python3-pip
+COPY requirements.txt ./
+# RUN pip install --no-cache-dir -r requirements.txt
+
+RUN uv venv /opt/venv
+# Use the virtual environment automatically
+ENV VIRTUAL_ENV=/opt/venv \
+    # UV_LINK_MODE=copy \
+    # UV_COMPILE_BYTECODE=1 \
+    # UV_PYTHON_DOWNLOADS=never \
+    # UV_PYTHON=python3.11 \
+# Place entry points in the environment at the front of the path
+    PATH="/opt/venv/bin:$PATH"
+
+RUN uv pip install -r requirements.txt
+RUN git clone https://github.com/mullenkamp/era5_to_int
+RUN ln -s /era5_to_int/era5_to_int.py /WPS/era5_to_int.py
+
 CMD ["/bin/bash"]
