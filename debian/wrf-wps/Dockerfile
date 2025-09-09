@@ -39,6 +39,8 @@ ENV VIRTUAL_ENV=/opt/venv \
 
 RUN uv pip install -r requirements.txt
 RUN git clone https://github.com/mullenkamp/era5_to_int
-RUN ln -s /era5_to_int/era5_to_int.py /WPS/era5_to_int.py
+RUN ln -s /era5_to_int/era5_to_int.py era5_to_int.py
+
+RUN rm /WPS/namelist.wps && rm /WRF/run/namelist.input
 
 CMD ["/bin/bash"]

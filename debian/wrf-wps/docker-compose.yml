@@ -5,6 +5,7 @@ services:
     image: mullenkamp/wrf-wps-debian:1.0
     stdin_open: true # docker run -i
     tty: true        # docker run -t
+    shm_size: '4gb'
     network_mode: host
     environment:
       - DISPLAY=${DISPLAY}
