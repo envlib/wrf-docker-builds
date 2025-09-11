@@ -38,7 +38,7 @@ To build containers in arm64 (using an amd64), you'll need to do two things.
 2) Allow docker to build multi-arch images: https://docs.docker.com/build/building/multi-platform/
 
 ### wrf-wps-debian
-A build with a WRF and WPS. This is contained in the folder /debian/wrf-wps.
+A build with a WRF and WPS. This is contained in the folder /debian/wrf-wps. This is primarily meant as the pre-processor. 
 
 ### wrf-wps-hydro-coupled-debian
 A build with WRF Hydro coupled with WRF and WPS. This is contained in the folder /debian/wrf-wps-hydro-coupled.
