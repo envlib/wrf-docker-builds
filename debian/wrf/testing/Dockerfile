@@ -9,8 +9,8 @@ ENV FCFLAGS=-m64
 ENV F77=gfortran
 ENV FFLAGS=-m64
 ENV NETCDF=/usr
-ENV HDF5=/usr/lib/x86_64-linux-gnu/hdf5/serial
-ENV LDFLAGS="-L/usr/lib/x86_64-linux-gnu/hdf5/serial/ -L/usr/lib"
+ENV HDF5=/usr/lib/aarch64-linux-gnu/hdf5/serial
+ENV LDFLAGS="-L/usr/lib/aarch64-linux-gnu/hdf5/serial/ -L/usr/lib"
 ENV CPPFLAGS="-I/usr/include/hdf5/serial/ -I/usr/include"
 ENV LD_LIBRARY_PATH=/usr/lib
 ENV JASPERINC=/WPS/grib2/include
@@ -29,13 +29,13 @@ RUN wget https://github.com/wrf-model/WRF/releases/download/v${WRF_VERSION}/v${W
         && rm v${WRF_VERSION}.tar.gz
 
 WORKDIR /WRF
-RUN sed -i 's#$NETCDF/lib#$NETCDF/lib/x86_64-linux-gnu#g' configure
+RUN sed -i 's#$NETCDF/lib#$NETCDF/lib/aarch64-linux-gnu#g' configure
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
         ( echo 34 ; echo 1 ) | ./configure; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
         ( echo 4 ; echo 1 ) | ./configure; \
     fi; 
-RUN sed -i 's#-L/usr/lib -lnetcdff -lnetcdf#-L/usr/lib/x86_64-linux-gnu -lnetcdff -lnetcdf#g' configure.wrf && gfortversion=$(gfortran -dumpversion | cut -d '.' -f 1) && ./compile -j "$(nproc)" em_real
+RUN sed -i 's#-L/usr/lib -lnetcdff -lnetcdf#-L/usr/lib/aarch64-linux-gnu -lnetcdff -lnetcdf#g' configure.wrf && gfortversion=$(gfortran -dumpversion | cut -d '.' -f 1) && ./compile -j "$(nproc)" em_real
 
 WORKDIR /WRF/run
 
