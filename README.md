@@ -37,6 +37,9 @@ To build containers in arm64 (using an amd64), you'll need to do two things.
 1) Install qemu on your OS: sudo apt install qemu-user-static
 2) Allow docker to build multi-arch images: https://docs.docker.com/build/building/multi-platform/
 
+### wrf-debian-test1
+This is a testing image for running wrf using a nest domain down to 3km and a simulation length of 12 hours.
+
 ### wrf-wps-debian
 A build with a WRF and WPS. This is contained in the folder /debian/wrf-wps. This is primarily meant as the pre-processor. 
 
