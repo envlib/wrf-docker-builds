@@ -53,7 +53,9 @@ COPY ./wrfinput_d01 .
 COPY ./wrfinput_d02 .
 COPY ./wrflowinp_d01 .
 COPY ./wrflowinp_d02 .
-COPY ./wrflowinp_d0* .
-RUN cat wrflowinp_d03* > wrflowinp_d03 && rm wrflowinp_d0*
+COPY ./wrflowinp_d03* .
+RUN files=(wrflowinp_d03*) && cat $files > wrflowinp_d03 && rm $files
+COPY ./wrflowinp_d04* .
+RUN files=(wrflowinp_d04*) && cat $files > wrflowinp_d04 && rm $files
 
 CMD ["/bin/bash"]
