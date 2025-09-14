@@ -5,15 +5,15 @@
  run_seconds                         = 0,
  start_year                          = 2019, 2019, 2019, 2019,
  start_month                         = 5,    5,    5,    5,   
- start_day                           = 28,   28,   28, 28,   
+ start_day                           = 30,   30,   30, 30,   
  start_hour                          = 00,   00,   00, 00,   
  end_year                            = 2019, 2019, 2019, 2019, 
  end_month                           = 5,    5,    5,    5,   
- end_day                             = 31,   31,   31,   31,   
- end_hour                            = 23,   23,   23,   23,   
+ end_day                             = 30,   30,   30,   30,   
+ end_hour                            = 6,   6,   6,   6,   
  interval_seconds                    = 21600
  input_from_file                     = .true.,.true.,.true.,.true.,
- history_interval                    = 180,  60,   60,   60,   
+ history_interval                    = 180,  180,   60,   60,   
  frames_per_outfile                  = 200,  200,  200,  200,  
  restart                             = .false.,
  restart_interval                    = 500000,
@@ -24,18 +24,19 @@
  auxinput4_inname                    = "wrflowinp_d<domain>",
  auxinput4_interval                  = 360,
  io_form_auxinput4                   = 2,
- output_diagnostics = 1,
- auxhist3_outname = "wrfxtrm_d<domain>_<date>.nc",
- io_form_auxhist3 = 2,
- auxhist3_interval = 1440, 1440, 1440, 1440, 1440, 
- frames_per_auxhist3 = 200, 200, 200, 200, 200,
+ output_diagnostics                  = 1,
+ auxhist3_outname                    = "wrfxtrm_d<domain>_<date>.nc",
+ io_form_auxhist3                    = 2,
+ auxhist3_interval                   = 1440, 1440, 1440, 1440,
+ frames_per_auxhist3                 = 200, 200, 200, 200, 
+ history_outname                     = "wrfout_d<domain>_<date>.nc"
 /
 
 &domains
  time_step                           = 120,
  time_step_fract_num                 = 0,
  time_step_fract_den                 = 1,
- max_dom              = 5
+ max_dom              = 4
  e_we                 = 100, 133, 316, 319,
  e_sn                 = 112, 202, 535, 832,
  dx                   = 27000
@@ -43,7 +44,7 @@
  grid_id              = 1, 2, 3, 4,
  parent_id            = 1, 1, 2, 3,
  i_parent_start       = 1, 35, 14, 160, 
- j_parent_start       = 1, 24, 12, 34,
+ j_parent_start       = 1, 21, 12, 34,
  parent_grid_ratio    = 1, 3, 3, 3,
  e_vert                              = 35,  35,  35,  35,  
  p_top_requested                     = 5000,
