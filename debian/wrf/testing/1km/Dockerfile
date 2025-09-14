@@ -47,7 +47,7 @@ RUN sed -i 's#-L/usr/lib -lnetcdff -lnetcdf#-L/usr/lib/$ARCH-linux-gnu -lnetcdff
 
 WORKDIR /WRF/run
 
-COPY ./namelist.input .
+COPY ./1km/namelist.input .
 COPY ./wrfbdy_d01 .
 COPY ./wrflowinp_d01 .
 COPY ./wrflowinp_d02 .
