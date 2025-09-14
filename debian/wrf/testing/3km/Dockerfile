@@ -24,7 +24,7 @@ ENV LD_LIBRARY_PATH=/usr/lib
 ENV JASPERINC=/WPS/grib2/include
 ENV JASPERLIB=/WPS/grib2/lib
 
-SHELL ["/bin/bash", "-c"]
+# SHELL ["/bin/bash", "-c"]
 
 # ENV
 ARG WRF_VERSION=4.6.1

@@ -46,7 +46,7 @@
  i_parent_start       = 1, 35, 14, 160, 
  j_parent_start       = 1, 21, 12, 34,
  parent_grid_ratio    = 1, 3, 3, 3,
- e_vert                              = 35,  35,  35,  35,  
+ e_vert                              = 33,  33,  33,  33,  
  p_top_requested                     = 5000,
  num_metgrid_levels                  = 38,
  num_metgrid_soil_levels             = 4,
