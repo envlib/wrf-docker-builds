@@ -23,6 +23,7 @@ if [ -n "$1" ]; then
 fi
 echo "Welcome! This Script will install the WRF${WRFversion}-${type}"
 echo "Installation may take several hours and it takes 52 GB storage. Be sure that you have enough time and storage."
+sleep 2
 #########################################################
 #	Controls					#
 #########################################################
