@@ -1,4 +1,4 @@
-FROM debian:12-slim
+FROM debian:13-slim
 
 # WRF-Hydro dependencies
 RUN apt-get update \
