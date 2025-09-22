@@ -1,4 +1,4 @@
-FROM mullenkamp/wrf-base-debian:1.0
+FROM mullenkamp/wrf-debian-base:1.0
 
 # Compile WRF and WRF-Hydro
 ## WRF/linux vars

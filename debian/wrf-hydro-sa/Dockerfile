@@ -1,37 +1,5 @@
-FROM debian:13-slim
+FROM mullenkamp/wrf-debian-base:1.0
 
-# WRF-Hydro dependencies
-RUN apt-get update \
-    && apt-get install -yq --no-install-recommends \
-    cmake \
-    curl \
-    emacs-nox \
-    bzip2 \
-    ca-certificates \
-    g++ \
-    gfortran \
-    git \
-    less \
-    libhdf5-dev \
-    libhdf5-openmpi-dev \
-    libnetcdf-pnetcdf-19 \
-    libnetcdf-dev \
-    libnetcdff-dev \
-    libnetcdff7 \
-    libopenmpi-dev \
-    make \
-    nano \
-    netcdf-bin \
-    openmpi-bin \
-    tcsh \
-    wget \
-    vim \
-    ncl-ncarg \
-    bash \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && update-alternatives --config csh
-    
 # install nccmp manually instead of with conda to save space
 ENV NCCMP=1.9.1.0
 WORKDIR /tmp
