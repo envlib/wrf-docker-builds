@@ -1,4 +1,4 @@
-FROM mullenkamp/wrf-debian-base:1.0
+FROM mullenkamp/wrf-base-debian:1.0
 
 ARG WRF_VERSION=4.6.1
 ARG WPS_VERSION=4.6.0
