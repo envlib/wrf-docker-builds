@@ -25,4 +25,16 @@ ENV LD_LIBRARY_PATH=/usr/lib
 ENV JASPERINC=/WPS/grib2/include
 ENV JASPERLIB=/WPS/grib2/lib
 
+RUN uv venv /opt/venv
+# Use the virtual environment automatically
+ENV VIRTUAL_ENV=/opt/venv \
+    # UV_LINK_MODE=copy \
+    # UV_COMPILE_BYTECODE=1 \
+    # UV_PYTHON_DOWNLOADS=never \
+    # UV_PYTHON=python3.11 \
+# Place entry points in the environment at the front of the path
+    PATH="/opt/venv/bin:$PATH"
+
+RUN uv tool install era5_to_int==0.1.0
+
 CMD ["/bin/bash"]
