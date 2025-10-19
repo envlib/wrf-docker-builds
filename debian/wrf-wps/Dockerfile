@@ -1,6 +1,6 @@
 FROM mullenkamp/wrf-base-debian:1.0
 
-ARG WRF_VERSION=4.6.1
+ARG WRF_VERSION=4.7.1
 ARG WPS_VERSION=4.6.0
 
 # Compile WRF - must get the release file instead of the archive like in WPS due to NoahMP not contained in the archive

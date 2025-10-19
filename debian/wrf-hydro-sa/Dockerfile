@@ -24,11 +24,8 @@ ENV NETCDF_INC=/usr/local/include
 ### This is a WRF environment variable. Always set to 1=On for compiling WRF-Hydro.
 ENV WRF_HYDRO=1
 
-### Enhanced diagnostic output for debugging: 0=Off, 1=On.
-ENV HYDRO_D=0
-
 ### Spatially distributed parameters for NoahMP: 0=Off, 1=On.
-ENV SPATIAL_SOIL=0
+ENV SPATIAL_SOIL=1
 
 ### RAPID routing model: 0=Off, 1=On. Option 1 is not currently supported.
 ENV WRF_HYDRO_RAPID=0
@@ -44,6 +41,12 @@ ENV WRF_HYDRO_NUDGING=0
 
 ### Coupling with NUOPC: 0=Off, 1=On. Option 1 is not currently supported.
 ENV DWRF_HYDRO_RAPID=0
+
+### Enhanced diagnostic output for debugging: 0=Off, 1=On.
+ENV HYDRO_D=0
+
+### Set to 1 to output channel network diagnostic information
+ENV OUTPUT_CHAN_CONN=0
 
 RUN wget https://github.com/NCAR/wrf_hydro_nwm_public/archive/refs/tags/v${HYDRO_VERSION}.tar.gz \
     && tar -zxf v${HYDRO_VERSION}.tar.gz \

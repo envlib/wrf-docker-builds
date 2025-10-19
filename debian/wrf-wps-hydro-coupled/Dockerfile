@@ -2,7 +2,7 @@ FROM mullenkamp/wrf-debian-base:1.0
 
 # Compile WRF and WRF-Hydro
 ## WRF/linux vars
-ARG WRF_VERSION=4.6.1
+ARG WRF_VERSION=4.7.1
 ARG WPS_VERSION=4.6.0
 ARG HYDRO_VERSION=5.4.0
 
@@ -10,11 +10,11 @@ ARG HYDRO_VERSION=5.4.0
 ### This is a WRF environment variable. Always set to 1=On for compiling WRF-Hydro.
 ENV WRF_HYDRO=1
 
-### Enhanced diagnostic output for debugging: 0=Off, 1=On.
-ENV HYDRO_D=0
-
 ### Spatially distributed parameters for NoahMP: 0=Off, 1=On.
-ENV SPATIAL_SOIL=0
+ENV SPATIAL_SOIL=1
+
+### Set to 1 if using a WRF/WRF-Hydro coupled build
+ENV WRFIO_NCD_LARGE_FILE_SUPPORT=1
 
 ### RAPID routing model: 0=Off, 1=On. Option 1 is not currently supported.
 ENV WRF_HYDRO_RAPID=0
@@ -30,6 +30,12 @@ ENV WRF_HYDRO_NUDGING=0
 
 ### Coupling with NUOPC: 0=Off, 1=On. Option 1 is not currently supported.
 ENV DWRF_HYDRO_RAPID=0
+
+### Enhanced diagnostic output for debugging: 0=Off, 1=On.
+ENV HYDRO_D=0
+
+### Set to 1 to output channel network diagnostic information
+ENV OUTPUT_CHAN_CONN=0
 
 ## Get WRF source code - must get the release file instead of the archive like in WPS due to NoahMP not contained in the archive
 RUN wget https://github.com/wrf-model/WRF/releases/download/v${WRF_VERSION}/v${WRF_VERSION}.tar.gz \
