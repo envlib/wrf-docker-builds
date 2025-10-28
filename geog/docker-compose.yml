@@ -1,0 +1,30 @@
+version: '3.3'
+
+# networks:
+#   net:
+#     # driver: overlay
+#     attachable: true
+
+volumes:
+  wps-geog:
+
+services:
+  data:
+    image: mullenkamp/wps-geog-nz:1.0
+    volumes:
+      - wps-geog:/data
+    # networks:
+    #   - net
+    deploy:
+      restart_policy:
+        condition: none
+
+  wrf:
+    image: mullenkamp/wrf-wps-debian:1.0
+    volumes:
+      - wps-geog:/WPS_GEOG
+    # networks:
+    #   - net
+    depends_on:
+      data:
+        condition: service_completed_successfully
