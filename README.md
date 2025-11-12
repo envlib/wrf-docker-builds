@@ -24,6 +24,12 @@ There are many sources that I drew from to create these builds. It shouldn't be 
 - https://ncar-hpc-docs.readthedocs.io/en/latest/environment-and-software/user-environment/containers/examples/#building-and-running-containerized-wrf-under-mpi
 - https://gitee.com/openeuler/openeuler-docker-images/tree/master/HPC/wrf
 
+### Geogrid info
+- https://www2.mmm.ucar.edu/wrf/users/download/get_sources_wps_geog.html
+- https://forum.mmm.ucar.edu/threads/references-for-geogrid-static-data.168/
+
+
+
 ### Issue with geogrid and metgrid building in docker
 https://forum.mmm.ucar.edu/threads/metegrid-exe-can-not-output-data-to-outfile.19466/
 
