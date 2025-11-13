@@ -27,4 +27,10 @@ RUN sed -i '163s/.*/    NETCDFF="-lnetcdff"/' configure && echo 1 | ./configure 
 
 RUN rm /WPS/namelist.wps && rm /WRF/run/namelist.input
 
+# WORKDIR /WPS/geogrid
+
+# RUN ln -sf GEOGRID.TBL.ARW.noahmp GEOGRID.TBL
+
+# WORKDIR /WPS
+
 CMD ["/bin/bash"]
