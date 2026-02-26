@@ -33,6 +33,12 @@ COPY GEOGRID.TBL.nz .
 
 RUN ln -sf GEOGRID.TBL.nz GEOGRID.TBL
 
+WORKDIR /WPS/metgrid
+
+COPY METGRID.TBL.nz .
+
+RUN ln -sf METGRID.TBL.nz METGRID.TBL
+
 WORKDIR /WPS
 
 CMD ["/bin/bash"]
