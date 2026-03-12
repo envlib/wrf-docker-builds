@@ -11,7 +11,9 @@ RUN wget https://github.com/wrf-model/WRF/releases/download/v${WRF_VERSION}/v${W
 
 WORKDIR /WRF
 RUN sed -i 's#$NETCDF/lib#$NETCDF/lib/x86_64-linux-gnu#g' configure && ( echo 34 ; echo 1 ) | ./configure
-RUN sed -i 's#-L/usr/lib -lnetcdff -lnetcdf#-L/usr/lib/x86_64-linux-gnu -lnetcdff -lnetcdf#g' configure.wrf && gfortversion=$(gfortran -dumpversion | cut -d '.' -f 1) && ./compile -j "$(nproc)" em_real
+RUN sed -i 's#-L/usr/lib -lnetcdff -lnetcdf#-L/usr/lib/x86_64-linux-gnu -lnetcdff -lnetcdf#g' configure.wrf \
+    && sed -i 's/^FCOPTIM.*=.*-O2/FCOPTIM         =       -O3/' configure.wrf \
+    && gfortversion=$(gfortran -dumpversion | cut -d '.' -f 1) && ./compile -j "$(nproc)" em_real
 
 # Compile WPS   
 RUN wget https://github.com/wrf-model/WPS/archive/v${WPS_VERSION}.tar.gz \

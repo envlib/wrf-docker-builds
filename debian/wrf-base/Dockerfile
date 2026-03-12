@@ -35,6 +35,6 @@ ENV VIRTUAL_ENV=/opt/venv \
 # Place entry points in the environment at the front of the path
     PATH="/opt/venv/bin:$PATH"
 
-RUN uv tool install era5_to_int==0.1.0
+RUN uv tool install era5_to_int==0.3.0
 
 CMD ["/bin/bash"]

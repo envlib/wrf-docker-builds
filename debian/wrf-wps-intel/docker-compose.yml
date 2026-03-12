@@ -1,8 +1,6 @@
-version: '3.3'
-
 services:
-  wrf-wps:
-    image: mullenkamp/wrf-wps-debian:1.1
+  wrf-wps-intel:
+    image: mullenkamp/wrf-wps-intel-ubuntu:1.0
     stdin_open: true # docker run -i
     tty: true        # docker run -t
     shm_size: '1gb'
@@ -20,4 +18,3 @@ services:
       - type: bind
         source: ~/data/wrf/WPS_GEOG
         target: /WPS_GEOG/
-

@@ -1,0 +1,105 @@
+FROM intel/oneapi-hpckit:2025.3.1-0-devel-ubuntu24.04
+
+# Install system tools to match wrf-base functionality
+RUN apt-get update && apt-get install -y \
+    m4 curl perl libpng-dev wget cmake nano tcsh bash \
+    zlib1g zlib1g-dev git vim python3 python3-numpy \
+    pipx nco libeccodes-tools unzip csh \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:0.8.15 /uv /uvx /bin/
+
+RUN curl https://rclone.org/install.sh | bash
+
+# Intel compiler env vars
+ENV CC=icx
+ENV CXX=icpx
+ENV FC=ifx
+ENV F77=ifx
+
+# Common install prefix for HDF5, NetCDF-C, and NetCDF-Fortran
+# Using a shared prefix avoids library path issues in WRF's nc4_test
+ENV LIBPREFIX=/usr/local
+
+# Build HDF5 from source with Intel compilers
+ARG HDF5_VERSION=1.14.6
+RUN wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_${HDF5_VERSION}/hdf5-${HDF5_VERSION}.tar.gz \
+    && tar -xzf hdf5-${HDF5_VERSION}.tar.gz && cd hdf5-${HDF5_VERSION} \
+    && CC=icx FC=ifx ./configure --prefix=$LIBPREFIX --enable-fortran --enable-shared \
+    && make -j$(nproc) && make install \
+    && ldconfig \
+    && cd / && rm -rf hdf5-${HDF5_VERSION}*
+
+# Build NetCDF-C from source with Intel compilers
+ARG NETCDF_C_VERSION=4.9.2
+RUN wget https://github.com/Unidata/netcdf-c/archive/v${NETCDF_C_VERSION}.tar.gz \
+    && tar -xzf v${NETCDF_C_VERSION}.tar.gz && cd netcdf-c-${NETCDF_C_VERSION} \
+    && CC=icx ./configure --prefix=$LIBPREFIX --disable-dap --disable-libxml2 --disable-byterange \
+    && make -j$(nproc) && make install \
+    && ldconfig \
+    && cd / && rm -rf netcdf-c-${NETCDF_C_VERSION}* v${NETCDF_C_VERSION}.tar.gz
+
+# Build NetCDF-Fortran from source with Intel compilers
+ARG NETCDF_F_VERSION=4.6.1
+RUN wget https://github.com/Unidata/netcdf-fortran/archive/v${NETCDF_F_VERSION}.tar.gz \
+    && tar -xzf v${NETCDF_F_VERSION}.tar.gz && cd netcdf-fortran-${NETCDF_F_VERSION} \
+    && FC=ifx CC=icx ./configure --prefix=$LIBPREFIX \
+    && make -j$(nproc) && make install \
+    && ldconfig \
+    && cd / && rm -rf netcdf-fortran-${NETCDF_F_VERSION}* v${NETCDF_F_VERSION}.tar.gz
+
+# Set library paths for WRF/WPS builds
+ENV NETCDF=/usr/local
+ENV HDF5=/usr/local
+ENV JASPERINC=/WPS/grib2/include
+ENV JASPERLIB=/WPS/grib2/lib
+
+# Python venv and tools
+RUN uv venv /opt/venv
+ENV VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
+RUN uv tool install era5_to_int==0.3.0
+
+# Compile WRF - option 78 = INTEL (ifx/icx) oneAPI LLVM, dmpar
+ARG WRF_VERSION=4.7.1
+RUN wget https://github.com/wrf-model/WRF/releases/download/v${WRF_VERSION}/v${WRF_VERSION}.tar.gz \
+    && tar -zxf v${WRF_VERSION}.tar.gz \
+    && mv WRFV${WRF_VERSION} /WRF \
+    && rm v${WRF_VERSION}.tar.gz
+
+WORKDIR /WRF
+RUN ( echo 78 ; echo 1 ) | ./configure \
+    && ./compile -j "$(nproc)" em_real
+
+# Compile WPS
+ARG WPS_VERSION=4.6.0
+RUN wget https://github.com/wrf-model/WPS/archive/v${WPS_VERSION}.tar.gz \
+    && tar -zxf v${WPS_VERSION}.tar.gz \
+    && mv WPS-${WPS_VERSION} /WPS \
+    && rm v${WPS_VERSION}.tar.gz
+
+WORKDIR /WPS
+
+COPY output_module.F /WPS/geogrid/src/
+
+# WPS option 19 = Intel oneAPI compilers, dmpar
+RUN echo 19 | ./configure --build-grib2-libs \
+    && ./compile
+
+RUN rm /WPS/namelist.wps && rm /WRF/run/namelist.input
+
+WORKDIR /WPS/geogrid
+
+COPY GEOGRID.TBL.nz .
+
+RUN ln -sf GEOGRID.TBL.nz GEOGRID.TBL
+
+WORKDIR /WPS/metgrid
+
+COPY METGRID.TBL.nz .
+
+RUN ln -sf METGRID.TBL.nz METGRID.TBL
+
+WORKDIR /WPS
+
+CMD ["/bin/bash"]
