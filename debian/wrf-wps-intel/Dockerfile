@@ -1,4 +1,7 @@
-FROM intel/oneapi-hpckit:2025.3.1-0-devel-ubuntu24.04
+###############################################################################
+# Stage 1: Builder — compile HDF5, NetCDF, WRF, and WPS with Intel oneAPI
+###############################################################################
+FROM intel/oneapi-hpckit:2025.3.1-0-devel-ubuntu24.04 AS builder
 
 # Install system tools to match wrf-base functionality
 RUN apt-get update && apt-get install -y \
@@ -99,6 +102,53 @@ WORKDIR /WPS/metgrid
 COPY METGRID.TBL.nz .
 
 RUN ln -sf METGRID.TBL.nz METGRID.TBL
+
+
+###############################################################################
+# Stage 2: Runtime — slim image with only executables and shared libraries
+###############################################################################
+FROM intel/oneapi-runtime:2025.3.1-0-devel-ubuntu24.04
+
+# Intel Fortran and MPI runtime libraries (not included in base runtime image)
+# plus runtime-only system packages (no compilers, no -dev headers)
+RUN apt-get update && apt-get install -y \
+    intel-oneapi-runtime-fortran \
+    intel-oneapi-runtime-mpi \
+    python3 python3-numpy nco libeccodes-tools \
+    bash csh nano curl wget unzip zlib1g libpng16-16t64 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# uv package manager
+COPY --from=ghcr.io/astral-sh/uv:0.8.15 /uv /uvx /bin/
+
+# HDF5 + NetCDF shared libraries
+COPY --from=builder /usr/local/ /usr/local/
+
+# WRF run directory only (executables + physics tables, no source tree)
+COPY --from=builder /WRF/run/ /WRF/run/
+
+# WPS (whole directory — small, has internal symlinks)
+COPY --from=builder /WPS/ /WPS/
+
+# Python virtual environment
+COPY --from=builder /opt/venv/ /opt/venv/
+
+# era5_to_int installed via uv tool
+COPY --from=builder /root/.local/ /root/.local/
+
+# rclone binary
+COPY --from=builder /usr/bin/rclone /usr/bin/rclone
+
+# Register shared libraries
+RUN ldconfig
+
+# Environment variables
+ENV NETCDF=/usr/local
+ENV HDF5=/usr/local
+ENV JASPERINC=/WPS/grib2/include
+ENV JASPERLIB=/WPS/grib2/lib
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="/root/.local/bin:/opt/venv/bin:$PATH"
 
 WORKDIR /WPS
 
