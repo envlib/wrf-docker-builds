@@ -19,6 +19,9 @@ ENV CC=icx
 ENV CXX=icpx
 ENV FC=ifx
 ENV F77=ifx
+# Tell Intel MPI wrappers (mpif90, mpicc) to use Intel compilers instead of defaulting to gfortran/gcc
+ENV I_MPI_F90=ifx
+ENV I_MPI_CC=icx
 
 # Common install prefix for HDF5, NetCDF-C, and NetCDF-Fortran
 # Using a shared prefix avoids library path issues in WRF's nc4_test
@@ -85,8 +88,14 @@ WORKDIR /WPS
 
 COPY output_module.F /WPS/geogrid/src/
 
-# WPS option 19 = Intel oneAPI compilers, dmpar
-RUN echo 19 | ./configure --build-grib2-libs \
+# Pre-build jasper with gcc — bundled jasper 1.900.29 has old-style C prototypes
+# that icx treats as errors (-Wstrict-prototypes)
+RUN cd /WPS/external/jasper-1.900.29 \
+    && CC=gcc ./configure --prefix=/WPS/grib2 --disable-shared \
+    && make -j$(nproc) && make install
+
+# WPS option 10 = Intel oneAPI compilers, dmpar (--build-grib2-libs removes NO_GRIB2 entries, shifting numbering)
+RUN echo 10 | ./configure --build-grib2-libs \
     && ./compile
 
 RUN rm /WPS/namelist.wps && rm /WRF/run/namelist.input
@@ -124,7 +133,9 @@ COPY --from=ghcr.io/astral-sh/uv:0.8.15 /uv /uvx /bin/
 # HDF5 + NetCDF shared libraries
 COPY --from=builder /usr/local/ /usr/local/
 
-# WRF run directory only (executables + physics tables, no source tree)
+# WRF executables (actual binaries live in main/, run/ has symlinks to ../main/)
+COPY --from=builder /WRF/main/*.exe /WRF/main/
+# WRF run directory (physics tables, data files, and symlinks to executables)
 COPY --from=builder /WRF/run/ /WRF/run/
 
 # WPS (whole directory — small, has internal symlinks)
