@@ -94,8 +94,8 @@ RUN cd /WPS/external/jasper-1.900.29 \
     && CC=gcc ./configure --prefix=/WPS/grib2 --disable-shared \
     && make -j$(nproc) && make install
 
-# WPS option 10 = Intel oneAPI compilers, dmpar (--build-grib2-libs removes NO_GRIB2 entries, shifting numbering)
-RUN echo 10 | ./configure --build-grib2-libs \
+# WPS option 9 = Intel oneAPI compilers, serial (--build-grib2-libs removes NO_GRIB2 entries, shifting numbering)
+RUN echo 9 | ./configure --build-grib2-libs \
     && ./compile
 
 RUN rm /WPS/namelist.wps && rm /WRF/run/namelist.input
@@ -137,6 +137,8 @@ COPY --from=builder /usr/local/ /usr/local/
 COPY --from=builder /WRF/main/*.exe /WRF/main/
 # WRF run directory (physics tables, data files, and symlinks to executables)
 COPY --from=builder /WRF/run/ /WRF/run/
+# Noah-MP parameter table (run/MPTABLE.TBL symlinks to ../phys/ which isn't copied)
+COPY --from=builder /WRF/phys/noahmp/parameters/MPTABLE.TBL /WRF/phys/noahmp/parameters/MPTABLE.TBL
 
 # WPS (whole directory — small, has internal symlinks)
 COPY --from=builder /WPS/ /WPS/
@@ -159,7 +161,9 @@ ENV HDF5=/usr/local
 ENV JASPERINC=/WPS/grib2/include
 ENV JASPERLIB=/WPS/grib2/lib
 ENV VIRTUAL_ENV=/opt/venv
-ENV PATH="/root/.local/bin:/opt/venv/bin:$PATH"
+ENV PATH="/root/.local/bin:/opt/venv/bin:/opt/intel/oneapi/redist/bin:$PATH"
+# Intel MPI fabric for container environments (shm for single-node, avoids OFI hardware errors)
+ENV I_MPI_FABRICS=shm
 
 WORKDIR /WPS
 
