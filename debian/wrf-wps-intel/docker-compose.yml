@@ -1,5 +1,8 @@
 services:
   wrf-wps-intel:
+    build:
+      context: ../
+      dockerfile: wrf-wps-intel/Dockerfile
     image: mullenkamp/wrf-wps-intel-ubuntu:1.0
     stdin_open: true # docker run -i
     tty: true        # docker run -t

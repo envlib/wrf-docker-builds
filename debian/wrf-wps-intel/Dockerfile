@@ -86,7 +86,7 @@ RUN wget https://github.com/wrf-model/WPS/archive/v${WPS_VERSION}.tar.gz \
 
 WORKDIR /WPS
 
-COPY output_module.F /WPS/geogrid/src/
+COPY patches/output_module.F /WPS/geogrid/src/
 
 # Pre-build jasper with gcc — bundled jasper 1.900.29 has old-style C prototypes
 # that icx treats as errors (-Wstrict-prototypes)
@@ -102,13 +102,13 @@ RUN rm /WPS/namelist.wps && rm /WRF/run/namelist.input
 
 WORKDIR /WPS/geogrid
 
-COPY GEOGRID.TBL.nz .
+COPY patches/GEOGRID.TBL.nz .
 
 RUN ln -sf GEOGRID.TBL.nz GEOGRID.TBL
 
 WORKDIR /WPS/metgrid
 
-COPY METGRID.TBL.nz .
+COPY patches/METGRID.TBL.nz .
 
 RUN ln -sf METGRID.TBL.nz METGRID.TBL
 

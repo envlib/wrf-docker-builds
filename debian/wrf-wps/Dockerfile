@@ -23,7 +23,7 @@ RUN wget https://github.com/wrf-model/WPS/archive/v${WPS_VERSION}.tar.gz \
 
 WORKDIR /WPS
 
-COPY output_module.F /WPS/geogrid/src/
+COPY patches/output_module.F /WPS/geogrid/src/
 
 RUN sed -i '163s/.*/    NETCDFF="-lnetcdff"/' configure && echo 1 | ./configure --build-grib2-libs && ./compile
 
@@ -31,13 +31,13 @@ RUN rm /WPS/namelist.wps && rm /WRF/run/namelist.input
 
 WORKDIR /WPS/geogrid
 
-COPY GEOGRID.TBL.nz .
+COPY patches/GEOGRID.TBL.nz .
 
 RUN ln -sf GEOGRID.TBL.nz GEOGRID.TBL
 
 WORKDIR /WPS/metgrid
 
-COPY METGRID.TBL.nz .
+COPY patches/METGRID.TBL.nz .
 
 RUN ln -sf METGRID.TBL.nz METGRID.TBL
 

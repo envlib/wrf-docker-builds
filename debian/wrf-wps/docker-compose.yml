@@ -2,6 +2,9 @@ version: '3.3'
 
 services:
   wrf-wps:
+    build:
+      context: ../
+      dockerfile: wrf-wps/Dockerfile
     image: mullenkamp/wrf-wps-debian:1.1
     stdin_open: true # docker run -i
     tty: true        # docker run -t

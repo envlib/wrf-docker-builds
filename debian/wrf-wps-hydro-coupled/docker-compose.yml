@@ -2,6 +2,9 @@ version: '3.3'
 
 services:
   wrf-wps-hydro:
+    build:
+      context: ../
+      dockerfile: wrf-wps-hydro-coupled/Dockerfile
     image: mullenkamp/wrf-wps-hydro-coupled-debian:1.0
     stdin_open: true # docker run -i
     tty: true        # docker run -t
