@@ -12,10 +12,8 @@ name = HGT_M
         interp_option =      gtopo_5m:four_pt
         interp_option =     gtopo_10m:four_pt
         interp_option =        lowres:average_gcell(4.0)+four_pt
-        interp_option =       default:average_gcell(4.0)+four_pt
-        +average_4pt
-        interp_option =       linz_3s:average_gcell(4.0)+four_pt
-        +average_4pt
+        interp_option =       default:average_gcell(4.0)+four_pt+average_4pt
+        interp_option =       linz_3s:average_gcell(4.0)+four_pt+average_4pt
         rel_path =       linz_3s:linz_64m_dem/
         rel_path = gmted2010_30s:topo_gmted2010_30s/
         rel_path =     gtopo_30s:topo_30s/
@@ -23,7 +21,7 @@ name = HGT_M
         rel_path =      gtopo_5m:topo_5m/
         rel_path =     gtopo_10m:topo_10m/
         rel_path =        lowres:topo_gmted2010_5m/
-        rel_path =       default:topo_gmted2010_30s/
+        rel_path =       default:linz_64m_dem/
 ===============================
 name=LANDUSEF
         priority=1

@@ -28,6 +28,10 @@ wget -N https://www2.mmm.ucar.edu/wrf/src/wps_files/lake_depth.tar.bz2 -O lake_d
 tar -jxf lake_depth.tar.bz2
 rm lake_depth.tar.bz2
 
+# LINZ DEM converted to 64 meters from 8m
+mkdir linz_64m_dem
+geotiff-to-wps /home/mike/data/linz/dem/linz-64m-dem-2012-int16-4326.tif ./linz_64m_dem
+
 cd ..
 
 tar -I "zstd -3" -cvf $dest_path ./WPS_GEOG
