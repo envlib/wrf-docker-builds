@@ -1,9 +1,9 @@
 services:
-  wrf:
-    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:1.1
+  wrf-wps:
     build:
       context: ../
-      dockerfile: wrf-wps-intel-wvt/Dockerfile
+      dockerfile: wrf-wps-wvt-ref/Dockerfile
+    image: mullenkamp/wrf-wps-wvt-ref-debian:1.0
     stdin_open: true
     tty: true
     shm_size: '1gb'
