@@ -1,0 +1,29 @@
+state    real  RTRQVBLTEN        ikj      misc        1         -      r        "RTRQVBLTEN"              "COUPLED TRACER Q_V TENDENCY DUE TO PBL PARAMETERIZATION"     "Pa kg kg-1 s-1"
+state    real  RTRQCBLTEN        ikj      misc        1         -      r        "RTRQCBLTEN"              "COUPLED TRACER Q_C TENDENCY DUE TO PBL PARAMETERIZATION"     "Pa kg kg-1 s-1"
+state    real  RTRQIBLTEN        ikj      misc        1         -      r        "RTRQIBLTEN"              "COUPLED TRACER Q_I TENDENCY DUE TO PBL PARAMETERIZATION"     "Pa kg kg-1 s-1"
+
+state    real  RTRQVCUTEN        ikj      misc        1         -      r        "RTRQVCUTEN"              "COUPLED TRACER Q_V TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
+state    real  RTRQRCUTEN        ikj      misc        1         -      r        "RTRQRCUTEN"              "COUPLED TRACER Q_R TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
+state    real  RTRQCCUTEN        ikj      misc        1         -      r        "RTRQCCUTEN"              "COUPLED TRACER Q_C TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
+state    real  RTRQSCUTEN        ikj      misc        1         -      r        "RTRQSCUTEN"              "COUPLED TRACER Q_S TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
+state    real  RTRQICUTEN        ikj      misc        1         -      r        "RTRQICUTEN"              "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
+
+state    real  TRQFX              ij      misc        1         -      rh       "TRQFX"                   "UPWARD MOISTURE TRACER FLUX AT THE SURFACE"          "kg m-2 s-1"
+state    real  TRMASK             ij      misc        1         -      i8r      "TRMASK"                  "2D SOURCE MASK FOR MOISTURE TRACERS "          ""
+state    real  TRMASK3D          ikj      misc        1         -      i8r      "TRMASK3D"                "3D SOURCE MASK FOR MOISTURE TRACERS "          ""
+state    real  TRMASK3D2         ikj      misc        1         -      i8r      "TRMASK3D2"               "3D SINK MASK FOR MOISTURE TRACERS   "          ""
+
+state    real  TR_RAINNC          ij      misc        1         -      rhdu     "TR_RAINNC"               "ACCUMULATED TOTAL GRID SCALE PRECIPITATION FROM MOISTURE TRACERS"         "mm"
+state    real  TR_SNOWNC          ij      misc        1         -      rhdu     "TR_SNOWNC"               "ACCUMULATED TOTAL GRID SCALE SNOW AND ICE FROM MOISTURE TRACERS"          "mm"
+state    real  TR_GRAUPELNC       ij      misc        1         -      rhdu     "TR_GRAUPELNC"            "ACCUMULATED TOTAL GRID SCALE GRAUPEL FROM MOISTURE TRACERS"               "mm"
+
+state    real  TR_RAINC           ij      misc        1         -      rhdu     "TR_RAINC"                "ACCUMULATED TOTAL CUMULUS PRECIPITATION FROM MOISTURE TRACERS"         "mm"
+state    real  TR_PRATEC          ij      misc        1         -      r        "TR_PRATEC"               "TRACER PRECIP RATE FROM CUMULUS SCHEME"                         "mm s-1"
+
+state   real  tr_thum_u_phy_dt   ikj      misc        1         -      rh       "tr_thum_u_phy_dt"        "tracer total humidity * x-wind component * dt"      "kg kg-1 m"
+state   real  tr_thum_v_phy_dt   ikj      misc        1         -      rh       "tr_thum_v_phy_dt"        "tracer total humidity * y-wind component * dt"      "kg kg-1 m"
+
+
+rconfig   integer tracer3dsource        namelist,dynamics      max_domains    0        rh    "tracer3dsource"    "switch to activate 3D region (read in from file) as tracer moisture source " ""
+rconfig   integer tracer2dsource        namelist,dynamics      max_domains    0        rh    "tracer2dsource"    "switch to activate 2D region (read in from file) as tracer moisture source " ""
+rconfig   integer tracer3dsink          namelist,dynamics      max_domains    0        rh    "tracer3dsink"      "switch to activate 3D region (read in from file) as tracer moisture sink " ""
