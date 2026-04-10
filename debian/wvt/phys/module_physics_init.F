@@ -4119,8 +4119,12 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
 
 #if ( EM_CORE == 1 )
      CASE (MSKFSCHEME)
+! mvt: native WVT integration - tracer tendency args passed to mskf_init
           CALL mskf_init(RTHCUTEN,RQVCUTEN,RQCCUTEN,RQRCUTEN,     &
-                      RQICUTEN,RQSCUTEN,NCA,W0AVG,P_QI,P_QS,      &
+                      RQICUTEN,RQSCUTEN,                           &
+                      RTRQVCUTEN,RTRQCCUTEN,RTRQRCUTEN,            & ! mvt
+                      RTRQICUTEN,RTRQSCUTEN,                       & ! mvt
+                      NCA,W0AVG,P_QI,P_QS,P_QI_TR,P_QS_TR,        & ! mvt
                       SVP1,SVP2,SVP3,SVPT0,                       &
                       PARAM_FIRST_SCALAR,restart,                 &
                       allowed_to_read ,                           &

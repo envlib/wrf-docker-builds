@@ -192,6 +192,8 @@ The legacy physics limitations above apply to the initial v1.0 implementation. I
 - **WSM6**: Tracer mass-fraction following added directly to `physics_mmm/mp_wsm6.F90` (CCPP core) and `module_mp_wsm6.F` (wrapper). Retains all 4.7.1 improvements (effective radii, radar reflectivity fixes, CCPP error handling).
 - **YSU**: Uses the native CCPP `nmix`/`qmix` passive tracer infrastructure in `bl_ysu_run`. Only the wrapper (`module_bl_ysu.F`) was modified. A `qmix_sflx` argument was added to `bl_ysu.F90` to inject the tracer surface flux (`TRQFX`) at the bottom level. Retains all 4.7.1 improvements (Noah-MP coupling, external model coupling).
 - **Kain-Fritsch**: Tracer transport added directly to the 4.7.1 `module_cu_kfeta.F`. Retains all 4.7.1 improvements (SPP hooks, gray-zone triggering).
+- **New Tiedtke** (cu_physics=16): Tracer flux-divergence transport added to `physics_mmm/cu_ntiedtke.F90` (CCPP core) and `module_cu_ntiedtke.F` (wrapper). Tracers follow the Tiedtke mass flux framework through updrafts, downdrafts, detrainment, and precipitation. All 4.7.1 improvements retained.
+- **Multi-scale KF** (cu_physics=11): Tracer transport added directly to `module_cu_mskf.F` following the same pattern as KF. Scale-awareness (`Scale_Fac`) inherited automatically by tracers. All 4.7.1 improvements retained including integrated microphysics and momentum transport.
 
 ### Validation Results
 
@@ -207,6 +209,21 @@ A 6-hour single-domain test (12km, 273x311, 2023-02-10, land-source mask) compar
 | `TRQFX` max | 1.63e-4 | 1.63e-4 | Identical |
 
 Small differences are expected from the 4.7.1 physics improvements (effective radii in radiation, refined microphysics). Standard (non-tracer) fields (`T2`, `PSFC`, `RAINNC`) show small differences consistent with different physics code paths.
+
+### Cross-Scheme Validation (ocean source mask)
+
+All three cumulus schemes tested with WVT on the same domain (12km, 6h, ocean source mask, WRF 4.7.1 gfortran) against the WRF 4.3.3 + original KF WVT reference:
+
+| Metric | KF (cu=1) | New Tiedtke (cu=16) | MSKF (cu=11) | KF 4.3.3 ref |
+|--------|-----------|--------------------|--------------|-|
+| `qv_tr/QVAPOR` mean | 2.64% | 2.64% | 2.64% | 2.67% |
+| `TR_RAINC/RAINC` mean | 5.2% | 5.2% | 3.3% | 3.7% |
+| `TR_RAINNC/RAINNC` mean | 0.24% | 0.24% | 0.76% | 1.05% |
+| `TR_RAINC` max (mm) | 7.18 | 1.52 | 2.86 | 2.46 |
+| `TR_RAINNC` max (mm) | 4.87 | 4.87 | 7.96 | 5.59 |
+| Constraint violations | 0 | 1 (minor) | 0 | 0 |
+
+All schemes produce consistent `qv_tr/QVAPOR` ratios (~2.6%) and physically reasonable tracer precipitation. Differences in `TR_RAINC` vs `TR_RAINNC` partitioning reflect each scheme's different convective vs grid-scale precipitation balance.
 
 ## Summary
 

@@ -1144,7 +1144,15 @@ CONTAINS
                ,AEROCU=aerocu,NO_SRC_TYPES_CU=no_src_types_cu   &
                ,AERCU_FCT=aercu_fct,AERCU_OPT=aercu_opt        &
                ,EFCS=EFCS,EFIS=EFIS,EFSS=EFSS                   &
-               ,RUCUTEN=RUCUTEN,RVCUTEN=RVCUTEN,XLAND=XLAND)       !JTR
+               ,RUCUTEN=RUCUTEN,RVCUTEN=RVCUTEN,XLAND=XLAND        & !JTR
+               ,TR_QV=tr_qv_curr,TR_PRATEC=tr_tmppratec          & ! mvt
+               ,RTRQVCUTEN=rtrqvcuten,RTRQCCUTEN=rtrqccuten      & ! mvt
+               ,RTRQRCUTEN=rtrqrcuten,RTRQICUTEN=rtrqicuten      & ! mvt
+               ,RTRQSCUTEN=rtrqscuten                            & ! mvt
+               ,F_TR_QV=flag_tr_qv,F_TR_QC=flag_tr_qc            & ! mvt
+               ,F_TR_QR=flag_tr_qr,F_TR_QI=flag_tr_qi            & ! mvt
+               ,F_TR_QS=flag_tr_qs                               & ! mvt
+                                                                 )
 #endif  
  
      CASE (GDSCHEME)

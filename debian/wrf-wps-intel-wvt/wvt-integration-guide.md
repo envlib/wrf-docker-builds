@@ -270,19 +270,41 @@ The KF scheme is self-contained in `module_cu_kfeta.F` (not refactored to CCPP).
 
 When adding optional tracer arguments to an init subroutine, ensure the call site in `module_physics_init.F` passes arguments in the exact order declared in the subroutine signature. Fortran positional arguments must match. We hit this as a type-mismatch error where `P_QI` (integer) was passed where `RTRQVCUTEN` (real array) was expected because the tracer args were added in a different position than the call assumed.
 
-### Cumulus Schemes to Consider
+### Implemented Cumulus Schemes
 
-For adding WVT to other cumulus schemes, candidates roughly ordered by integration difficulty:
+| Scheme | `cu_physics` | Architecture | Integration Pattern |
+|--------|-------------|-------------|-------------------|
+| Kain-Fritsch | 1 | Self-contained (`module_cu_kfeta.F`) | Column mass-flux with tracer updraft/downdraft/subsidence |
+| New Tiedtke | 16 | CCPP wrapper + core (`cu_ntiedtke.F90`) | Flux-divergence with parallel tracer fluxes through 7 subroutines |
+| Multi-scale KF | 11 | Self-contained (`module_cu_mskf.F`) | Direct port of KF pattern; scale-awareness inherited automatically |
+
+### New Tiedtke Implementation Notes
+
+The New Tiedtke scheme uses a flux-divergence approach (different from KF's column-integrated approach). Key details:
+
+- **CCPP architecture**: Wrapper `module_cu_ntiedtke.F` handles 3D↔2D packing with column reversal (WRF uses bottom-up, CCPP uses top-down). Tracer packing must follow the same reversal: `tr_qv_hv(i, kte-k+kts) = tr_qv_curr(i, k, j)`.
+- **Precipitation rate units**: The CCPP core computes `zprecc` as accumulated depth (mm), not a rate. The tracer precipitation must be converted to a rate by dividing by `ztmst` (= dt × stepcu) before returning to the wrapper. Failing to do this produces `TR_RAINC` values orders of magnitude too large.
+- **Tendency computation**: Done in the wrapper as `(tr_qv_new - tr_qv_old) / (dt * stepcu)`, matching how `rqvcuten` is computed in `cu_ntiedtke_post_run`.
+- **Single tracer tendency**: New Tiedtke produces only a `qv_tr` tendency (total moisture), not separate qc/qr/qi/qs tendencies. The microphysics scheme handles phase partitioning.
+
+### MSKF Implementation Notes
+
+MSKF is structurally identical to KF with scale-aware parameter adjustments:
+- `Scale_Fac` modifies timescales, entrainment rates, and autoconversion -- all automatically inherited by tracers
+- The MSKF file is 8041 lines (vs KF's 3303) due to integrated microphysics (`module_cu_mp`), but the tracer additions (~360 lines) are similar in scope
+- Helper subroutines (`TPMIX2`, `ENVIRTHT`) are shared with KF
+
+### Cumulus Schemes Not Yet Implemented
+
+For future WVT integration, candidates roughly ordered by integration difficulty:
 
 | Scheme | `cu_physics` | CCPP? | Complexity | Notes |
 |--------|-------------|-------|------------|-------|
-| Kain-Fritsch (done) | 1 | No | High | Full mass-flux framework |
 | Grell-Freitas | 3 | No | High | Dual mass-flux (deep+shallow) |
-| New Tiedtke | 16 | No | High | Mass-flux with CAPE closure |
 | BMJ | 2 | No | Moderate | Adjustment scheme (simpler) |
 | KSAS/NSAS | 4/14 | No | High | SAS mass-flux framework |
 
-For mass-flux schemes (GF, Tiedtke, KSAS), the KF integration pattern applies directly. For adjustment schemes (BMJ), the approach is simpler since there's no explicit mass flux -- you'd proportionally adjust tracer fields based on the moisture adjustment profile.
+For mass-flux schemes (GF, KSAS), the KF integration pattern applies directly. For adjustment schemes (BMJ), the approach is simpler since there's no explicit mass flux -- you'd proportionally adjust tracer fields based on the moisture adjustment profile.
 
 ## Driver-Level Plumbing
 
@@ -390,7 +412,7 @@ WRF validates namelist settings in `share/module_check_a_mundo.F` before the sim
 |---------|---------------|----------------|
 | `mp_physics` | 6 (WSM6) | `tracer_opt=4 (WVT) requires mp_physics=6 (WSM6)` |
 | `bl_pbl_physics` | 1 (YSU) or 0 | `tracer_opt=4 (WVT) requires bl_pbl_physics=1 (YSU) or 0` |
-| `cu_physics` | 1 (Kain-Fritsch) or 0 | `tracer_opt=4 (WVT) requires cu_physics=1 (Kain-Fritsch) or 0` |
+| `cu_physics` | 1 (KF), 11 (MSKF), 16 (NTiedtke), or 0 | `tracer_opt=4 (WVT) requires cu_physics=1 (KF), 11 (MSKF), 16 (NTiedtke), or 0` |
 | `scalar_pblmix` | 0 | `tracer_opt=4 (WVT) requires scalar_pblmix=0` |
 | `tracer_pblmix` | 0 | `tracer_opt=4 (WVT) requires tracer_pblmix=0` |
 | `tracer_adv_opt` | 4 | `tracer_opt=4 (WVT) requires tracer_adv_opt=4` |
@@ -408,11 +430,13 @@ IF ( model_config_rec % mp_physics(i) .NE. 6 .AND. &
      model_config_rec % mp_physics(i) .NE. 8 ) THEN
 ```
 
-Similarly for cumulus: after adding WVT to Grell-Freitas (`cu_physics=3`):
+Similarly for cumulus: after adding WVT to Grell-Freitas (`cu_physics=3`), add it to the existing list:
 
 ```fortran
 IF ( model_config_rec % cu_physics(i) .NE. 1 .AND. &
      model_config_rec % cu_physics(i) .NE. 3 .AND. &
+     model_config_rec % cu_physics(i) .NE. 11 .AND. &
+     model_config_rec % cu_physics(i) .NE. 16 .AND. &
      model_config_rec % cu_physics(i) .NE. 0 ) THEN
 ```
 

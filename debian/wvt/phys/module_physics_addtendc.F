@@ -1395,7 +1395,7 @@ SUBROUTINE phy_cu_ten(config_flags,rk_step,n_moist,n_scalar,     & !mvt
                 ids,ide, jds, jde, kds, kde,                     &
                 ims, ime, jms, jme, kms, kme,                    &
                 its, ite, jts, jte, kts, kte                     )
- 
+
         if (P_QV .ge. PARAM_FIRST_SCALAR)                                         &
         CALL add_a2a(moist_tendf(ims,kms,jms,P_QV),RQVCUTEN,     &
                 config_flags,                                    &
@@ -1426,6 +1426,41 @@ SUBROUTINE phy_cu_ten(config_flags,rk_step,n_moist,n_scalar,     & !mvt
 
         if (P_QS .ge. PARAM_FIRST_SCALAR)                                         &
         CALL add_a2a(moist_tendf(ims,kms,jms,P_QS),RQSCUTEN,     &
+                config_flags,                                    &
+                ids,ide, jds, jde, kds, kde,                     &
+                ims, ime, jms, jme, kms, kme,                    &
+                its, ite, jts, jte, kts, kte                     )
+
+        if (P_QV_TR .ge. PARAM_FIRST_SCALAR)                                      & ! mvt
+        CALL add_a2a(tracer_tendf(ims,kms,jms,P_QV_TR),RTRQVCUTEN,     &
+                config_flags,                                    &
+                ids,ide, jds, jde, kds, kde,                     &
+                ims, ime, jms, jme, kms, kme,                    &
+                its, ite, jts, jte, kts, kte                     )
+
+        if (P_QC_TR .ge. PARAM_FIRST_SCALAR)                                      & ! mvt
+        CALL add_a2a(tracer_tendf(ims,kms,jms,P_QC_TR),RTRQCCUTEN,     &
+                config_flags,                                    &
+                ids,ide, jds, jde, kds, kde,                     &
+                ims, ime, jms, jme, kms, kme,                    &
+                its, ite, jts, jte, kts, kte                     )
+
+        if (P_QR_TR .ge. PARAM_FIRST_SCALAR)                                      & ! mvt
+        CALL add_a2a(tracer_tendf(ims,kms,jms,P_QR_TR),RTRQRCUTEN,     &
+                config_flags,                                    &
+                ids,ide, jds, jde, kds, kde,                     &
+                ims, ime, jms, jme, kms, kme,                    &
+                its, ite, jts, jte, kts, kte                     )
+
+        if (P_QI_TR .ge. PARAM_FIRST_SCALAR)                                      & ! mvt
+        CALL add_a2a(tracer_tendf(ims,kms,jms,P_QI_TR),RTRQICUTEN,     &
+                config_flags,                                    &
+                ids,ide, jds, jde, kds, kde,                     &
+                ims, ime, jms, jme, kms, kme,                    &
+                its, ite, jts, jte, kts, kte                     )
+
+        if (P_QS_TR .ge. PARAM_FIRST_SCALAR)                                      & ! mvt
+        CALL add_a2a(tracer_tendf(ims,kms,jms,P_QS_TR),RTRQSCUTEN,     &
                 config_flags,                                    &
                 ids,ide, jds, jde, kds, kde,                     &
                 ims, ime, jms, jme, kms, kme,                    &
