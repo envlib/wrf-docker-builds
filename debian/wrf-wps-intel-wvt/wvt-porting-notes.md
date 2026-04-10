@@ -185,25 +185,6 @@ Namelist validation:
 
 - Added WVT scheme compatibility checks. When `tracer_opt==4`, validates that `mp_physics=6`, `bl_pbl_physics=1 or 0`, `cu_physics=1 or 0`, `scalar_pblmix=0`, `tracer_pblmix=0`, and `tracer_adv_opt=4`. Each violation produces a specific error message and increments the fatal error count. When new schemes gain WVT support, the allowed values in these checks must be updated (see `wvt-integration-guide.md`).
 
-## Limitations (Legacy Physics)
-
-Because the WVT implementation copies three physics modules (`module_mp_wsm6_tr.F`, `module_bl_ysu_tr.F`, and `module_cu_kfeta_tr.F`) directly from WRF 4.3.3, activating `tracer_opt=4` causes the model to fall back to the older logic for these schemes. This introduces several limitations compared to standard WRF 4.7.1:
-
-1. **WSM6 (Microphysics)**
-   - **Effective Radii for Radiation:** Lacks support for explicit background and maximum effective radii parameters (`re_qc_bg`, `re_qi_bg`, `re_qs_bg`, etc.) introduced in later versions to improve radiation scheme fidelity.
-   - **Radar Reflectivity:** Lacks the bug fixes made in WRF 4.6.0 for radar reflectivity generation (`refl_10cm`) when `do_radar_ref=1`.
-   - **WRFDA Compatibility:** Does not include the "regularized" WSM6 (TL/AD models) added in WRF 4.5, meaning it cannot be used for 4DVar assimilation of frozen hydrometeors.
-
-2. **YSU (Planetary Boundary Layer)**
-   - **External Model Coupling:** Missing the WRF 4.6.0 updates that introduced a non-intrusive, multi-scale coupling interface for interaction with external ocean/wave models.
-   - **Noah-MP Enhancements:** Lacks the coupling refinements made in WRF 4.5+ to support Noah-MP irrigation and crop modeling updates.
-
-3. **Kain-Fritsch (Cumulus)**
-   - **Stochastic Parameter Perturbations (SPP):** Does not contain the SPP hooks added in WRF 4.4 for the WRF-Solar Ensemble Prediction System.
-   - **Gray-Zone Triggering:** Misses the scale-aware updraft triggering refinements made to the broader Kain-Fritsch family between WRF 4.4 and 4.7.1.
-
-**Takeaway:** This implementation is perfectly suitable for standard regional climate or weather simulations focusing on moisture tracking. However, it should **not** be used for advanced Data Assimilation (4DVar), fully coupled ocean/wave model runs, or Stochastic Ensemble (SPP) forecasting.
-
 ## Native 4.7.1 Integration (v1.1)
 
 The legacy physics limitations above apply to the initial v1.0 implementation. In v1.1, the tracer logic was integrated directly into the 4.7.1 physics modules, eliminating the legacy `_tr` modules entirely:
