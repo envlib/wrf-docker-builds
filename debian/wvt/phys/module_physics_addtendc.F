@@ -1757,6 +1757,20 @@ SUBROUTINE phy_cu_ten(config_flags,rk_step,n_moist,n_scalar,     & !mvt
                 ims, ime, jms, jme, kms, kme,                    &
                 its, ite, jts, jte, kts, kte                     )
 
+        if (P_QC_TR .ge. PARAM_FIRST_SCALAR)                                      & ! mvt
+        CALL add_a2a(tracer_tendf(ims,kms,jms,P_QC_TR),RTRQCCUTEN,     &
+                config_flags,                                    &
+                ids,ide, jds, jde, kds, kde,                     &
+                ims, ime, jms, jme, kms, kme,                    &
+                its, ite, jts, jte, kts, kte                     )
+
+        if (P_QI_TR .ge. PARAM_FIRST_SCALAR)                                      & ! mvt
+        CALL add_a2a(tracer_tendf(ims,kms,jms,P_QI_TR),RTRQICUTEN,     &
+                config_flags,                                    &
+                ids,ide, jds, jde, kds, kde,                     &
+                ims, ime, jms, jme, kms, kme,                    &
+                its, ite, jts, jte, kts, kte                     )
+
        IF(.not. adv_moist_cond)THEN
 
         if (P_QT .ge. PARAM_FIRST_SCALAR)                        &

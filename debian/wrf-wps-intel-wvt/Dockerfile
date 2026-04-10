@@ -67,7 +67,7 @@ ENV VIRTUAL_ENV=/opt/venv \
 RUN uv tool install era5_to_int==0.3.0
 
 # Cache bust for WRF+WVT rebuild (change this value to force recompile)
-ARG WVT_CACHE_BUST=15
+ARG WVT_CACHE_BUST=17
 
 # Download WRF source
 ARG WRF_VERSION=4.7.1

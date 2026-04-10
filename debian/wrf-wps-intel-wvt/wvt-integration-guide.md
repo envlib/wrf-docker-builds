@@ -284,8 +284,8 @@ The New Tiedtke scheme uses a flux-divergence approach (different from KF's colu
 
 - **CCPP architecture**: Wrapper `module_cu_ntiedtke.F` handles 3D↔2D packing with column reversal (WRF uses bottom-up, CCPP uses top-down). Tracer packing must follow the same reversal: `tr_qv_hv(i, kte-k+kts) = tr_qv_curr(i, k, j)`.
 - **Precipitation rate units**: The CCPP core computes `zprecc` as accumulated depth (mm), not a rate. The tracer precipitation must be converted to a rate by dividing by `ztmst` (= dt × stepcu) before returning to the wrapper. Failing to do this produces `TR_RAINC` values orders of magnitude too large.
-- **Tendency computation**: Done in the wrapper as `(tr_qv_new - tr_qv_old) / (dt * stepcu)`, matching how `rqvcuten` is computed in `cu_ntiedtke_post_run`.
-- **Single tracer tendency**: New Tiedtke produces only a `qv_tr` tendency (total moisture), not separate qc/qr/qi/qs tendencies. The microphysics scheme handles phase partitioning.
+- **Tendency computation**: Done in the wrapper as `(tr_new - tr_old) / (dt * stepcu)`, matching how `rqvcuten` is computed in `cu_ntiedtke_post_run`. Three tendencies are returned: `rtrqvcuten` (vapor), `rtrqccuten` (cloud water), `rtrqicuten` (cloud ice). The state arrays (`tr_qv_curr`, `tr_qc_curr`, `tr_qi_curr`) are INTENT(IN) only -- never modified in-place. See Pitfall #10 below.
+- **Cloud condensate detrainment**: New Tiedtke explicitly detrains cloud liquid and ice back to the grid-scale environment (via `plude` → `pcte`). The tracer equivalent `pcte_tr` is computed in `cudtdqn` and applied to the tracer cloud fields inside `cu_ntiedtke_run`. The resulting changes are returned as `rtrqccuten` and `rtrqicuten` tendencies. See Pitfall #9 below.
 
 ### MSKF Implementation Notes
 
@@ -401,6 +401,53 @@ r1(i,1) = r1(i,1) + (1.0-bepswitch)*qmix_sflx(i,n)*g/del(i,1)*dt2
 ```
 
 Without this fix, `qv_tr` is ~6 orders of magnitude too small because the surface evaporation never enters the tracer field through PBL mixing. This is the single most important detail to get right for any PBL scheme integration that uses a tridiagonal solver.
+
+### 9. Cumulus Cloud Condensate Detrainment Must Update Tracer Cloud Fields
+
+Some cumulus schemes (notably New Tiedtke) explicitly detrain cloud liquid and ice condensate back to the grid-scale environment to feed the microphysics scheme. In the base moisture code, this appears as:
+
+```fortran
+pcte(jl,jk) = zdp(jl,jk) * plude(jl,jk)     ! cloud tendency from detrainment
+pqc(j,k) = pqc(j,k) + fliq * pcte(j,k) * ztmst  ! add to grid cloud water
+pqi(j,k) = pqi(j,k) + fice * pcte(j,k) * ztmst  ! add to grid cloud ice
+```
+
+The tracer flux-divergence equation subtracts `plude_tr` from tracer vapor (removing it from the updraft). But if `tr_qc` and `tr_qi` are never updated with the detrained tracer condensate, that mass is permanently lost from the simulation.
+
+**The fix**: Compute `pcte_tr = zdp * plude_tr` in `cudtdqn`, return it to `cu_ntiedtke_run`, and apply:
+
+```fortran
+if (l_tracers) then
+  tr_qc(j,k) = tr_qc(j,k) + fliq * pcte_tr(j,k) * ztmst
+  tr_qi(j,k) = tr_qi(j,k) + fice * pcte_tr(j,k) * ztmst
+endif
+```
+
+This requires passing `tr_qc` and `tr_qi` into the cumulus scheme (through the wrapper and CCPP core), which older KF-style schemes may not need because they handle condensate through explicit tendency arrays instead of direct field modification.
+
+**Impact if missed**: Steady artificial loss of tracer mass proportional to convective detrainment. The `qv_tr/QVAPOR` ratio may appear correct on short simulations but will drift low over longer runs.
+
+### 10. Never Modify Tracer State Arrays In-Place in Cumulus Schemes
+
+In WRF, cumulus schemes must return **tendencies only** -- they must not modify the state arrays (`tr_qv_curr`, `tr_qc_curr`, `tr_qi_curr`) in-place. The Runge-Kutta dynamical core advances the state using the tendencies over multiple acoustic sub-steps.
+
+**Two bugs result from in-place modification:**
+
+1. **Double-counting**: If you compute a tendency `rtrqvcuten = (new - old) / dt` AND also overwrite `tr_qv_curr = new`, the change is applied twice -- once by your overwrite and again by the tendency accumulation in `module_physics_addtendc.F`. This causes tracer vapor to balloon unphysically.
+
+2. **RK bypass**: Directly modifying `tr_qc_curr` or `tr_qi_curr` bypasses the Runge-Kutta integration, causing grid-scale noise and inconsistencies with the host moisture fields.
+
+**The correct pattern:**
+```fortran
+! State arrays are INTENT(IN) -- read only
+! Compute tendencies from before/after difference:
+rtrqvcuten(i,k,j) = (tr_qv_hv(i,kte-k+kts) - tr_qv_curr(i,k,j)) / (dt*stepcu)
+rtrqccuten(i,k,j) = (tr_qc_hv(i,kte-k+kts) - tr_qc_curr(i,k,j)) / (dt*stepcu)
+rtrqicuten(i,k,j) = (tr_qi_hv(i,kte-k+kts) - tr_qi_curr(i,k,j)) / (dt*stepcu)
+! Do NOT write: tr_qv_curr(i,k,j) = tr_qv_hv(...)  -- this causes double-counting
+```
+
+Then ensure all three tendencies are accumulated in `module_physics_addtendc.F` via `add_a2a` calls for `P_QV_TR`, `P_QC_TR`, and `P_QI_TR`.
 
 ## Namelist Validation
 

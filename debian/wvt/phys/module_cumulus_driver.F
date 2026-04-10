@@ -1502,9 +1502,13 @@ CONTAINS
                ,RD=r_d,RV=r_v,CP=cp                             &
                ,errmsg=errmsg,errflg=errflg                     &
                ,tr_qv_curr=tr_qv_curr                           & ! mvt
+               ,tr_qc_curr=tr_qc_curr                           & ! mvt
+               ,tr_qi_curr=tr_qi_curr                           & ! mvt
                ,tr_pratec=tr_tmppratec                           & ! mvt
                ,tr_rainc=tr_rainc                                & ! mvt
                ,rtrqvcuten=rtrqvcuten                            & ! mvt
+               ,rtrqccuten=rtrqccuten                            & ! mvt
+               ,rtrqicuten=rtrqicuten                            & ! mvt
                ,f_tr_qv=flag_tr_qv                               & ! mvt
                                                              )
 

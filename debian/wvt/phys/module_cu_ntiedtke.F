@@ -30,8 +30,10 @@
                 ,ims,ime,jms,jme,kms,kme                 &
                 ,its,ite,jts,jte,kts,kte                 &
                 ,errmsg,errflg                           &
-                ,tr_qv_curr,tr_pratec,tr_rainc            & ! mvt
-                ,rtrqvcuten,f_tr_qv)                       ! mvt
+                ,tr_qv_curr,tr_qc_curr,tr_qi_curr          & ! mvt
+                ,tr_pratec,tr_rainc                        & ! mvt
+                ,rtrqvcuten,rtrqccuten,rtrqicuten          & ! mvt
+                ,f_tr_qv)                                    ! mvt
 !=================================================================================================================
 !-- u3d         3d u-velocity interpolated to theta points (m/s)
 !-- v3d         3d v-velocity interpolated to theta points (m/s)
@@ -134,9 +136,14 @@
  integer,intent(out):: errflg
 
 !--- optional tracer arguments:                                                           ! mvt
+ real(kind=kind_phys),intent(in),dimension(ims:ime,kms:kme,jms:jme),optional:: &          ! mvt
+    tr_qv_curr,  &                                                                        ! mvt - INTENT(IN): state read only, tendencies returned
+    tr_qc_curr,  &                                                                        ! mvt - tracer cloud water (read only)
+    tr_qi_curr                                                                             ! mvt - tracer cloud ice (read only)
  real(kind=kind_phys),intent(inout),dimension(ims:ime,kms:kme,jms:jme),optional:: &       ! mvt
-    tr_qv_curr,  &                                                                        ! mvt
-    rtrqvcuten                                                                             ! mvt
+    rtrqvcuten,  &                                                                        ! mvt - tracer vapor tendency
+    rtrqccuten,  &                                                                        ! mvt - tracer cloud water tendency
+    rtrqicuten                                                                             ! mvt - tracer cloud ice tendency
  real(kind=kind_phys),intent(inout),dimension(ims:ime,jms:jme),optional:: &                ! mvt
     tr_pratec,   &                                                                        ! mvt
     tr_rainc                                                                               ! mvt
@@ -165,6 +172,7 @@
 
  logical:: l_do_tracers                                                                    ! mvt
  real(kind=kind_phys),dimension(its:ite,kts:kte):: tr_qv_hv                                ! mvt
+ real(kind=kind_phys),dimension(its:ite,kts:kte):: tr_qc_hv, tr_qi_hv                     ! mvt
  real(kind=kind_phys),dimension(its:ite):: tr_pratec_hv                                    ! mvt
 
 !-----------------------------------------------------------------------------------------------------------------
@@ -228,6 +236,8 @@
        do k = kts,kte                                                                      ! mvt
           do i = its,ite                                                                   ! mvt
              tr_qv_hv(i,kte-k+kts) = tr_qv_curr(i,k,j)                                   ! mvt
+             tr_qc_hv(i,kte-k+kts) = tr_qc_curr(i,k,j)                                   ! mvt
+             tr_qi_hv(i,kte-k+kts) = tr_qi_curr(i,k,j)                                   ! mvt
           enddo                                                                            ! mvt
        enddo                                                                               ! mvt
        do i = its,ite                                                                      ! mvt
@@ -256,7 +266,8 @@
                      paph = prsi   , evap = qfx_hv , hfx    = hfx_hv  , zprecc = rn      , &
                      lndj = slimsk , lq   = im     , km     = kx      , km1    = kx1     , &
                      dt   = delt   , dx   = dx_hv  , errmsg = errmsg  , errflg = errflg  , & ! mvt
-                     tr_qv = tr_qv_hv , tr_pratec = tr_pratec_hv ,                         & ! mvt
+                     tr_qv = tr_qv_hv , tr_qc = tr_qc_hv , tr_qi = tr_qi_hv ,              & ! mvt
+                     tr_pratec = tr_pratec_hv ,                                             & ! mvt
                      do_tracers = l_do_tracers                                               & ! mvt
                         )
 
@@ -306,13 +317,17 @@
     endif
 
 !--- mvt: unpack tracer tile arrays back to 3D (reverse column order)
-!--- mvt: compute tendency before overwriting tr_qv_curr with updated values
+!--- mvt: compute tendencies only -- do NOT modify state arrays in-place
+!--- mvt: state is advanced by the RK solver via tendency accumulation
     if (l_do_tracers) then                                                                 ! mvt
        do k = kts,kte                                                                      ! mvt
           do i = its,ite                                                                   ! mvt
              rtrqvcuten(i,k,j) = (tr_qv_hv(i,kte-k+kts) - tr_qv_curr(i,k,j)) &           ! mvt
                                  / (dt*stepcu)                                              ! mvt
-             tr_qv_curr(i,k,j) = tr_qv_hv(i,kte-k+kts)                                   ! mvt
+             rtrqccuten(i,k,j) = (tr_qc_hv(i,kte-k+kts) - tr_qc_curr(i,k,j)) &           ! mvt
+                                 / (dt*stepcu)                                              ! mvt
+             rtrqicuten(i,k,j) = (tr_qi_hv(i,kte-k+kts) - tr_qi_curr(i,k,j)) &           ! mvt
+                                 / (dt*stepcu)                                              ! mvt
           enddo                                                                            ! mvt
        enddo                                                                               ! mvt
        do i = its,ite                                                                      ! mvt

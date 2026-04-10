@@ -216,14 +216,16 @@ All three cumulus schemes tested with WVT on the same domain (12km, 6h, ocean so
 
 | Metric | KF (cu=1) | New Tiedtke (cu=16) | MSKF (cu=11) | KF 4.3.3 ref |
 |--------|-----------|--------------------|--------------|-|
-| `qv_tr/QVAPOR` mean | 2.64% | 2.64% | 2.64% | 2.67% |
-| `TR_RAINC/RAINC` mean | 5.2% | 5.2% | 3.3% | 3.7% |
-| `TR_RAINNC/RAINNC` mean | 0.24% | 0.24% | 0.76% | 1.05% |
-| `TR_RAINC` max (mm) | 7.18 | 1.52 | 2.86 | 2.46 |
-| `TR_RAINNC` max (mm) | 4.87 | 4.87 | 7.96 | 5.59 |
+| `qv_tr/QVAPOR` mean | 2.64% | 2.72% | 2.64% | 2.67% |
+| `TR_RAINC/RAINC` mean | 5.2% | 5.6% | 3.3% | 3.7% |
+| `TR_RAINNC/RAINNC` mean | 0.24% | 0.44% | 0.76% | 1.05% |
+| `TR_RAINC` max (mm) | 7.18 | 1.97 | 2.86 | 2.46 |
+| `TR_RAINNC` max (mm) | 4.87 | 5.64 | 7.96 | 5.59 |
+| `qc_tr` max | 9.0e-5 | 1.7e-4 | 1.7e-4 | 1.6e-4 |
+| `qi_tr` max | 1.9e-5 | 1.7e-5 | 1.5e-5 | 1.4e-5 |
 | Constraint violations | 0 | 1 (minor) | 0 | 0 |
 
-All schemes produce consistent `qv_tr/QVAPOR` ratios (~2.6%) and physically reasonable tracer precipitation. Differences in `TR_RAINC` vs `TR_RAINNC` partitioning reflect each scheme's different convective vs grid-scale precipitation balance.
+All schemes produce consistent `qv_tr/QVAPOR` ratios (~2.6-2.7%) and physically reasonable tracer precipitation. The New Tiedtke `qc_tr` and `qi_tr` values are higher than KF because Tiedtke explicitly detrains more cloud condensate back to the environment (rather than precipitating it). Differences in `TR_RAINC` vs `TR_RAINNC` partitioning reflect each scheme's different convective vs grid-scale precipitation balance.
 
 ## Summary
 

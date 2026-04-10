@@ -147,7 +147,7 @@
 !     level 1 subroutine 'cu_ntiedkte_run'
       subroutine cu_ntiedtke_run(pu,pv,pt,pqv,pqc,pqi,pqvf,ptf,poz,pzz,pomg, &
      &         pap,paph,evap,hfx,zprecc,lndj,lq,km,km1,dt,dx,errmsg,errflg, & ! mvt
-     &         tr_qv,tr_pratec,do_tracers)                                      ! mvt
+     &         tr_qv,tr_qc,tr_qi,tr_pratec,do_tracers)                            ! mvt
 !=================================================================================================================
 !     this is the interface between the model and the mass flux convection module
 !     m.tiedtke      e.c.m.w.f.      1989
@@ -207,6 +207,8 @@
 
 !--- optional tracer arguments:                                          ! mvt
       real(kind=kind_phys),intent(inout),dimension(:,:),optional:: tr_qv ! mvt
+      real(kind=kind_phys),intent(inout),dimension(:,:),optional:: tr_qc ! mvt - tracer cloud water
+      real(kind=kind_phys),intent(inout),dimension(:,:),optional:: tr_qi ! mvt - tracer cloud ice
       real(kind=kind_phys),intent(inout),dimension(:),optional:: tr_pratec ! mvt
       logical,intent(in),optional:: do_tracers                           ! mvt
 
@@ -230,6 +232,7 @@
 
       real(kind=kind_phys),dimension(lq,km):: ztr_qv_sp                  ! mvt - tracer in specific humidity space
       real(kind=kind_phys),dimension(lq,km):: ztr_tenq                   ! mvt - tracer tendency output
+      real(kind=kind_phys),dimension(lq,km):: ztr_pcte                   ! mvt - tracer cloud detrainment tendency
       real(kind=kind_phys):: ztr_rain_frac                               ! mvt - tracer fraction of total precip
       real(kind=kind_phys):: ztr_qv_new                                  ! mvt
 
@@ -248,6 +251,7 @@
           do j=1,lq                                                      ! mvt
             ztr_qv_sp(j,k) = 0.0                                        ! mvt
             ztr_tenq(j,k) = 0.0                                         ! mvt
+            ztr_pcte(j,k) = 0.0                                         ! mvt
           end do                                                         ! mvt
         end do                                                           ! mvt
       endif                                                              ! mvt
@@ -322,7 +326,7 @@
      &     zlu,      zlude,    zmfu,     zmfd,    zrain, &
      &     pcte,     phhfl,    lndj,     pgeoh,   dx,    &
      &     scale_fac, scale_fac2,                        &              ! mvt
-     &     l_tracers, ztr_qv_sp, ztr_tenq)                              ! mvt
+     &     l_tracers, ztr_qv_sp, ztr_tenq, ztr_pcte)                     ! mvt
 !
 !     to include the cloud water and cloud ice detrained from convection
 !
@@ -333,6 +337,11 @@
         fice=1.0-fliq
         pqc(j,k)=pqc(j,k)+fliq*pcte(j,k)*ztmst
         pqi(j,k)=pqi(j,k)+fice*pcte(j,k)*ztmst
+!--- mvt: apply detrained tracer condensate to tr_qc/tr_qi
+        if (l_tracers .and. present(tr_qc) .and. present(tr_qi)) then  ! mvt
+          tr_qc(j,k) = tr_qc(j,k) + fliq*ztr_pcte(j,k)*ztmst          ! mvt
+          tr_qi(j,k) = tr_qi(j,k) + fice*ztr_pcte(j,k)*ztmst          ! mvt
+        endif                                                            ! mvt
       endif
       end do
       end do
@@ -420,7 +429,7 @@
      &     plu,      plude,    pmfu,     pmfd,     prain, &
      &     pcte,     phhfl,    lndj,     zgeoh,    dx,    &
      &     scale_fac,  scale_fac2,                        &              ! mvt
-     &     l_tracers, pqv_tr, ptenq_tr)                                  ! mvt
+     &     l_tracers, pqv_tr, ptenq_tr, pcte_tr)                          ! mvt
       implicit none
 !
 !***cumastrn*  master routine for cumulus massflux-scheme
@@ -506,6 +515,7 @@
       logical,intent(in):: l_tracers                                     ! mvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqv_tr   ! mvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: ptenq_tr ! mvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pcte_tr  ! mvt - tracer cloud detrainment
 
 !--- local variables and arrays:
       logical:: llo1
@@ -570,6 +580,7 @@
             zdmfup_tr(jl,jk) = 0.0                                       ! mvt
             zdmfdp_tr(jl,jk) = 0.0                                       ! mvt
             ptenq_tr(jl,jk) = 0.0                                        ! mvt
+            pcte_tr(jl,jk) = 0.0                                         ! mvt
           end do                                                         ! mvt
         end do                                                           ! mvt
       endif                                                              ! mvt
@@ -1065,7 +1076,7 @@
                  zlglac,plude,pmfu,pmfd,zmfus,zmfds,zmfuq,zmfdq,zmful, &
                  zdmfup,zdmfdp,zdpmel,ptte,pqte,pcte,                   & ! mvt
                  l_tracers,zmfuq_tr,zmfdq_tr,zmful_tr,plude_tr,         & ! mvt
-                 zdmfup_tr,zdmfdp_tr,ptenq_tr)                            ! mvt
+                 zdmfup_tr,zdmfdp_tr,ptenq_tr,pcte_tr)                     ! mvt
 !----------------------------------------------------------------
 !*    9.0      update tendencies for u and u in subroutine cududv
 !----------------------------------------------------------------
@@ -3431,7 +3442,7 @@
                      pqenh,pqsen,plglac,plude,pmfu,pmfd,pmfus,pmfds, &
                      pmfuq,pmfdq,pmful,pdmfup,pdmfdp,pdpmel,ptent,ptenq,pcte, & ! mvt
                      l_tracers,pmfuq_tr,pmfdq_tr,pmful_tr,plude_tr,            & ! mvt
-                     pdmfup_tr,pdmfdp_tr,ptenq_tr)                               ! mvt
+                     pdmfup_tr,pdmfdp_tr,ptenq_tr,pcte_tr)                        ! mvt
     implicit none
 
 !--- input arguments:
@@ -3463,6 +3474,7 @@
     real(kind=kind_phys),intent(in),dimension(klon,klev):: pdmfup_tr     ! mvt
     real(kind=kind_phys),intent(in),dimension(klon,klev):: pdmfdp_tr     ! mvt
     real(kind=kind_phys),intent(inout),dimension(klon,klev):: ptenq_tr   ! mvt
+    real(kind=kind_phys),intent(inout),dimension(klon,klev):: pcte_tr    ! mvt - tracer cloud detrainment
 
 !--- local variables and arrays:
     integer::  jk ,ik ,jl
@@ -3545,9 +3557,10 @@
          ptent(jl,jk) = ptent(jl,jk) + zdtdt(jl,jk)
          ptenq(jl,jk) = ptenq(jl,jk) + zdqdt(jl,jk)
          pcte(jl,jk)  = zdp(jl,jk)*plude(jl,jk)
-!--- mvt: update tracer tendency
+!--- mvt: update tracer tendency and cloud detrainment
          if (l_tracers) then                                             ! mvt
            ptenq_tr(jl,jk) = ptenq_tr(jl,jk) + zdqdt_tr(jl,jk)         ! mvt
+           pcte_tr(jl,jk) = zdp(jl,jk)*plude_tr(jl,jk)                  ! mvt - tracer cloud detrainment
          endif                                                           ! mvt
        end if
      end do
