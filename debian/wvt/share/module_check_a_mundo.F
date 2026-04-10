@@ -3048,8 +3048,9 @@
             END IF
 
             IF ( model_config_rec % cu_physics(i) .NE. 1 .AND. &
+                 model_config_rec % cu_physics(i) .NE. 16 .AND. &
                  model_config_rec % cu_physics(i) .NE. 0 ) THEN
-               wrf_err_message = '--- ERROR: tracer_opt=4 (WVT) requires cu_physics=1 (Kain-Fritsch) or 0'
+               wrf_err_message = '--- ERROR: tracer_opt=4 (WVT) requires cu_physics=1 (KF), 16 (NTiedtke), or 0'
                CALL wrf_message ( wrf_err_message )
                count_fatal_error = count_fatal_error + 1
             END IF

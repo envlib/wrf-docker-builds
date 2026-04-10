@@ -1493,6 +1493,11 @@ CONTAINS
                ,GRAV=g,XLF=xlf,XLS=xls,XLV=xlv                  &
                ,RD=r_d,RV=r_v,CP=cp                             &
                ,errmsg=errmsg,errflg=errflg                     &
+               ,tr_qv_curr=tr_qv_curr                           & ! mvt
+               ,tr_pratec=tr_tmppratec                           & ! mvt
+               ,tr_rainc=tr_rainc                                & ! mvt
+               ,rtrqvcuten=rtrqvcuten                            & ! mvt
+               ,f_tr_qv=flag_tr_qv                               & ! mvt
                                                              )
 
 ! New KIM SAS SCHEME - (KIAPS, South Korea)
