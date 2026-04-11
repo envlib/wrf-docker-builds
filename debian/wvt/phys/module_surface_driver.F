@@ -315,7 +315,7 @@ CONTAINS
      &          ,TS_RUL2D_mosaic                                      &  !danli mosaic     
      &          ,ZOL                                                  &  !ckay
      &          ,SDA_HFX, SDA_QFX, HFX_BOTH, QFX_BOTH, QNORM, fasdas  &  !fasdas
-     &          ,trqfx,trmask,tr_qv_curr,f_tr_qv                      &  ! mvt: for ET tracers
+     &          ,trqfx,trmask,tr_qv_curr,f_tr_qv                      &  ! wvt: for ET tracers
      &          ,spp_lsm,pattern_spp_lsm,field_sf                     &  !SPP
      &          ,spp_pbl,pattern_spp_pbl                              &  !SPP
      &          ,XLAIDYN                                              &
@@ -1433,7 +1433,7 @@ CONTAINS
 !
   real,    dimension(ims:ime,1:maxpatch,jms:jme ) ::  q_ref2m   ! clm
 
-! mvt: for ET tracers
+! wvt: for ET tracers
    REAL, DIMENSION( ims:ime, jms:jme ) , INTENT(INOUT)::   TRQFX
    REAL, DIMENSION( ims:ime, jms:jme ) , INTENT(IN) :: TRMASK
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                 &
@@ -4369,7 +4369,7 @@ CONTAINS
 
      END SELECT sfc_select
 
-! mvt: tracer source region
+! wvt: tracer source region
        IF ( PRESENT( tr_qv_curr ) ) THEN
            DO j=j_start(ij),j_end(ij)
            DO i=i_start(ij),i_end(ij)
@@ -4389,7 +4389,7 @@ CONTAINS
            ENDDO
            ENDDO
        ENDIF
-! mvt
+! wvt
 
      ENDDO
      !$OMP END PARALLEL DO

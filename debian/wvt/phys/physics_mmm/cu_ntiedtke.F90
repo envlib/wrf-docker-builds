@@ -146,8 +146,8 @@
 !!
 !     level 1 subroutine 'cu_ntiedkte_run'
       subroutine cu_ntiedtke_run(pu,pv,pt,pqv,pqc,pqi,pqvf,ptf,poz,pzz,pomg, &
-     &         pap,paph,evap,hfx,zprecc,lndj,lq,km,km1,dt,dx,errmsg,errflg, & ! mvt
-     &         tr_qv,tr_qc,tr_qi,tr_pratec,do_tracers)                            ! mvt
+     &         pap,paph,evap,hfx,zprecc,lndj,lq,km,km1,dt,dx,errmsg,errflg, & ! wvt
+     &         tr_qv,tr_qc,tr_qi,tr_pratec,do_tracers)                            ! wvt
 !=================================================================================================================
 !     this is the interface between the model and the mass flux convection module
 !     m.tiedtke      e.c.m.w.f.      1989
@@ -205,15 +205,15 @@
       character(len=*),intent(out):: errmsg
       integer,intent(out):: errflg
 
-!--- optional tracer arguments:                                          ! mvt
-      real(kind=kind_phys),intent(inout),dimension(:,:),optional:: tr_qv ! mvt
-      real(kind=kind_phys),intent(inout),dimension(:,:),optional:: tr_qc ! mvt - tracer cloud water
-      real(kind=kind_phys),intent(inout),dimension(:,:),optional:: tr_qi ! mvt - tracer cloud ice
-      real(kind=kind_phys),intent(inout),dimension(:),optional:: tr_pratec ! mvt
-      logical,intent(in),optional:: do_tracers                           ! mvt
+!--- optional tracer arguments:                                          ! wvt
+      real(kind=kind_phys),intent(inout),dimension(:,:),optional:: tr_qv ! wvt
+      real(kind=kind_phys),intent(inout),dimension(:,:),optional:: tr_qc ! wvt - tracer cloud water
+      real(kind=kind_phys),intent(inout),dimension(:,:),optional:: tr_qi ! wvt - tracer cloud ice
+      real(kind=kind_phys),intent(inout),dimension(:),optional:: tr_pratec ! wvt
+      logical,intent(in),optional:: do_tracers                           ! wvt
 
 !--- local variables and arrays:
-      logical:: l_tracers                                                ! mvt
+      logical:: l_tracers                                                ! wvt
       logical,dimension(lq):: locum
       integer:: i,j,k
       integer,dimension(lq):: icbot,ictop,ktype
@@ -230,31 +230,31 @@
       real(kind=kind_phys),dimension(lq,km):: ztp1,zqp1,ztu,zqu,zlu,zlude,zmfu,zmfd,zqsat
       real(kind=kind_phys),dimension(lq,km1):: pgeoh
 
-      real(kind=kind_phys),dimension(lq,km):: ztr_qv_sp                  ! mvt - tracer in specific humidity space
-      real(kind=kind_phys),dimension(lq,km):: ztr_tenq                   ! mvt - tracer tendency output
-      real(kind=kind_phys),dimension(lq,km):: ztr_pcte                   ! mvt - tracer cloud detrainment tendency
-      real(kind=kind_phys):: ztr_rain_frac                               ! mvt - tracer fraction of total precip
-      real(kind=kind_phys):: ztr_qv_new                                  ! mvt
+      real(kind=kind_phys),dimension(lq,km):: ztr_qv_sp                  ! wvt - tracer in specific humidity space
+      real(kind=kind_phys),dimension(lq,km):: ztr_tenq                   ! wvt - tracer tendency output
+      real(kind=kind_phys),dimension(lq,km):: ztr_pcte                   ! wvt - tracer cloud detrainment tendency
+      real(kind=kind_phys):: ztr_rain_frac                               ! wvt - tracer fraction of total precip
+      real(kind=kind_phys):: ztr_qv_new                                  ! wvt
 
 !-----------------------------------------------------------------------------------------------------------------
 !
       ztmst=dt
 !
-!--- mvt: set tracer flag
-      l_tracers = .false.                                                ! mvt
-      if (present(do_tracers)) then                                      ! mvt
-        if (do_tracers) l_tracers = .true.                               ! mvt
-      endif                                                              ! mvt
-!--- mvt: initialize tracer arrays
-      if (l_tracers) then                                                ! mvt
-        do k=1,km                                                        ! mvt
-          do j=1,lq                                                      ! mvt
-            ztr_qv_sp(j,k) = 0.0                                        ! mvt
-            ztr_tenq(j,k) = 0.0                                         ! mvt
-            ztr_pcte(j,k) = 0.0                                         ! mvt
-          end do                                                         ! mvt
-        end do                                                           ! mvt
-      endif                                                              ! mvt
+!--- wvt: set tracer flag
+      l_tracers = .false.                                                ! wvt
+      if (present(do_tracers)) then                                      ! wvt
+        if (do_tracers) l_tracers = .true.                               ! wvt
+      endif                                                              ! wvt
+!--- wvt: initialize tracer arrays
+      if (l_tracers) then                                                ! wvt
+        do k=1,km                                                        ! wvt
+          do j=1,lq                                                      ! wvt
+            ztr_qv_sp(j,k) = 0.0                                        ! wvt
+            ztr_tenq(j,k) = 0.0                                         ! wvt
+            ztr_pcte(j,k) = 0.0                                         ! wvt
+          end do                                                         ! wvt
+        end do                                                           ! wvt
+      endif                                                              ! wvt
 !
 !  set scale-dependency factor when dx is < 15 km
 !
@@ -305,11 +305,11 @@
           zqq(j,k) =pqte(j,k)
           ptte(j,k)=ptf(j,k)
           ztt(j,k) =ptte(j,k)
-!--- mvt: convert tracer from mixing ratio to specific humidity space
-          if (l_tracers) then                                            ! mvt
-            ztr_qv_sp(j,k) = tr_qv(j,k)/(1.0+pqv(j,k))                 ! mvt
-            ztr_qv_sp(j,k) = max(0.0, min(ztr_qv_sp(j,k), zqp1(j,k)))  ! mvt
-          endif                                                          ! mvt
+!--- wvt: convert tracer from mixing ratio to specific humidity space
+          if (l_tracers) then                                            ! wvt
+            ztr_qv_sp(j,k) = tr_qv(j,k)/(1.0+pqv(j,k))                 ! wvt
+            ztr_qv_sp(j,k) = max(0.0, min(ztr_qv_sp(j,k), zqp1(j,k)))  ! wvt
+          endif                                                          ! wvt
         end do
       end do
 !
@@ -325,8 +325,8 @@
      &     ktype,    icbot,    ictop,    ztu,     zqu,   &
      &     zlu,      zlude,    zmfu,     zmfd,    zrain, &
      &     pcte,     phhfl,    lndj,     pgeoh,   dx,    &
-     &     scale_fac, scale_fac2,                        &              ! mvt
-     &     l_tracers, ztr_qv_sp, ztr_tenq, ztr_pcte)                     ! mvt
+     &     scale_fac, scale_fac2,                        &              ! wvt
+     &     l_tracers, ztr_qv_sp, ztr_tenq, ztr_pcte)                     ! wvt
 !
 !     to include the cloud water and cloud ice detrained from convection
 !
@@ -337,11 +337,11 @@
         fice=1.0-fliq
         pqc(j,k)=pqc(j,k)+fliq*pcte(j,k)*ztmst
         pqi(j,k)=pqi(j,k)+fice*pcte(j,k)*ztmst
-!--- mvt: apply detrained tracer condensate to tr_qc/tr_qi
-        if (l_tracers .and. present(tr_qc) .and. present(tr_qi)) then  ! mvt
-          tr_qc(j,k) = tr_qc(j,k) + fliq*ztr_pcte(j,k)*ztmst          ! mvt
-          tr_qi(j,k) = tr_qi(j,k) + fice*ztr_pcte(j,k)*ztmst          ! mvt
-        endif                                                            ! mvt
+!--- wvt: apply detrained tracer condensate to tr_qc/tr_qi
+        if (l_tracers .and. present(tr_qc) .and. present(tr_qi)) then  ! wvt
+          tr_qc(j,k) = tr_qc(j,k) + fliq*ztr_pcte(j,k)*ztmst          ! wvt
+          tr_qi(j,k) = tr_qi(j,k) + fice*ztr_pcte(j,k)*ztmst          ! wvt
+        endif                                                            ! wvt
       endif
       end do
       end do
@@ -358,43 +358,43 @@
         zprecc(j)=amax1(0.0,(prsfc(j)+pssfc(j))*ztmst)
       end do
 
-!--- mvt: apply tracer tendencies and compute tracer precipitation
-      if (l_tracers) then                                                ! mvt
-        do k=1,km                                                        ! mvt
-          do j=1,lq                                                      ! mvt
-!--- mvt: apply tracer tendency (in specific humidity space)
-            ztr_qv_sp(j,k) = ztr_qv_sp(j,k) + ztr_tenq(j,k)*ztmst      ! mvt
-            ztr_qv_sp(j,k) = max(0.0, ztr_qv_sp(j,k))                   ! mvt
-!--- mvt: convert tracer back to mixing ratio space
-            ztr_qv_new = ztr_qv_sp(j,k)/(1.0-zqp1(j,k))                 ! mvt
-!--- mvt: cap tracer to not exceed base moisture
-            tr_qv(j,k) = max(0.0, min(ztr_qv_new, pqv(j,k)))            ! mvt
-          end do                                                         ! mvt
-        end do                                                           ! mvt
-!--- mvt: compute tracer precipitation rate (proportional to moisture precip)
-        do j=1,lq                                                        ! mvt
-          if (zprecc(j) .gt. 0.0) then                                   ! mvt
-!--- mvt: tracer fraction = column-mean tracer/moisture ratio
-!--- mvt: use the ratio of column tracer to column moisture near cloud base
-            ztr_rain_frac = 0.0                                          ! mvt
-            do k=1,km                                                    ! mvt
-              ztr_rain_frac = ztr_rain_frac +                          & ! mvt
-     &          ztr_qv_sp(j,k) / max(zqp1(j,k), 1.0e-10)             & ! mvt
-     &          * abs(ztr_tenq(j,k))                                     ! mvt
-            end do                                                       ! mvt
-            if (abs(ztr_rain_frac) .gt. 0.0) then                        ! mvt
-              ztr_rain_frac = ztr_rain_frac /                          & ! mvt
-     &          max(sum(abs(ztr_tenq(j,:))), 1.0e-20)                    ! mvt
-            else                                                         ! mvt
-!--- mvt: fallback: use surface level ratio
-              ztr_rain_frac = ztr_qv_sp(j,km) /                       & ! mvt
-     &          max(zqp1(j,km), 1.0e-10)                                 ! mvt
-            endif                                                        ! mvt
-            ztr_rain_frac = max(0.0, min(ztr_rain_frac, 1.0))           ! mvt
-            tr_pratec(j) = zprecc(j)*ztr_rain_frac/ztmst                 ! mvt - rate (mm/s), not depth
-          endif                                                          ! mvt
-        end do                                                           ! mvt
-      endif                                                              ! mvt
+!--- wvt: apply tracer tendencies and compute tracer precipitation
+      if (l_tracers) then                                                ! wvt
+        do k=1,km                                                        ! wvt
+          do j=1,lq                                                      ! wvt
+!--- wvt: apply tracer tendency (in specific humidity space)
+            ztr_qv_sp(j,k) = ztr_qv_sp(j,k) + ztr_tenq(j,k)*ztmst      ! wvt
+            ztr_qv_sp(j,k) = max(0.0, ztr_qv_sp(j,k))                   ! wvt
+!--- wvt: convert tracer back to mixing ratio space
+            ztr_qv_new = ztr_qv_sp(j,k)/(1.0-zqp1(j,k))                 ! wvt
+!--- wvt: cap tracer to not exceed base moisture
+            tr_qv(j,k) = max(0.0, min(ztr_qv_new, pqv(j,k)))            ! wvt
+          end do                                                         ! wvt
+        end do                                                           ! wvt
+!--- wvt: compute tracer precipitation rate (proportional to moisture precip)
+        do j=1,lq                                                        ! wvt
+          if (zprecc(j) .gt. 0.0) then                                   ! wvt
+!--- wvt: tracer fraction = column-mean tracer/moisture ratio
+!--- wvt: use the ratio of column tracer to column moisture near cloud base
+            ztr_rain_frac = 0.0                                          ! wvt
+            do k=1,km                                                    ! wvt
+              ztr_rain_frac = ztr_rain_frac +                          & ! wvt
+     &          ztr_qv_sp(j,k) / max(zqp1(j,k), 1.0e-10)             & ! wvt
+     &          * abs(ztr_tenq(j,k))                                     ! wvt
+            end do                                                       ! wvt
+            if (abs(ztr_rain_frac) .gt. 0.0) then                        ! wvt
+              ztr_rain_frac = ztr_rain_frac /                          & ! wvt
+     &          max(sum(abs(ztr_tenq(j,:))), 1.0e-20)                    ! wvt
+            else                                                         ! wvt
+!--- wvt: fallback: use surface level ratio
+              ztr_rain_frac = ztr_qv_sp(j,km) /                       & ! wvt
+     &          max(zqp1(j,km), 1.0e-10)                                 ! wvt
+            endif                                                        ! wvt
+            ztr_rain_frac = max(0.0, min(ztr_rain_frac, 1.0))           ! wvt
+            tr_pratec(j) = zprecc(j)*ztr_rain_frac/ztmst                 ! wvt - rate (mm/s), not depth
+          endif                                                          ! wvt
+        end do                                                           ! wvt
+      endif                                                              ! wvt
 
       if (lmfdudv) then
         do k=1,km
@@ -428,8 +428,8 @@
      &     ktype,    kcbot,    kctop,    ptu,      pqu,   &
      &     plu,      plude,    pmfu,     pmfd,     prain, &
      &     pcte,     phhfl,    lndj,     zgeoh,    dx,    &
-     &     scale_fac,  scale_fac2,                        &              ! mvt
-     &     l_tracers, pqv_tr, ptenq_tr, pcte_tr)                          ! mvt
+     &     scale_fac,  scale_fac2,                        &              ! wvt
+     &     l_tracers, pqv_tr, ptenq_tr, pcte_tr)                          ! wvt
       implicit none
 !
 !***cumastrn*  master routine for cumulus massflux-scheme
@@ -511,11 +511,11 @@
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pcte,ptte,pqte,pvom,pvol
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: ptu,pqu,plu,plude,pmfu,pmfd
 
-!--- tracer arguments:                                                   ! mvt
-      logical,intent(in):: l_tracers                                     ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqv_tr   ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: ptenq_tr ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pcte_tr  ! mvt - tracer cloud detrainment
+!--- tracer arguments:                                                   ! wvt
+      logical,intent(in):: l_tracers                                     ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqv_tr   ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: ptenq_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pcte_tr  ! wvt - tracer cloud detrainment
 
 !--- local variables and arrays:
       logical:: llo1
@@ -549,16 +549,16 @@
       real(kind=kind_phys),dimension(klon,klev):: zuu,zvu,zud,zvd,zlglac
       real(kind=kind_phys),dimension(klon,klevp1):: pmflxr,pmflxs
 
-!--- mvt: local tracer arrays
-      real(kind=kind_phys),dimension(klon,klev):: pqu_tr                 ! mvt - updraft tracer
-      real(kind=kind_phys),dimension(klon,klev):: pqd_tr                 ! mvt - downdraft tracer
-      real(kind=kind_phys),dimension(klon,klev):: pqenh_tr               ! mvt - environment tracer at half-levels
-      real(kind=kind_phys),dimension(klon,klev):: zmfuq_tr               ! mvt - updraft tracer flux
-      real(kind=kind_phys),dimension(klon,klev):: zmfdq_tr               ! mvt - downdraft tracer flux
-      real(kind=kind_phys),dimension(klon,klev):: zmful_tr               ! mvt - updraft liquid tracer flux
-      real(kind=kind_phys),dimension(klon,klev):: plude_tr               ! mvt - tracer liquid detrainment
-      real(kind=kind_phys),dimension(klon,klev):: zdmfup_tr              ! mvt - tracer updraft precip
-      real(kind=kind_phys),dimension(klon,klev):: zdmfdp_tr              ! mvt - tracer downdraft precip
+!--- wvt: local tracer arrays
+      real(kind=kind_phys),dimension(klon,klev):: pqu_tr                 ! wvt - updraft tracer
+      real(kind=kind_phys),dimension(klon,klev):: pqd_tr                 ! wvt - downdraft tracer
+      real(kind=kind_phys),dimension(klon,klev):: pqenh_tr               ! wvt - environment tracer at half-levels
+      real(kind=kind_phys),dimension(klon,klev):: zmfuq_tr               ! wvt - updraft tracer flux
+      real(kind=kind_phys),dimension(klon,klev):: zmfdq_tr               ! wvt - downdraft tracer flux
+      real(kind=kind_phys),dimension(klon,klev):: zmful_tr               ! wvt - updraft liquid tracer flux
+      real(kind=kind_phys),dimension(klon,klev):: plude_tr               ! wvt - tracer liquid detrainment
+      real(kind=kind_phys),dimension(klon,klev):: zdmfup_tr              ! wvt - tracer updraft precip
+      real(kind=kind_phys),dimension(klon,klev):: zdmfdp_tr              ! wvt - tracer downdraft precip
 
 !-------------------------------------------
 !     1.    specify constants and parameters
@@ -566,24 +566,24 @@
       zcons=1./(g*ztmst)
       zcons2=3./(g*ztmst)
 
-!--- mvt: initialize all tracer arrays to zero
-      if (l_tracers) then                                                ! mvt
-        do jk=1,klev                                                     ! mvt
-          do jl=1,klon                                                   ! mvt
-            pqu_tr(jl,jk) = 0.0                                          ! mvt
-            pqd_tr(jl,jk) = 0.0                                          ! mvt
-            pqenh_tr(jl,jk) = 0.0                                        ! mvt
-            zmfuq_tr(jl,jk) = 0.0                                        ! mvt
-            zmfdq_tr(jl,jk) = 0.0                                        ! mvt
-            zmful_tr(jl,jk) = 0.0                                        ! mvt
-            plude_tr(jl,jk) = 0.0                                        ! mvt
-            zdmfup_tr(jl,jk) = 0.0                                       ! mvt
-            zdmfdp_tr(jl,jk) = 0.0                                       ! mvt
-            ptenq_tr(jl,jk) = 0.0                                        ! mvt
-            pcte_tr(jl,jk) = 0.0                                         ! mvt
-          end do                                                         ! mvt
-        end do                                                           ! mvt
-      endif                                                              ! mvt
+!--- wvt: initialize all tracer arrays to zero
+      if (l_tracers) then                                                ! wvt
+        do jk=1,klev                                                     ! wvt
+          do jl=1,klon                                                   ! wvt
+            pqu_tr(jl,jk) = 0.0                                          ! wvt
+            pqd_tr(jl,jk) = 0.0                                          ! wvt
+            pqenh_tr(jl,jk) = 0.0                                        ! wvt
+            zmfuq_tr(jl,jk) = 0.0                                        ! wvt
+            zmfdq_tr(jl,jk) = 0.0                                        ! wvt
+            zmful_tr(jl,jk) = 0.0                                        ! wvt
+            plude_tr(jl,jk) = 0.0                                        ! wvt
+            zdmfup_tr(jl,jk) = 0.0                                       ! wvt
+            zdmfdp_tr(jl,jk) = 0.0                                       ! wvt
+            ptenq_tr(jl,jk) = 0.0                                        ! wvt
+            pcte_tr(jl,jk) = 0.0                                         ! wvt
+          end do                                                         ! wvt
+        end do                                                           ! wvt
+      endif                                                              ! wvt
 
 !--------------------------------------------------------------
 !*    2.    initialize values at vertical grid points in 'cuini'
@@ -596,8 +596,8 @@
      &     zqd,      zuu,      zvu,      zud,      zvd,   &
      &     pmfu,     pmfd,     zmfus,    zmfds,    zmfuq, &
      &     zmfdq,    zdmfup,   zdmfdp,   zdpmel,   plu,   &
-     &     plude,    ilab,                                 &             ! mvt
-     &     l_tracers, pqv_tr, pqenh_tr)                                  ! mvt
+     &     plude,    ilab,                                 &             ! wvt
+     &     l_tracers, pqv_tr, pqenh_tr)                                  ! wvt
 
 !----------------------------------
 !*    3.0   cloud base calculations
@@ -672,9 +672,9 @@
      &     zmfus,    zmfuq,    zmful,    plude,    zdmfup,  &
      &     kcbot,    kctop,    ictop0,   icum,     ztmst,   &
      &     zqsenh,   zlglac,   lndj,     wup,      wbase,   &
-     &     kdpl,     pmfude_rate,                            &           ! mvt
-     &     l_tracers, pqenh_tr, pqu_tr, zmfuq_tr,           &           ! mvt
-     &     zmful_tr, plude_tr, zdmfup_tr)                                ! mvt
+     &     kdpl,     pmfude_rate,                            &           ! wvt
+     &     l_tracers, pqenh_tr, pqu_tr, zmfuq_tr,           &           ! wvt
+     &     zmful_tr, plude_tr, zdmfup_tr)                                ! wvt
 
 !*     (b) check cloud depth and change entrainment rate accordingly
 !          calculate precipitation rate (for downdraft calculation)
@@ -704,10 +704,10 @@
         zmfdq(jl,jk) = 0.
         zdmfdp(jl,jk) = 0.
         zdpmel(jl,jk) = 0.
-        if (l_tracers) then                                              ! mvt
-          zmfdq_tr(jl,jk) = 0.0                                          ! mvt
-          zdmfdp_tr(jl,jk) = 0.0                                         ! mvt
-        endif                                                            ! mvt
+        if (l_tracers) then                                              ! wvt
+          zmfdq_tr(jl,jk) = 0.0                                          ! wvt
+          zdmfdp_tr(jl,jk) = 0.0                                         ! wvt
+        endif                                                            ! wvt
       end do
       end do
 
@@ -726,9 +726,9 @@
      &     zuu,      zvu,      zmfub,  zrfl,   &
      &     ztd,      zqd,      zud,    zvd,    &
      &     pmfd,     zmfds,    zmfdq,  zdmfdp, &
-     &     idtop,    loddraf,                   &                        ! mvt
-     &     l_tracers, pqenh_tr, pqu_tr, pqd_tr, &                       ! mvt
-     &     zmfdq_tr)                                                     ! mvt
+     &     idtop,    loddraf,                   &                        ! wvt
+     &     l_tracers, pqenh_tr, pqu_tr, pqd_tr, &                       ! wvt
+     &     zmfdq_tr)                                                     ! wvt
 !*     (b)  determine downdraft t,q and fluxes in 'cuddrafn'
 !------------------------------------------------------------
         call cuddrafn &
@@ -736,8 +736,8 @@
      &     ztenh,    zqenh,    puen,     pven,           &
      &     pgeo,     zgeoh,    paph,     zrfl,           &
      &     ztd,      zqd,      zud,      zvd,      pmfu, &
-     &     pmfd,     zmfds,    zmfdq,    zdmfdp,   pmfdde_rate, &        ! mvt
-     &     l_tracers, pqenh_tr, pqd_tr, zmfdq_tr)                       ! mvt
+     &     pmfd,     zmfds,    zmfdq,    zdmfdp,   pmfdde_rate, &        ! wvt
+     &     l_tracers, pqenh_tr, pqd_tr, zmfdq_tr)                       ! wvt
 !-----------------------------------------------------------
       end if
 !
@@ -862,10 +862,10 @@
            zmfdq(jl,jk)=zmfdq(jl,jk)*zfac
            zdmfdp(jl,jk)=zdmfdp(jl,jk)*zfac
            pmfdde_rate(jl,jk) = pmfdde_rate(jl,jk)*zfac
-           if (l_tracers) then                                           ! mvt
-             zmfdq_tr(jl,jk) = zmfdq_tr(jl,jk)*zfac                     ! mvt
-             zdmfdp_tr(jl,jk) = zdmfdp_tr(jl,jk)*zfac                   ! mvt
-           endif                                                         ! mvt
+           if (l_tracers) then                                           ! wvt
+             zmfdq_tr(jl,jk) = zmfdq_tr(jl,jk)*zfac                     ! wvt
+             zdmfdp_tr(jl,jk) = zdmfdp_tr(jl,jk)*zfac                   ! wvt
+           endif                                                         ! wvt
         end if
        end do
        end do
@@ -900,12 +900,12 @@
           zdmfup(jl,jk) = zdmfup(jl,jk)*zmfs(jl)
           plude(jl,jk) = plude(jl,jk)*zmfs(jl)
           pmfude_rate(jl,jk) = pmfude_rate(jl,jk)*zmfs(jl)
-          if (l_tracers) then                                            ! mvt
-            zmfuq_tr(jl,jk) = zmfuq_tr(jl,jk)*zmfs(jl)                  ! mvt
-            zmful_tr(jl,jk) = zmful_tr(jl,jk)*zmfs(jl)                  ! mvt
-            zdmfup_tr(jl,jk) = zdmfup_tr(jl,jk)*zmfs(jl)               ! mvt
-            plude_tr(jl,jk) = plude_tr(jl,jk)*zmfs(jl)                  ! mvt
-          endif                                                          ! mvt
+          if (l_tracers) then                                            ! wvt
+            zmfuq_tr(jl,jk) = zmfuq_tr(jl,jk)*zmfs(jl)                  ! wvt
+            zmful_tr(jl,jk) = zmful_tr(jl,jk)*zmfs(jl)                  ! wvt
+            zdmfup_tr(jl,jk) = zdmfup_tr(jl,jk)*zmfs(jl)               ! wvt
+            plude_tr(jl,jk) = plude_tr(jl,jk)*zmfs(jl)                  ! wvt
+          endif                                                          ! wvt
         end if
       end do
     end do
@@ -947,10 +947,10 @@
             zmfdq(jl,jk) = 0.
             pmfdde_rate(jl,jk) = 0.
             zdmfdp(jl,jk) = 0.
-            if (l_tracers) then                                          ! mvt
-              zmfdq_tr(jl,jk) = 0.0                                      ! mvt
-              zdmfdp_tr(jl,jk) = 0.0                                     ! mvt
-            endif                                                        ! mvt
+            if (l_tracers) then                                          ! wvt
+              zmfdq_tr(jl,jk) = 0.0                                      ! wvt
+              zdmfdp_tr(jl,jk) = 0.0                                     ! wvt
+            endif                                                        ! wvt
           else if ( jk == idtop(jl) ) then
             pmfdde_rate(jl,jk) = 0.
           end if
@@ -969,9 +969,9 @@
      &  ,  pmfu,     pmfd,     zmfus,    zmfds          &
      &  ,  zmfuq,    zmfdq,    zmful,    plude          &
      &  ,  zdmfup,   zdmfdp,   zdpmel,   zlglac         &
-     &  ,  prain,    pmfdde_rate, pmflxr, pmflxs         &               ! mvt
-     &  ,  l_tracers, pqenh_tr, zmfuq_tr, zmfdq_tr      &              ! mvt
-     &  ,  zmful_tr, plude_tr, zdmfup_tr, zdmfdp_tr )                   ! mvt
+     &  ,  prain,    pmfdde_rate, pmflxr, pmflxs         &               ! wvt
+     &  ,  l_tracers, pqenh_tr, zmfuq_tr, zmfdq_tr      &              ! wvt
+     &  ,  zmful_tr, plude_tr, zdmfup_tr, zdmfdp_tr )                   ! wvt
 
 ! some adjustments needed
     do jl=1,klon
@@ -999,10 +999,10 @@
           zmfuub(jl) = zmfuub(jl) - (1.-zmfs(jl))*zdmfdp(jl,jk)
           pmflxr(jl,jk+1) = pmflxr(jl,jk+1) + zmfuub(jl)
           zdmfdp(jl,jk) = zdmfdp(jl,jk)*zmfs(jl)
-          if (l_tracers) then                                            ! mvt
-            zmfdq_tr(jl,jk) = zmfdq_tr(jl,jk)*zmfs(jl)                  ! mvt
-            zdmfdp_tr(jl,jk) = zdmfdp_tr(jl,jk)*zmfs(jl)               ! mvt
-          endif                                                          ! mvt
+          if (l_tracers) then                                            ! wvt
+            zmfdq_tr(jl,jk) = zmfdq_tr(jl,jk)*zmfs(jl)                  ! wvt
+            zdmfdp_tr(jl,jk) = zdmfdp_tr(jl,jk)*zmfs(jl)               ! wvt
+          endif                                                          ! wvt
         end if
       end do
     end do
@@ -1052,11 +1052,11 @@
             plude(jl,jk) = plude(jl,jk) + 2.*(pqen(jl,jk)+zmfa)/zdz
           end if
           if ( plude(jl,jk) < 0. ) plude(jl,jk) = 0.
-!--- mvt: cap tracer detrainment to not exceed moisture detrainment
-          if (l_tracers) then                                            ! mvt
-            plude_tr(jl,jk) = min(plude_tr(jl,jk), plude(jl,jk))       ! mvt
-            if (plude_tr(jl,jk) < 0.0) plude_tr(jl,jk) = 0.0          ! mvt
-          endif                                                          ! mvt
+!--- wvt: cap tracer detrainment to not exceed moisture detrainment
+          if (l_tracers) then                                            ! wvt
+            plude_tr(jl,jk) = min(plude_tr(jl,jk), plude(jl,jk))       ! wvt
+            if (plude_tr(jl,jk) < 0.0) plude_tr(jl,jk) = 0.0          ! wvt
+          endif                                                          ! wvt
         end if
         if ( .not. ldcum(jl) ) pmfude_rate(jl,jk) = 0.
         if ( abs(pmfd(jl,jk-1)) < 1.0e-20 ) pmfdde_rate(jl,jk) = 0.
@@ -1074,9 +1074,9 @@
       call cudtdqn(klon,klev,itopm2,kctop,idtop,ldcum,loddraf,         &
                  ztmst,paph,zgeoh,pgeo,pten,ztenh,pqen,zqenh,pqsen,    &
                  zlglac,plude,pmfu,pmfd,zmfus,zmfds,zmfuq,zmfdq,zmful, &
-                 zdmfup,zdmfdp,zdpmel,ptte,pqte,pcte,                   & ! mvt
-                 l_tracers,zmfuq_tr,zmfdq_tr,zmful_tr,plude_tr,         & ! mvt
-                 zdmfup_tr,zdmfdp_tr,ptenq_tr,pcte_tr)                     ! mvt
+                 zdmfup,zdmfdp,zdpmel,ptte,pqte,pcte,                   & ! wvt
+                 l_tracers,zmfuq_tr,zmfdq_tr,zmful_tr,plude_tr,         & ! wvt
+                 zdmfup_tr,zdmfdp_tr,ptenq_tr,pcte_tr)                     ! wvt
 !----------------------------------------------------------------
 !*    9.0      update tendencies for u and u in subroutine cududv
 !----------------------------------------------------------------
@@ -1250,8 +1250,8 @@
      &     pqd,      puu,      pvu,      pud,      pvd,   &
      &     pmfu,     pmfd,     pmfus,    pmfds,    pmfuq, &
      &     pmfdq,    pdmfup,   pdmfdp,   pdpmel,   plu,   &
-     &     plude,    klab,                                 &             ! mvt
-     &     l_tracers, pqv_tr, pqenh_tr)                                  ! mvt
+     &     plude,    klab,                                 &             ! wvt
+     &     l_tracers, pqv_tr, pqenh_tr)                                  ! wvt
       implicit none
 !      m.tiedtke         e.c.m.w.f.     12/89
 !***purpose
@@ -1289,10 +1289,10 @@
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfu,pmfd,pmfus,pmfds,pmfuq,pmfdq
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfup,pdmfdp,plude,pdpmel
 
-!--- tracer arguments:                                                   ! mvt
-      logical,intent(in):: l_tracers                                     ! mvt
-      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqv_tr      ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqenh_tr ! mvt
+!--- tracer arguments:                                                   ! wvt
+      logical,intent(in):: l_tracers                                     ! wvt
+      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqv_tr      ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqenh_tr ! wvt
 
 !--- local variables and arrays:
       logical,dimension(klon):: loflag
@@ -1314,10 +1314,10 @@
         pqsenh(jl,jk)= pqsen(jl,jk-1)
         zph(jl)=paph(jl,jk)
         loflag(jl)=.true.
-!--- mvt: interpolate tracer to half levels (same pattern as moisture)
-        if (l_tracers) then                                              ! mvt
-          pqenh_tr(jl,jk) = pqv_tr(jl,jk-1)                             ! mvt
-        endif                                                            ! mvt
+!--- wvt: interpolate tracer to half levels (same pattern as moisture)
+        if (l_tracers) then                                              ! wvt
+          pqenh_tr(jl,jk) = pqv_tr(jl,jk-1)                             ! wvt
+        endif                                                            ! wvt
       end do
 
       if ( jk >= klev-1 .or. jk < 2 ) cycle
@@ -1328,15 +1328,15 @@
         pqenh(jl,jk)=min(pqen(jl,jk-1),pqsen(jl,jk-1)) &
      &            +(pqsenh(jl,jk)-pqsen(jl,jk-1))
         pqenh(jl,jk)=max(pqenh(jl,jk),0.)
-!--- mvt: refine tracer interpolation using same weight as moisture
-        if (l_tracers) then                                              ! mvt
-          if (pqen(jl,jk-1) .gt. 1.0e-10) then                          ! mvt
-            pqenh_tr(jl,jk) = pqenh_tr(jl,jk) *                       & ! mvt
-     &        pqenh(jl,jk) / pqen(jl,jk-1)                              ! mvt
-          endif                                                          ! mvt
-          pqenh_tr(jl,jk) = max(0.0, min(pqenh_tr(jl,jk),              & ! mvt
-     &                      pqenh(jl,jk)))                               ! mvt
-        endif                                                            ! mvt
+!--- wvt: refine tracer interpolation using same weight as moisture
+        if (l_tracers) then                                              ! wvt
+          if (pqen(jl,jk-1) .gt. 1.0e-10) then                          ! wvt
+            pqenh_tr(jl,jk) = pqenh_tr(jl,jk) *                       & ! wvt
+     &        pqenh(jl,jk) / pqen(jl,jk-1)                              ! wvt
+          endif                                                          ! wvt
+          pqenh_tr(jl,jk) = max(0.0, min(pqenh_tr(jl,jk),              & ! wvt
+     &                      pqenh(jl,jk)))                               ! wvt
+        endif                                                            ! wvt
       end do
       end do
 
@@ -1348,11 +1348,11 @@
         pqenh(jl,1)=pqen(jl,1)
         klwmin(jl)=klev
         zwmax(jl)=0.
-!--- mvt: set tracer boundary values
-        if (l_tracers) then                                              ! mvt
-          pqenh_tr(jl,klev) = pqv_tr(jl,klev)                           ! mvt
-          pqenh_tr(jl,1) = pqv_tr(jl,1)                                 ! mvt
-        endif                                                            ! mvt
+!--- wvt: set tracer boundary values
+        if (l_tracers) then                                              ! wvt
+          pqenh_tr(jl,klev) = pqv_tr(jl,klev)                           ! wvt
+          pqenh_tr(jl,1) = pqv_tr(jl,1)                                 ! wvt
+        endif                                                            ! wvt
       end do
 
       do jk=klevm1,2,-1
@@ -1940,9 +1940,9 @@
      &     pmfus,    pmfuq,    pmful,    plude,    pdmfup,  &
      &     kcbot,    kctop,    kctop0,   kcum,     ztmst,   &
      &     pqsenh,   plglac,   lndj,     wup,      wbase,   &
-     &     kdpl,     pmfude_rate,                            &           ! mvt
-     &     l_tracers, pqenh_tr, pqu_tr, pmfuq_tr,           &           ! mvt
-     &     pmful_tr, plude_tr, pdmfup_tr)                                ! mvt
+     &     kdpl,     pmfude_rate,                            &           ! wvt
+     &     l_tracers, pqenh_tr, pqu_tr, pmfuq_tr,           &           ! wvt
+     &     pmful_tr, plude_tr, pdmfup_tr)                                ! wvt
 
       implicit none
 !     this routine does the calculations for cloud ascents
@@ -2046,14 +2046,14 @@
       real(kind=kind_phys),intent(out),dimension(klon):: wup
       real(kind=kind_phys),intent(out),dimension(klon,klev):: plglac,pmfude_rate
 
-!--- tracer arguments:                                                   ! mvt
-      logical,intent(in):: l_tracers                                     ! mvt
-      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqenh_tr    ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqu_tr   ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfuq_tr ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmful_tr ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: plude_tr ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfup_tr ! mvt
+!--- tracer arguments:                                                   ! wvt
+      logical,intent(in):: l_tracers                                     ! wvt
+      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqenh_tr    ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqu_tr   ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfuq_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmful_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: plude_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfup_tr ! wvt
 
 !--- local variables and arrays:
       logical:: llo2,llo3
@@ -2076,12 +2076,12 @@
       real(kind=kind_phys),dimension(klon):: zph,zdmfen,zdmfde,zmfuu,zmfuv,zpbase,zqold,zluold,zprecip
       real(kind=kind_phys),dimension(klon,klev):: zlrain,zbuo,kup,zodetr,pdmfen
 
-!--- mvt: local tracer variables
-      real(kind=kind_phys):: zqeen_tr, zqude_tr                         ! mvt
-      real(kind=kind_phys):: zmfuqk_tr, zmfulk_tr                       ! mvt
-      real(kind=kind_phys):: zplu_tr, ztr_frac                          ! mvt
-      real(kind=kind_phys),dimension(klon):: zluold_tr                   ! mvt
-      real(kind=kind_phys),dimension(klon,klev):: plu_tr                 ! mvt - updraft liquid tracer
+!--- wvt: local tracer variables
+      real(kind=kind_phys):: zqeen_tr, zqude_tr                         ! wvt
+      real(kind=kind_phys):: zmfuqk_tr, zmfulk_tr                       ! wvt
+      real(kind=kind_phys):: zplu_tr, ztr_frac                          ! wvt
+      real(kind=kind_phys),dimension(klon):: zluold_tr                   ! wvt
+      real(kind=kind_phys),dimension(klon,klev):: plu_tr                 ! wvt - updraft liquid tracer
 
 !--------------------------------
 !*    1.       specify parameters
@@ -2102,7 +2102,7 @@
         wup(jl)=0.
         zdpmean(jl)=0.
         zoentr(jl)=0.
-        if (l_tracers) zluold_tr(jl) = 0.0                              ! mvt
+        if (l_tracers) zluold_tr(jl) = 0.0                              ! wvt
         if(.not.ldcum(jl)) then
           ktype(jl)=0
           kcbot(jl) = -1
@@ -2129,15 +2129,15 @@
           pmfude_rate(jl,jk) = 0.
           if(.not.ldcum(jl).or.ktype(jl).eq.3) klab(jl,jk)=0
           if(.not.ldcum(jl).and.paph(jl,jk).lt.4.e4) kctop0(jl)=jk
-!--- mvt: initialize tracer updraft arrays
-          if (l_tracers) then                                            ! mvt
-            pqu_tr(jl,jk) = 0.0                                          ! mvt
-            plu_tr(jl,jk) = 0.0                                          ! mvt
-            pmfuq_tr(jl,jk) = 0.0                                        ! mvt
-            pmful_tr(jl,jk) = 0.0                                        ! mvt
-            plude_tr(jl,jk) = 0.0                                        ! mvt
-            pdmfup_tr(jl,jk) = 0.0                                       ! mvt
-          endif                                                          ! mvt
+!--- wvt: initialize tracer updraft arrays
+          if (l_tracers) then                                            ! wvt
+            pqu_tr(jl,jk) = 0.0                                          ! wvt
+            plu_tr(jl,jk) = 0.0                                          ! wvt
+            pmfuq_tr(jl,jk) = 0.0                                        ! wvt
+            pmful_tr(jl,jk) = 0.0                                        ! wvt
+            plude_tr(jl,jk) = 0.0                                        ! wvt
+            pdmfup_tr(jl,jk) = 0.0                                       ! wvt
+          endif                                                          ! wvt
       end do
       end do
 
@@ -2156,14 +2156,14 @@
           pmfus(jl,ikb) = pmfub(jl)*(cpd*ptu(jl,ikb)+pgeoh(jl,ikb))
           pmfuq(jl,ikb) = pmfub(jl)*pqu(jl,ikb)
           pmful(jl,ikb) = pmfub(jl)*plu(jl,ikb)
-!--- mvt: initialize tracer at cloud base
-          if (l_tracers) then                                            ! mvt
-            pqu_tr(jl,ikb) = min(pqenh_tr(jl,ikb), pqu(jl,ikb))         ! mvt
-            pqu_tr(jl,ikb) = max(0.0, pqu_tr(jl,ikb))                   ! mvt
-            pmfuq_tr(jl,ikb) = pmfub(jl)*pqu_tr(jl,ikb)                 ! mvt
-            plu_tr(jl,ikb) = 0.0                                         ! mvt
-            pmful_tr(jl,ikb) = 0.0                                       ! mvt
-          endif                                                          ! mvt
+!--- wvt: initialize tracer at cloud base
+          if (l_tracers) then                                            ! wvt
+            pqu_tr(jl,ikb) = min(pqenh_tr(jl,ikb), pqu(jl,ikb))         ! wvt
+            pqu_tr(jl,ikb) = max(0.0, pqu_tr(jl,ikb))                   ! wvt
+            pmfuq_tr(jl,ikb) = pmfub(jl)*pqu_tr(jl,ikb)                 ! wvt
+            plu_tr(jl,ikb) = 0.0                                         ! wvt
+            pmful_tr(jl,ikb) = 0.0                                       ! wvt
+          endif                                                          ! wvt
         end if
       end do
 !
@@ -2276,19 +2276,19 @@
           zlrain(jl,jk) = zlrain(jl,jk+1)*(pmfu(jl,jk+1)-zdmfde(jl)) * &
                           (1./max(cmfcmin,pmfu(jl,jk)))
           zluold(jl) = plu(jl,jk)
-!--- mvt: tracer entrainment/detrainment in updraft
-          if (l_tracers) then                                            ! mvt
-            zqeen_tr = pqenh_tr(jl,jk+1)*zdmfen(jl)                     ! mvt
-            zqude_tr = pqu_tr(jl,jk+1)*zdmfde(jl)                       ! mvt
-            plude_tr(jl,jk) = plu_tr(jl,jk+1)*zdmfde(jl)               ! mvt
-            zmfuqk_tr = pmfuq_tr(jl,jk+1) + zqeen_tr - zqude_tr         ! mvt
-            zmfulk_tr = pmful_tr(jl,jk+1) - plude_tr(jl,jk)             ! mvt
-            plu_tr(jl,jk) = zmfulk_tr*(1./max(cmfcmin,pmfu(jl,jk)))     ! mvt
-            pqu_tr(jl,jk) = zmfuqk_tr*(1./max(cmfcmin,pmfu(jl,jk)))     ! mvt
-            pqu_tr(jl,jk) = max(0.0, min(pqu_tr(jl,jk), pqu(jl,jk)))   ! mvt
-            plu_tr(jl,jk) = max(0.0, min(plu_tr(jl,jk), plu(jl,jk)))   ! mvt
-            zluold_tr(jl) = plu_tr(jl,jk)                               ! mvt
-          endif                                                          ! mvt
+!--- wvt: tracer entrainment/detrainment in updraft
+          if (l_tracers) then                                            ! wvt
+            zqeen_tr = pqenh_tr(jl,jk+1)*zdmfen(jl)                     ! wvt
+            zqude_tr = pqu_tr(jl,jk+1)*zdmfde(jl)                       ! wvt
+            plude_tr(jl,jk) = plu_tr(jl,jk+1)*zdmfde(jl)               ! wvt
+            zmfuqk_tr = pmfuq_tr(jl,jk+1) + zqeen_tr - zqude_tr         ! wvt
+            zmfulk_tr = pmful_tr(jl,jk+1) - plude_tr(jl,jk)             ! wvt
+            plu_tr(jl,jk) = zmfulk_tr*(1./max(cmfcmin,pmfu(jl,jk)))     ! wvt
+            pqu_tr(jl,jk) = zmfuqk_tr*(1./max(cmfcmin,pmfu(jl,jk)))     ! wvt
+            pqu_tr(jl,jk) = max(0.0, min(pqu_tr(jl,jk), pqu(jl,jk)))   ! wvt
+            plu_tr(jl,jk) = max(0.0, min(plu_tr(jl,jk), plu(jl,jk)))   ! wvt
+            zluold_tr(jl) = plu_tr(jl,jk)                               ! wvt
+          endif                                                          ! wvt
         end do
 ! reset to environmental values if below departure level
         do jl = 1,klon
@@ -2297,12 +2297,12 @@
             pqu(jl,jk) = pqenh(jl,jk)
             plu(jl,jk) = 0.
             zluold(jl) = plu(jl,jk)
-!--- mvt: reset tracer below departure level
-            if (l_tracers) then                                          ! mvt
-              pqu_tr(jl,jk) = pqenh_tr(jl,jk)                           ! mvt
-              plu_tr(jl,jk) = 0.0                                        ! mvt
-              zluold_tr(jl) = 0.0                                        ! mvt
-            endif                                                        ! mvt
+!--- wvt: reset tracer below departure level
+            if (l_tracers) then                                          ! wvt
+              pqu_tr(jl,jk) = pqenh_tr(jl,jk)                           ! wvt
+              plu_tr(jl,jk) = 0.0                                        ! wvt
+              zluold_tr(jl) = 0.0                                        ! wvt
+            endif                                                        ! wvt
           end if
         end do
 !*             do corrections for moist ascent
@@ -2329,19 +2329,19 @@
           if ( pqu(jl,jk) /= zqold(jl) ) then
             klab(jl,jk) = 2
             plu(jl,jk) = plu(jl,jk) + zqold(jl) - pqu(jl,jk)
-!--- mvt: compute tracer condensation proportional to moisture condensation
-            if (l_tracers) then                                          ! mvt
-              ztr_frac = pqu_tr(jl,jk) / max(zqold(jl), 1.0e-10)        ! mvt
-              ztr_frac = max(0.0, min(ztr_frac, 1.0))                    ! mvt
-!--- mvt: tracer condensate = condensation * tracer fraction
-              zplu_tr = (zqold(jl) - pqu(jl,jk)) * ztr_frac             ! mvt
-              plu_tr(jl,jk) = plu_tr(jl,jk) + zplu_tr                   ! mvt
-!--- mvt: reduce tracer vapor by condensation amount
-              pqu_tr(jl,jk) = pqu_tr(jl,jk) - zplu_tr                   ! mvt
-              pqu_tr(jl,jk) = max(0.0, min(pqu_tr(jl,jk), pqu(jl,jk))) ! mvt
-              plu_tr(jl,jk) = max(0.0, min(plu_tr(jl,jk), plu(jl,jk))) ! mvt
-              zluold_tr(jl) = plu_tr(jl,jk)                             ! mvt
-            endif                                                        ! mvt
+!--- wvt: compute tracer condensation proportional to moisture condensation
+            if (l_tracers) then                                          ! wvt
+              ztr_frac = pqu_tr(jl,jk) / max(zqold(jl), 1.0e-10)        ! wvt
+              ztr_frac = max(0.0, min(ztr_frac, 1.0))                    ! wvt
+!--- wvt: tracer condensate = condensation * tracer fraction
+              zplu_tr = (zqold(jl) - pqu(jl,jk)) * ztr_frac             ! wvt
+              plu_tr(jl,jk) = plu_tr(jl,jk) + zplu_tr                   ! wvt
+!--- wvt: reduce tracer vapor by condensation amount
+              pqu_tr(jl,jk) = pqu_tr(jl,jk) - zplu_tr                   ! wvt
+              pqu_tr(jl,jk) = max(0.0, min(pqu_tr(jl,jk), pqu(jl,jk))) ! wvt
+              plu_tr(jl,jk) = max(0.0, min(plu_tr(jl,jk), plu(jl,jk))) ! wvt
+              zluold_tr(jl) = plu_tr(jl,jk)                             ! wvt
+            endif                                                        ! wvt
             zbc = ptu(jl,jk)*(1.+vtmpc1*pqu(jl,jk)-plu(jl,jk+1) - &
               zlrain(jl,jk+1))
             zbe = ptenh(jl,jk)*(1.+vtmpc1*pqenh(jl,jk))
@@ -2386,10 +2386,10 @@
                 zdmfde(jl) = max(zdmfde(jl),pmfu(jl,jk+1)-zmfun)
                 plude(jl,jk) = plu(jl,jk+1)*zdmfde(jl)
                 pmfu(jl,jk) = pmfu(jl,jk+1) + zdmfen(jl) - zdmfde(jl)
-!--- mvt: update tracer detrainment for enhanced detrainment
-                if (l_tracers) then                                      ! mvt
-                  plude_tr(jl,jk) = plu_tr(jl,jk+1)*zdmfde(jl)         ! mvt
-                endif                                                    ! mvt
+!--- wvt: update tracer detrainment for enhanced detrainment
+                if (l_tracers) then                                      ! wvt
+                  plude_tr(jl,jk) = plu_tr(jl,jk+1)*zdmfde(jl)         ! wvt
+                endif                                                    ! wvt
               end if
               if ( zbuo(jl,jk) > -0.2  ) then
                 ikb = kcbot(jl)
@@ -2414,10 +2414,10 @@
                 kup(jl,jk) = 0.
                 zdmfde(jl) = pmfu(jl,jk+1)
                 plude(jl,jk) = plu(jl,jk+1)*zdmfde(jl)
-!--- mvt: tracer detrainment when updraft is killed
-                if (l_tracers) then                                      ! mvt
-                  plude_tr(jl,jk) = plu_tr(jl,jk+1)*zdmfde(jl)         ! mvt
-                endif                                                    ! mvt
+!--- wvt: tracer detrainment when updraft is killed
+                if (l_tracers) then                                      ! wvt
+                  plude_tr(jl,jk) = plu_tr(jl,jk+1)*zdmfde(jl)         ! wvt
+                endif                                                    ! wvt
               end if
 ! save detrainment rates for updraught
               if ( pmfu(jl,jk+1) > 0. ) pmfude_rate(jl,jk) = zdmfde(jl)
@@ -2429,10 +2429,10 @@
             zdmfde(jl) = pmfu(jl,jk+1)
             plude(jl,jk) = plu(jl,jk+1)*zdmfde(jl)
             pmfude_rate(jl,jk) = zdmfde(jl)
-!--- mvt: tracer detrainment when shallow updraft fails
-            if (l_tracers) then                                          ! mvt
-              plude_tr(jl,jk) = plu_tr(jl,jk+1)*zdmfde(jl)             ! mvt
-            endif                                                        ! mvt
+!--- wvt: tracer detrainment when shallow updraft fails
+            if (l_tracers) then                                          ! wvt
+              plude_tr(jl,jk) = plu_tr(jl,jk+1)*zdmfde(jl)             ! wvt
+            endif                                                        ! wvt
           end if
         end do
 
@@ -2471,16 +2471,16 @@
               pdmfup(jl,jk) = zprecip(jl)*pmfu(jl,jk)
               zlrain(jl,jk) = zlrain(jl,jk) + zprecip(jl)
               plu(jl,jk) = zlnew
-!--- mvt: tracer precipitation proportional to moisture precipitation
-              if (l_tracers) then                                        ! mvt
-                ztr_frac = plu_tr(jl,jk) / max(plu(jl,jk)+zprecip(jl),  & ! mvt
-     &                     1.0e-10)                                      ! mvt
-                ztr_frac = max(0.0, min(ztr_frac, 1.0))                  ! mvt
-                pdmfup_tr(jl,jk) = zprecip(jl)*ztr_frac*pmfu(jl,jk)     ! mvt
-                plu_tr(jl,jk) = max(0.0, plu_tr(jl,jk) -               & ! mvt
-     &            zprecip(jl)*ztr_frac)                                  ! mvt
-                plu_tr(jl,jk) = min(plu_tr(jl,jk), plu(jl,jk))         ! mvt
-              endif                                                      ! mvt
+!--- wvt: tracer precipitation proportional to moisture precipitation
+              if (l_tracers) then                                        ! wvt
+                ztr_frac = plu_tr(jl,jk) / max(plu(jl,jk)+zprecip(jl),  & ! wvt
+     &                     1.0e-10)                                      ! wvt
+                ztr_frac = max(0.0, min(ztr_frac, 1.0))                  ! wvt
+                pdmfup_tr(jl,jk) = zprecip(jl)*ztr_frac*pmfu(jl,jk)     ! wvt
+                plu_tr(jl,jk) = max(0.0, plu_tr(jl,jk) -               & ! wvt
+     &            zprecip(jl)*ztr_frac)                                  ! wvt
+                plu_tr(jl,jk) = min(plu_tr(jl,jk), plu(jl,jk))         ! wvt
+              endif                                                      ! wvt
             end if
           end if
         end do
@@ -2507,11 +2507,11 @@
           pmful(jl,jk) = plu(jl,jk)*pmfu(jl,jk)
           pmfus(jl,jk) = (cpd*ptu(jl,jk)+pgeoh(jl,jk))*pmfu(jl,jk)
           pmfuq(jl,jk) = pqu(jl,jk)*pmfu(jl,jk)
-!--- mvt: compute tracer fluxes
-          if (l_tracers) then                                            ! mvt
-            pmfuq_tr(jl,jk) = pqu_tr(jl,jk)*pmfu(jl,jk)                 ! mvt
-            pmful_tr(jl,jk) = plu_tr(jl,jk)*pmfu(jl,jk)                 ! mvt
-          endif                                                          ! mvt
+!--- wvt: compute tracer fluxes
+          if (l_tracers) then                                            ! wvt
+            pmfuq_tr(jl,jk) = pqu_tr(jl,jk)*pmfu(jl,jk)                 ! wvt
+            pmful_tr(jl,jk) = plu_tr(jl,jk)*pmfu(jl,jk)                 ! wvt
+          endif                                                          ! wvt
         end do
       end if
     end do
@@ -2541,9 +2541,9 @@
      &     puu,      pvu,      pmfub,    prfl,          &
      &     ptd,      pqd,      pud,      pvd,           &
      &     pmfd,     pmfds,    pmfdq,    pdmfdp,        &
-     &     kdtop,    lddraf,                             &               ! mvt
-     &     l_tracers, pqenh_tr, pqu_tr, pqd_tr,         &               ! mvt
-     &     pmfdq_tr)                                                     ! mvt
+     &     kdtop,    lddraf,                             &               ! wvt
+     &     l_tracers, pqenh_tr, pqu_tr, pqd_tr,         &               ! wvt
+     &     pmfdq_tr)                                                     ! wvt
 
 !          this routine calculates level of free sinking for
 !          cumulus downdrafts and specifies t,q,u and v values
@@ -2653,12 +2653,12 @@
 
       real(kind=kind_phys),intent(out),dimension(klon,klev):: ptd,pqd,pmfd,pmfds,pmfdq,pdmfdp
 
-!--- tracer arguments:                                                   ! mvt
-      logical,intent(in):: l_tracers                                     ! mvt
-      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqenh_tr    ! mvt
-      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqu_tr      ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqd_tr   ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfdq_tr ! mvt
+!--- tracer arguments:                                                   ! wvt
+      logical,intent(in):: l_tracers                                     ! wvt
+      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqenh_tr    ! wvt
+      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqu_tr      ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqd_tr   ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfdq_tr ! wvt
 
 !--- local variables and arrays:
       logical,dimension(klon):: llo2
@@ -2759,13 +2759,13 @@
               pmfdq(jl,jk)=pmfd(jl,jk)*pqd(jl,jk)
               pdmfdp(jl,jk-1)=-0.5*pmfd(jl,jk)*zcond(jl)
               prfl(jl)=prfl(jl)+pdmfdp(jl,jk-1)
-!--- mvt: set downdraft tracer at LFS (mix of updraft and environment)
-              if (l_tracers) then                                        ! mvt
-                pqd_tr(jl,jk) = 0.5*(pqu_tr(jl,jk) + pqenh_tr(jl,jk))  ! mvt
-                pqd_tr(jl,jk) = max(0.0, min(pqd_tr(jl,jk),            & ! mvt
-     &                          pqd(jl,jk)))                             ! mvt
-                pmfdq_tr(jl,jk) = pmfd(jl,jk)*pqd_tr(jl,jk)             ! mvt
-              endif                                                      ! mvt
+!--- wvt: set downdraft tracer at LFS (mix of updraft and environment)
+              if (l_tracers) then                                        ! wvt
+                pqd_tr(jl,jk) = 0.5*(pqu_tr(jl,jk) + pqenh_tr(jl,jk))  ! wvt
+                pqd_tr(jl,jk) = max(0.0, min(pqd_tr(jl,jk),            & ! wvt
+     &                          pqd(jl,jk)))                             ! wvt
+                pmfdq_tr(jl,jk) = pmfd(jl,jk)*pqd_tr(jl,jk)             ! wvt
+              endif                                                      ! wvt
             endif
           endif
         enddo
@@ -2786,8 +2786,8 @@
      &   , ptenh,    pqenh,    puen,     pven            &
      &   , pgeo,     pgeoh,    paph,     prfl            &
      &   , ptd,      pqd,      pud,      pvd,      pmfu  &
-     &   , pmfd,     pmfds,    pmfdq,    pdmfdp,   pmfdde_rate &         ! mvt
-     &   , l_tracers, pqenh_tr, pqd_tr,  pmfdq_tr )                     ! mvt
+     &   , pmfd,     pmfds,    pmfdq,    pdmfdp,   pmfdde_rate &         ! wvt
+     &   , l_tracers, pqenh_tr, pqd_tr,  pmfdq_tr )                     ! wvt
 
 !          this routine calculates cumulus downdraft descent
 
@@ -2873,11 +2873,11 @@
 !--- output arguments:
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfdde_rate
 
-!--- tracer arguments:                                                   ! mvt
-      logical,intent(in):: l_tracers                                     ! mvt
-      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqenh_tr    ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqd_tr   ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfdq_tr ! mvt
+!--- tracer arguments:                                                   ! wvt
+      logical,intent(in):: l_tracers                                     ! wvt
+      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqenh_tr    ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqd_tr   ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfdq_tr ! wvt
 
 !--- local variables and arrays:
       logical:: llo1
@@ -2891,8 +2891,8 @@
       real(kind=kind_phys):: zmfdsk,zmfdqk,zbuo,zrain,zbuoyz,zmfduk,zmfdvk
       real(kind=kind_phys),dimension(klon):: zdmfen,zdmfde,zcond,zoentr,zbuoy,zph
 
-!--- mvt: local tracer variables
-      real(kind=kind_phys):: zqeen_tr, zqdde_tr, zmfdqk_tr              ! mvt
+!--- wvt: local tracer variables
+      real(kind=kind_phys):: zqeen_tr, zqdde_tr, zmfdqk_tr              ! wvt
 
 !----------------------------------------------------------------------
 !     1.           calculate moist descent for cumulus downdraft by
@@ -2978,14 +2978,14 @@
             ptd(jl,jk)=min(400.,ptd(jl,jk))
             ptd(jl,jk)=max(100.,ptd(jl,jk))
             zcond(jl)=pqd(jl,jk)
-!--- mvt: tracer entrainment in downdraft
-            if (l_tracers) then                                          ! mvt
-              zqeen_tr = pqenh_tr(jl,jk-1)*zdmfen(jl)                   ! mvt
-              zqdde_tr = pqd_tr(jl,jk-1)*zdmfde(jl)                     ! mvt
-              zmfdqk_tr = pmfdq_tr(jl,jk-1) + zqeen_tr - zqdde_tr       ! mvt
-              pqd_tr(jl,jk) = zmfdqk_tr*(1./min(-cmfcmin,pmfd(jl,jk)))  ! mvt
-              pqd_tr(jl,jk) = max(0.0, min(pqd_tr(jl,jk), pqd(jl,jk))) ! mvt
-            endif                                                        ! mvt
+!--- wvt: tracer entrainment in downdraft
+            if (l_tracers) then                                          ! wvt
+              zqeen_tr = pqenh_tr(jl,jk-1)*zdmfen(jl)                   ! wvt
+              zqdde_tr = pqd_tr(jl,jk-1)*zdmfde(jl)                     ! wvt
+              zmfdqk_tr = pmfdq_tr(jl,jk-1) + zqeen_tr - zqdde_tr       ! wvt
+              pqd_tr(jl,jk) = zmfdqk_tr*(1./min(-cmfcmin,pmfd(jl,jk)))  ! wvt
+              pqd_tr(jl,jk) = max(0.0, min(pqd_tr(jl,jk), pqd(jl,jk))) ! wvt
+            endif                                                        ! wvt
           endif
         enddo
 
@@ -3005,20 +3005,20 @@
             if(zbuo.ge.0 .or. prfl(jl).le.(pmfd(jl,jk)*zcond(jl))) then
               pmfd(jl,jk)=0.
               zbuo=0.
-!--- mvt: zero tracer downdraft when downdraft is zeroed
-              if (l_tracers) then                                        ! mvt
-                pmfdq_tr(jl,jk) = 0.0                                    ! mvt
-              endif                                                      ! mvt
+!--- wvt: zero tracer downdraft when downdraft is zeroed
+              if (l_tracers) then                                        ! wvt
+                pmfdq_tr(jl,jk) = 0.0                                    ! wvt
+              endif                                                      ! wvt
             endif
             pmfds(jl,jk)=(cpd*ptd(jl,jk)+pgeoh(jl,jk))*pmfd(jl,jk)
             pmfdq(jl,jk)=pqd(jl,jk)*pmfd(jl,jk)
             zdmfdp=-pmfd(jl,jk)*zcond(jl)
             pdmfdp(jl,jk-1)=zdmfdp
             prfl(jl)=prfl(jl)+zdmfdp
-!--- mvt: compute tracer downdraft flux
-            if (l_tracers) then                                          ! mvt
-              pmfdq_tr(jl,jk) = pqd_tr(jl,jk)*pmfd(jl,jk)              ! mvt
-            endif                                                        ! mvt
+!--- wvt: compute tracer downdraft flux
+            if (l_tracers) then                                          ! wvt
+              pmfdq_tr(jl,jk) = pqd_tr(jl,jk)*pmfd(jl,jk)              ! wvt
+            endif                                                        ! wvt
 
 ! compute organized entrainment for use at next level
             zbuoyz=zbuo/ptenh(jl,jk)
@@ -3046,9 +3046,9 @@
      &  ,  pmfu,     pmfd,     pmfus,    pmfds           &
      &  ,  pmfuq,    pmfdq,    pmful,    plude           &
      &  ,  pdmfup,   pdmfdp,   pdpmel,   plglac          &
-     &  ,  prain,    pmfdde_rate, pmflxr, pmflxs          &              ! mvt
-     &  ,  l_tracers, pqenh_tr, pmfuq_tr, pmfdq_tr      &              ! mvt
-     &  ,  pmful_tr, plude_tr, pdmfup_tr, pdmfdp_tr )                   ! mvt
+     &  ,  prain,    pmfdde_rate, pmflxr, pmflxs          &              ! wvt
+     &  ,  l_tracers, pqenh_tr, pmfuq_tr, pmfdq_tr      &              ! wvt
+     &  ,  pmful_tr, plude_tr, pdmfup_tr, pdmfdp_tr )                   ! wvt
 
 !          m.tiedtke         e.c.m.w.f.     7/86 modif. 12/89                  
                                                                                
@@ -3156,15 +3156,15 @@
       real(kind=kind_phys),dimension(klon,klev):: pmfdde_rate
       real(kind=kind_phys),dimension(klon,klev+1):: pmflxr,pmflxs
 
-!--- tracer arguments:                                                   ! mvt
-      logical,intent(in):: l_tracers                                     ! mvt
-      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqenh_tr    ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfuq_tr ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfdq_tr ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmful_tr ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: plude_tr ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfup_tr ! mvt
-      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfdp_tr ! mvt
+!--- tracer arguments:                                                   ! wvt
+      logical,intent(in):: l_tracers                                     ! wvt
+      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqenh_tr    ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfuq_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfdq_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmful_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: plude_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfup_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfdp_tr ! wvt
 
 !--- local variables and arrays:
       logical:: llddraf
@@ -3213,31 +3213,31 @@
      &       (cpd*ptenh(jl,jk)+pgeoh(jl,jk))
             pmfuq(jl,jk)=pmfuq(jl,jk)-pmfu(jl,jk)*pqenh(jl,jk)
             plglac(jl,jk)=pmfu(jl,jk)*plglac(jl,jk)
-!--- mvt: adjust tracer updraft flux (same pattern as moisture)
-            if (l_tracers) then                                          ! mvt
-              pmfuq_tr(jl,jk) = pmfuq_tr(jl,jk)                       & ! mvt
-     &          - pmfu(jl,jk)*pqenh_tr(jl,jk)                           ! mvt
-            endif                                                        ! mvt
+!--- wvt: adjust tracer updraft flux (same pattern as moisture)
+            if (l_tracers) then                                          ! wvt
+              pmfuq_tr(jl,jk) = pmfuq_tr(jl,jk)                       & ! wvt
+     &          - pmfu(jl,jk)*pqenh_tr(jl,jk)                           ! wvt
+            endif                                                        ! wvt
             llddraf = lddraf(jl) .and. jk >= kdtop(jl)
             if ( llddraf .and.jk.ge.kdtop(jl)) then
               pmfds(jl,jk) = pmfds(jl,jk)-pmfd(jl,jk) * &
                            (cpd*ptenh(jl,jk)+pgeoh(jl,jk))
               pmfdq(jl,jk) = pmfdq(jl,jk)-pmfd(jl,jk)*pqenh(jl,jk)
-!--- mvt: adjust tracer downdraft flux (same pattern as moisture)
-              if (l_tracers) then                                        ! mvt
-                pmfdq_tr(jl,jk) = pmfdq_tr(jl,jk)                     & ! mvt
-     &            - pmfd(jl,jk)*pqenh_tr(jl,jk)                         ! mvt
-              endif                                                      ! mvt
+!--- wvt: adjust tracer downdraft flux (same pattern as moisture)
+              if (l_tracers) then                                        ! wvt
+                pmfdq_tr(jl,jk) = pmfdq_tr(jl,jk)                     & ! wvt
+     &            - pmfd(jl,jk)*pqenh_tr(jl,jk)                         ! wvt
+              endif                                                      ! wvt
             else
               pmfd(jl,jk) = 0.
               pmfds(jl,jk) = 0.
               pmfdq(jl,jk) = 0.
               pdmfdp(jl,jk-1) = 0.
-!--- mvt: zero tracer downdraft flux
-              if (l_tracers) then                                        ! mvt
-                pmfdq_tr(jl,jk) = 0.0                                    ! mvt
-                pdmfdp_tr(jl,jk-1) = 0.0                                 ! mvt
-              endif                                                      ! mvt
+!--- wvt: zero tracer downdraft flux
+              if (l_tracers) then                                        ! wvt
+                pmfdq_tr(jl,jk) = 0.0                                    ! wvt
+                pdmfdp_tr(jl,jk-1) = 0.0                                 ! wvt
+              endif                                                      ! wvt
             end if
             if ( llddraf .and. pmfd(jl,jk) < 0. .and. &
                abs(pmfd(jl,ikb)) < 1.e-20 ) then
@@ -3255,15 +3255,15 @@
             pdmfup(jl,jk-1)=0.
             pdmfdp(jl,jk-1)=0.
             plude(jl,jk-1)=0.
-!--- mvt: zero all tracer fluxes outside convection
-            if (l_tracers) then                                          ! mvt
-              pmfuq_tr(jl,jk) = 0.0                                      ! mvt
-              pmfdq_tr(jl,jk) = 0.0                                      ! mvt
-              pmful_tr(jl,jk) = 0.0                                      ! mvt
-              pdmfup_tr(jl,jk-1) = 0.0                                   ! mvt
-              pdmfdp_tr(jl,jk-1) = 0.0                                   ! mvt
-              plude_tr(jl,jk-1) = 0.0                                    ! mvt
-            endif                                                        ! mvt
+!--- wvt: zero all tracer fluxes outside convection
+            if (l_tracers) then                                          ! wvt
+              pmfuq_tr(jl,jk) = 0.0                                      ! wvt
+              pmfdq_tr(jl,jk) = 0.0                                      ! wvt
+              pmful_tr(jl,jk) = 0.0                                      ! wvt
+              pdmfup_tr(jl,jk-1) = 0.0                                   ! wvt
+              pdmfdp_tr(jl,jk-1) = 0.0                                   ! wvt
+              plude_tr(jl,jk-1) = 0.0                                    ! wvt
+            endif                                                        ! wvt
           endif
         enddo
       enddo
@@ -3286,12 +3286,12 @@
      &         foelhm(ptenh(jl,ikb))*pmful(jl,ikb))*zzp
           pmfuq(jl,ik)=(pmfuq(jl,ikb)+pmful(jl,ikb))*zzp
           pmful(jl,ik)=0.
-!--- mvt: tracer sub-cloud layer extension
-          if (l_tracers) then                                            ! mvt
-            pmfuq_tr(jl,ik) = (pmfuq_tr(jl,ikb)                       & ! mvt
-     &        + pmful_tr(jl,ikb))*zzp                                    ! mvt
-            pmful_tr(jl,ik) = 0.0                                        ! mvt
-          endif                                                          ! mvt
+!--- wvt: tracer sub-cloud layer extension
+          if (l_tracers) then                                            ! wvt
+            pmfuq_tr(jl,ik) = (pmfuq_tr(jl,ikb)                       & ! wvt
+     &        + pmful_tr(jl,ikb))*zzp                                    ! wvt
+            pmful_tr(jl,ik) = 0.0                                        ! wvt
+          endif                                                          ! wvt
         endif
       enddo
 
@@ -3308,11 +3308,11 @@
             pmfus(jl,jk)=pmfus(jl,ikb)*zzp
             pmfuq(jl,jk)=pmfuq(jl,ikb)*zzp
             pmful(jl,jk)=0.
-!--- mvt: tracer sub-cloud layer extension
-            if (l_tracers) then                                          ! mvt
-              pmfuq_tr(jl,jk) = pmfuq_tr(jl,ikb)*zzp                    ! mvt
-              pmful_tr(jl,jk) = 0.0                                      ! mvt
-            endif                                                        ! mvt
+!--- wvt: tracer sub-cloud layer extension
+            if (l_tracers) then                                          ! wvt
+              pmfuq_tr(jl,jk) = pmfuq_tr(jl,ikb)*zzp                    ! wvt
+              pmful_tr(jl,jk) = 0.0                                      ! wvt
+            endif                                                        ! wvt
           endif
           ik = idbas(jl)
           llddraf = lddraf(jl) .and. jk > ik .and. ik < klev
@@ -3323,10 +3323,10 @@
             pmfds(jl,jk) = pmfds(jl,ik)*zzp
             pmfdq(jl,jk) = pmfdq(jl,ik)*zzp
             pmfdde_rate(jl,jk) = -(pmfd(jl,jk-1)-pmfd(jl,jk))
-!--- mvt: tracer downdraft sub-cloud extension
-            if (l_tracers) then                                          ! mvt
-              pmfdq_tr(jl,jk) = pmfdq_tr(jl,ik)*zzp                     ! mvt
-            endif                                                        ! mvt
+!--- wvt: tracer downdraft sub-cloud extension
+            if (l_tracers) then                                          ! wvt
+              pmfdq_tr(jl,jk) = pmfdq_tr(jl,ik)*zzp                     ! wvt
+            endif                                                        ! wvt
            else if ( llddraf .and. ik /= kcbot(jl)+1 .and. jk == ik+1 ) then
             pmfdde_rate(jl,jk) = -(pmfd(jl,jk-1)-pmfd(jl,jk))
            end if
@@ -3400,12 +3400,12 @@
               pmflxs(jl,jk+1)=pmflxs(jl,jk)+zpds         &
      &         -pdpmel(jl,jk)+zdrfl*pmflxs(jl,jk)*zdenom
               pdmfup(jl,jk)=pdmfup(jl,jk)+zdrfl
-!--- mvt: scale tracer precipitation proportionally to evaporation
-              if (l_tracers .and. abs(pdmfup(jl,jk)) .gt. 1.0e-20) then ! mvt
-                pdmfup_tr(jl,jk) = pdmfup_tr(jl,jk) *                 & ! mvt
-     &            (pdmfup(jl,jk) / (pdmfup(jl,jk) - zdrfl + 1.0e-20))  ! mvt
-                pdmfup_tr(jl,jk) = max(0.0, pdmfup_tr(jl,jk))          ! mvt
-              endif                                                      ! mvt
+!--- wvt: scale tracer precipitation proportionally to evaporation
+              if (l_tracers .and. abs(pdmfup(jl,jk)) .gt. 1.0e-20) then ! wvt
+                pdmfup_tr(jl,jk) = pdmfup_tr(jl,jk) *                 & ! wvt
+     &            (pdmfup(jl,jk) / (pdmfup(jl,jk) - zdrfl + 1.0e-20))  ! wvt
+                pdmfup_tr(jl,jk) = max(0.0, pdmfup_tr(jl,jk))          ! wvt
+              endif                                                      ! wvt
               if ( pmflxr(jl,jk+1)+pmflxs(jl,jk+1) < 0. ) then
                 pdmfup(jl,jk) = pdmfup(jl,jk)-(pmflxr(jl,jk+1)+pmflxs(jl,jk+1))
                 pmflxr(jl,jk+1) = 0.
@@ -3423,10 +3423,10 @@
               pmflxs(jl,jk+1)=0.0
               pdmfdp(jl,jk)=0.0
               pdpmel(jl,jk)=0.0
-!--- mvt: zero tracer downdraft precip when all precip zeroed
-              if (l_tracers) then                                        ! mvt
-                pdmfdp_tr(jl,jk) = 0.0                                   ! mvt
-              endif                                                      ! mvt
+!--- wvt: zero tracer downdraft precip when all precip zeroed
+              if (l_tracers) then                                        ! wvt
+                pdmfdp_tr(jl,jk) = 0.0                                   ! wvt
+              endif                                                      ! wvt
             endif
           endif
         enddo
@@ -3440,9 +3440,9 @@
      subroutine cudtdqn(klon,klev,ktopm2,kctop,kdtop,ldcum,          &
                      lddraf,ztmst,paph,pgeoh,pgeo,pten,ptenh,pqen,   &
                      pqenh,pqsen,plglac,plude,pmfu,pmfd,pmfus,pmfds, &
-                     pmfuq,pmfdq,pmful,pdmfup,pdmfdp,pdpmel,ptent,ptenq,pcte, & ! mvt
-                     l_tracers,pmfuq_tr,pmfdq_tr,pmful_tr,plude_tr,            & ! mvt
-                     pdmfup_tr,pdmfdp_tr,ptenq_tr,pcte_tr)                        ! mvt
+                     pmfuq,pmfdq,pmful,pdmfup,pdmfdp,pdpmel,ptent,ptenq,pcte, & ! wvt
+                     l_tracers,pmfuq_tr,pmfdq_tr,pmful_tr,plude_tr,            & ! wvt
+                     pdmfup_tr,pdmfdp_tr,ptenq_tr,pcte_tr)                        ! wvt
     implicit none
 
 !--- input arguments:
@@ -3465,35 +3465,35 @@
 !--- inout arguments:
     real(kind=kind_phys),intent(inout),dimension(klon,klev):: ptent,ptenq,pcte
 
-!--- tracer arguments:                                                   ! mvt
-    logical,intent(in):: l_tracers                                       ! mvt
-    real(kind=kind_phys),intent(in),dimension(klon,klev):: pmfuq_tr      ! mvt
-    real(kind=kind_phys),intent(in),dimension(klon,klev):: pmfdq_tr      ! mvt
-    real(kind=kind_phys),intent(in),dimension(klon,klev):: pmful_tr      ! mvt
-    real(kind=kind_phys),intent(in),dimension(klon,klev):: plude_tr      ! mvt
-    real(kind=kind_phys),intent(in),dimension(klon,klev):: pdmfup_tr     ! mvt
-    real(kind=kind_phys),intent(in),dimension(klon,klev):: pdmfdp_tr     ! mvt
-    real(kind=kind_phys),intent(inout),dimension(klon,klev):: ptenq_tr   ! mvt
-    real(kind=kind_phys),intent(inout),dimension(klon,klev):: pcte_tr    ! mvt - tracer cloud detrainment
+!--- tracer arguments:                                                   ! wvt
+    logical,intent(in):: l_tracers                                       ! wvt
+    real(kind=kind_phys),intent(in),dimension(klon,klev):: pmfuq_tr      ! wvt
+    real(kind=kind_phys),intent(in),dimension(klon,klev):: pmfdq_tr      ! wvt
+    real(kind=kind_phys),intent(in),dimension(klon,klev):: pmful_tr      ! wvt
+    real(kind=kind_phys),intent(in),dimension(klon,klev):: plude_tr      ! wvt
+    real(kind=kind_phys),intent(in),dimension(klon,klev):: pdmfup_tr     ! wvt
+    real(kind=kind_phys),intent(in),dimension(klon,klev):: pdmfdp_tr     ! wvt
+    real(kind=kind_phys),intent(inout),dimension(klon,klev):: ptenq_tr   ! wvt
+    real(kind=kind_phys),intent(inout),dimension(klon,klev):: pcte_tr    ! wvt - tracer cloud detrainment
 
 !--- local variables and arrays:
     integer::  jk ,ik ,jl
     real(kind=kind_phys):: zalv ,zzp
     real(kind=kind_phys),dimension(klon,klev):: zdtdt,zdqdt,zdp
 
-!--- mvt: local tracer tendency
-    real(kind=kind_phys),dimension(klon,klev):: zdqdt_tr                 ! mvt
+!--- wvt: local tracer tendency
+    real(kind=kind_phys),dimension(klon,klev):: zdqdt_tr                 ! wvt
 
     !*    1.0          SETUP AND INITIALIZATIONS
     ! -------------------------
-!--- mvt: initialize tracer tendency array
-    if (l_tracers) then                                                  ! mvt
-      do jk = 1, klev                                                    ! mvt
-        do jl = 1, klon                                                  ! mvt
-          zdqdt_tr(jl,jk) = 0.0                                          ! mvt
-        end do                                                           ! mvt
-      end do                                                             ! mvt
-    endif                                                                ! mvt
+!--- wvt: initialize tracer tendency array
+    if (l_tracers) then                                                  ! wvt
+      do jk = 1, klev                                                    ! wvt
+        do jl = 1, klon                                                  ! wvt
+          zdqdt_tr(jl,jk) = 0.0                                          ! wvt
+        end do                                                           ! wvt
+      end do                                                             ! wvt
+    endif                                                                ! wvt
     do jk = 1 , klev
       do jl = 1, klon
         if ( ldcum(jl) ) then
@@ -3516,15 +3516,15 @@
             zdqdt(jl,jk) = zdp(jl,jk)*(pmfuq(jl,jk+1) - &
               pmfuq(jl,jk)+pmfdq(jl,jk+1)-pmfdq(jl,jk)+pmful(jl,jk+1) - &
               pmful(jl,jk)-plude(jl,jk)-pdmfup(jl,jk)-pdmfdp(jl,jk))
-!--- mvt: tracer tendency (same flux-divergence equation as moisture)
-            if (l_tracers) then                                          ! mvt
-              zdqdt_tr(jl,jk) = zdp(jl,jk) * (                        & ! mvt
-     &          pmfuq_tr(jl,jk+1) - pmfuq_tr(jl,jk) +                & ! mvt
-     &          pmfdq_tr(jl,jk+1) - pmfdq_tr(jl,jk) +                & ! mvt
-     &          pmful_tr(jl,jk+1) - pmful_tr(jl,jk) -                 & ! mvt
-     &          plude_tr(jl,jk) -                                      & ! mvt
-     &          pdmfup_tr(jl,jk) - pdmfdp_tr(jl,jk))                    ! mvt
-            endif                                                        ! mvt
+!--- wvt: tracer tendency (same flux-divergence equation as moisture)
+            if (l_tracers) then                                          ! wvt
+              zdqdt_tr(jl,jk) = zdp(jl,jk) * (                        & ! wvt
+     &          pmfuq_tr(jl,jk+1) - pmfuq_tr(jl,jk) +                & ! wvt
+     &          pmfdq_tr(jl,jk+1) - pmfdq_tr(jl,jk) +                & ! wvt
+     &          pmful_tr(jl,jk+1) - pmful_tr(jl,jk) -                 & ! wvt
+     &          plude_tr(jl,jk) -                                      & ! wvt
+     &          pdmfup_tr(jl,jk) - pdmfdp_tr(jl,jk))                    ! wvt
+            endif                                                        ! wvt
           end if
         end do
       else
@@ -3536,14 +3536,14 @@
                zalv*(pmful(jl,jk)+pdmfup(jl,jk)+pdmfdp(jl,jk)+plude(jl,jk)))
             zdqdt(jl,jk) = -zdp(jl,jk)*(pmfuq(jl,jk) + plude(jl,jk) + &
               pmfdq(jl,jk)+(pmful(jl,jk)+pdmfup(jl,jk)+pdmfdp(jl,jk)))
-!--- mvt: tracer tendency at lowest level
-            if (l_tracers) then                                          ! mvt
-              zdqdt_tr(jl,jk) = -zdp(jl,jk) * (                       & ! mvt
-     &          pmfuq_tr(jl,jk) + plude_tr(jl,jk) +                   & ! mvt
-     &          pmfdq_tr(jl,jk) +                                      & ! mvt
-     &          pmful_tr(jl,jk) + pdmfup_tr(jl,jk) +                  & ! mvt
-     &          pdmfdp_tr(jl,jk))                                        ! mvt
-            endif                                                        ! mvt
+!--- wvt: tracer tendency at lowest level
+            if (l_tracers) then                                          ! wvt
+              zdqdt_tr(jl,jk) = -zdp(jl,jk) * (                       & ! wvt
+     &          pmfuq_tr(jl,jk) + plude_tr(jl,jk) +                   & ! wvt
+     &          pmfdq_tr(jl,jk) +                                      & ! wvt
+     &          pmful_tr(jl,jk) + pdmfup_tr(jl,jk) +                  & ! wvt
+     &          pdmfdp_tr(jl,jk))                                        ! wvt
+            endif                                                        ! wvt
           end if
         end do
       end if
@@ -3557,11 +3557,11 @@
          ptent(jl,jk) = ptent(jl,jk) + zdtdt(jl,jk)
          ptenq(jl,jk) = ptenq(jl,jk) + zdqdt(jl,jk)
          pcte(jl,jk)  = zdp(jl,jk)*plude(jl,jk)
-!--- mvt: update tracer tendency and cloud detrainment
-         if (l_tracers) then                                             ! mvt
-           ptenq_tr(jl,jk) = ptenq_tr(jl,jk) + zdqdt_tr(jl,jk)         ! mvt
-           pcte_tr(jl,jk) = zdp(jl,jk)*plude_tr(jl,jk)                  ! mvt - tracer cloud detrainment
-         endif                                                           ! mvt
+!--- wvt: update tracer tendency and cloud detrainment
+         if (l_tracers) then                                             ! wvt
+           ptenq_tr(jl,jk) = ptenq_tr(jl,jk) + zdqdt_tr(jl,jk)         ! wvt
+           pcte_tr(jl,jk) = zdp(jl,jk)*plude_tr(jl,jk)                  ! wvt - tracer cloud detrainment
+         endif                                                           ! wvt
        end if
      end do
     end do

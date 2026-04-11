@@ -3565,10 +3565,10 @@ BENCH_START(advance_ppt_tim)
      CALL advance_ppt(grid%rthcuten,grid%rqvcuten,grid%rqccuten,grid%rqrcuten, &
                       grid%cldfra_cup,                                         & !BSINGH -  Added for CuP scheme
                       grid%rqicuten,grid%rqscuten,           &
-                      grid%rtrqvcuten,grid%rtrqccuten,grid%rtrqrcuten, &   !mvt
-                      grid%rtrqicuten,grid%rtrqscuten,           &         !mvt
+                      grid%rtrqvcuten,grid%rtrqccuten,grid%rtrqrcuten, &   !wvt
+                      grid%rtrqicuten,grid%rtrqscuten,           &         !wvt
                       grid%rainc,grid%raincv,grid%rainsh,grid%pratec,grid%pratesh, &
-                      grid%tr_rainc,grid%tr_pratec, &    !mvt
+                      grid%tr_rainc,grid%tr_pratec, &    !wvt
                       grid%nca,grid%htop,grid%hbot,grid%cutop,grid%cubot,  &
                       grid%cuppt, grid%dt, config_flags,                   &
                       ids,ide, jds,jde, kds,kde,             &
@@ -3594,9 +3594,9 @@ BENCH_END(advance_ppt_tim)
                         grid%rucuten,  grid%rvcuten,  grid%rthcuten,     &
                         grid%rqvcuten, grid%rqccuten, grid%rqrcuten,     &
                         grid%rqicuten, grid%rqscuten,                    &
-                        grid%rtrqvblten, grid%rtrqcblten, grid%rtrqiblten, & !mvt
-                        grid%rtrqvcuten, grid%rtrqccuten, grid%rtrqrcuten, & !mvt
-                        grid%rtrqicuten, grid%rtrqscuten,                  & !mvt
+                        grid%rtrqvblten, grid%rtrqcblten, grid%rtrqiblten, & !wvt
+                        grid%rtrqvcuten, grid%rtrqccuten, grid%rtrqrcuten, & !wvt
+                        grid%rtrqicuten, grid%rtrqscuten,                  & !wvt
                         grid%rushten,  grid%rvshten,  grid%rthshten,     &
                         grid%rqvshten, grid%rqcshten, grid%rqrshten,     &
                         grid%rqishten, grid%rqsshten, grid%rqgshten,     &
@@ -3838,7 +3838,7 @@ BENCH_START(micro_driver_tim)
       &        , QIP_CURR=moist(ims,kms,jms,P_QIP), F_QIP=F_QIP               &
       &        , QID_CURR=moist(ims,kms,jms,P_QID), F_QID=F_QID               &
       &        , QNDROP_CURR=scalar(ims,kms,jms,P_QNDROP), F_QNDROP=F_QNDROP &
-      &        , TR_QV_CURR=tracer(ims,kms,jms,P_QV_TR), F_TR_QV=F_QV_TR         &  ! mvt: moisture tracers
+      &        , TR_QV_CURR=tracer(ims,kms,jms,P_QV_TR), F_TR_QV=F_QV_TR         &  ! wvt: moisture tracers
       &        , TR_QC_CURR=tracer(ims,kms,jms,P_QC_TR), F_TR_QC=F_QC_TR     &
       &        , TR_QR_CURR=tracer(ims,kms,jms,P_QR_TR), F_TR_QR=F_QR_TR     &
       &        , TR_QI_CURR=tracer(ims,kms,jms,P_QI_TR), F_TR_QI=F_QI_TR     &
@@ -4397,7 +4397,7 @@ BENCH_END(moist_phys_end_tim)
 !  end filter for chem and scalar variables at end of timestep
 !-----------------------------------------------------------
 
-! mvt: now make tracer moisture variables equal to the full moisture species in the the source region, if specified
+! wvt: now make tracer moisture variables equal to the full moisture species in the the source region, if specified
 
      IF ( config_flags%tracer3dsource == 1 ) then
        DO jj = jps, MIN(jpe,jde-1)
@@ -4427,7 +4427,7 @@ BENCH_END(moist_phys_end_tim)
 !       ENDDO tracer_source_loop
 !     ENDIF
 
-! mvt: now make moist tracer variables equal to zero in the secondary trmask3d (trmask3d2 => the sink region), if specified
+! wvt: now make moist tracer variables equal to zero in the secondary trmask3d (trmask3d2 => the sink region), if specified
 
      IF ( config_flags%tracer3dsink == 1 ) then
        DO jj = jps, MIN(jpe,jde-1)

@@ -41,7 +41,7 @@ state   real    tr_qs   ikjftb  tracer        1         -     irhusdf=(bdy_inter
 
 package   tracer_test1  tracer_opt==2       -             tracer:tr17_1,tr17_2,tr17_3,tr17_4,tr17_5,tr17_6,tr17_7,tr17_8
 
-#mvt: Tracers for water vapor
+#wvt: Tracers for water vapor
 #
 state   real    qv_tr     ikjftb  tracer        1         -     irh06usdf=(bdy_interp:dt)    "qv_tr"         "tracer for water vapor from ET (mix. ratio)"      "Kg Kg-1"
 state   real    qc_tr     ikjftb  tracer        1         -     irh06usdf=(bdy_interp:dt)    "qc_tr"         "tracer for cloud water from ET (mix. ratio)"      "Kg Kg-1"

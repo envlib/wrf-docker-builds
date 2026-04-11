@@ -30,11 +30,11 @@
 #if(WRF_CHEM == 1)
                  ,wetscav_on,evapprod,rainprod                       &
 #endif
-                 ,tr_qv_curr,tr_qc_curr,tr_qr_curr                  & ! mvt
-                 ,tr_qi_curr,tr_qs_curr,tr_qg_curr                  & ! mvt
-                 ,tr_rainnc,tr_snownc,tr_graupelnc                   & ! mvt
-                 ,f_tr_qv,f_tr_qc,f_tr_qr                           & ! mvt
-                 ,f_tr_qi,f_tr_qs,f_tr_qg                           & ! mvt
+                 ,tr_qv_curr,tr_qc_curr,tr_qr_curr                  & ! wvt
+                 ,tr_qi_curr,tr_qs_curr,tr_qg_curr                  & ! wvt
+                 ,tr_rainnc,tr_snownc,tr_graupelnc                   & ! wvt
+                 ,f_tr_qv,f_tr_qc,f_tr_qr                           & ! wvt
+                 ,f_tr_qi,f_tr_qs,f_tr_qg                           & ! wvt
                 )
 !=================================================================================================================
 
@@ -95,14 +95,14 @@
  real(kind=kind_phys),dimension(its:ite,kts:kte):: rainprod_hv,evapprod_hv
 #endif
 
-!--- WVT tracer optional arguments:                                          ! mvt
- real(kind=kind_phys),intent(inout),dimension(ims:ime,kms:kme,jms:jme),optional:: & ! mvt
-    tr_qv_curr,tr_qc_curr,tr_qr_curr,tr_qi_curr,tr_qs_curr,tr_qg_curr      ! mvt
+!--- WVT tracer optional arguments:                                          ! wvt
+ real(kind=kind_phys),intent(inout),dimension(ims:ime,kms:kme,jms:jme),optional:: & ! wvt
+    tr_qv_curr,tr_qc_curr,tr_qr_curr,tr_qi_curr,tr_qs_curr,tr_qg_curr      ! wvt
 
- real(kind=kind_phys),intent(inout),dimension(ims:ime,jms:jme),optional:: &  ! mvt
-    tr_rainnc,tr_snownc,tr_graupelnc                                         ! mvt
+ real(kind=kind_phys),intent(inout),dimension(ims:ime,jms:jme),optional:: &  ! wvt
+    tr_rainnc,tr_snownc,tr_graupelnc                                         ! wvt
 
- logical,intent(in),optional:: f_tr_qv,f_tr_qc,f_tr_qr,f_tr_qi,f_tr_qs,f_tr_qg ! mvt
+ logical,intent(in),optional:: f_tr_qv,f_tr_qc,f_tr_qr,f_tr_qi,f_tr_qs,f_tr_qg ! wvt
 
 !output arguments:
  character(len=*),intent(out):: errmsg
@@ -112,9 +112,9 @@
  logical:: do_microp_re
  integer:: i,j,k
 
- logical:: flag_tr_qv,flag_tr_qc,flag_tr_qr                                 ! mvt
- logical:: flag_tr_qi,flag_tr_qs,flag_tr_qg                                 ! mvt
- logical:: l_do_tracers                                                      ! mvt
+ logical:: flag_tr_qv,flag_tr_qc,flag_tr_qr                                 ! wvt
+ logical:: flag_tr_qi,flag_tr_qs,flag_tr_qg                                 ! wvt
+ logical:: l_do_tracers                                                      ! wvt
 
  real(kind=kind_phys),dimension(kts:kte):: qv1d,t1d,p1d,qr1d,qs1d,qg1d,dBZ
  real(kind=kind_phys),dimension(kts:kte):: den1d,qc1d,qi1d,re_qc,re_qi,re_qs
@@ -126,28 +126,28 @@
  real(kind=kind_phys),dimension(its:ite,kts:kte):: qv_hv,qc_hv,qi_hv,qr_hv,qs_hv,qg_hv
  real(kind=kind_phys),dimension(its:ite,kts:kte):: re_qc_hv,re_qi_hv,re_qs_hv
 
- real(kind=kind_phys),dimension(its:ite,kts:kte):: tr_qv_hv,tr_qc_hv,tr_qr_hv ! mvt
- real(kind=kind_phys),dimension(its:ite,kts:kte):: tr_qi_hv,tr_qs_hv,tr_qg_hv ! mvt
- real(kind=kind_phys),dimension(its:ite):: tr_rain_hv,tr_snow_hv,tr_graupel_hv ! mvt
+ real(kind=kind_phys),dimension(its:ite,kts:kte):: tr_qv_hv,tr_qc_hv,tr_qr_hv ! wvt
+ real(kind=kind_phys),dimension(its:ite,kts:kte):: tr_qi_hv,tr_qs_hv,tr_qg_hv ! wvt
+ real(kind=kind_phys),dimension(its:ite):: tr_rain_hv,tr_snow_hv,tr_graupel_hv ! wvt
 
 !-----------------------------------------------------------------------------------------------------------------
 
-!--- set WVT tracer flags:                                                   ! mvt
- flag_tr_qv = .false.                                                        ! mvt
- flag_tr_qc = .false.                                                        ! mvt
- flag_tr_qr = .false.                                                        ! mvt
- flag_tr_qi = .false.                                                        ! mvt
- flag_tr_qs = .false.                                                        ! mvt
- flag_tr_qg = .false.                                                        ! mvt
- if(present(f_tr_qv)) flag_tr_qv = f_tr_qv                                  ! mvt
- if(present(f_tr_qc)) flag_tr_qc = f_tr_qc                                  ! mvt
- if(present(f_tr_qr)) flag_tr_qr = f_tr_qr                                  ! mvt
- if(present(f_tr_qi)) flag_tr_qi = f_tr_qi                                   ! mvt
- if(present(f_tr_qs)) flag_tr_qs = f_tr_qs                                   ! mvt
- if(present(f_tr_qg)) flag_tr_qg = f_tr_qg                                  ! mvt
-                                                                             ! mvt
- l_do_tracers = flag_tr_qv .and. flag_tr_qc .and. flag_tr_qr .and.        & ! mvt
-                flag_tr_qi .and. flag_tr_qs .and. flag_tr_qg                 ! mvt
+!--- set WVT tracer flags:                                                   ! wvt
+ flag_tr_qv = .false.                                                        ! wvt
+ flag_tr_qc = .false.                                                        ! wvt
+ flag_tr_qr = .false.                                                        ! wvt
+ flag_tr_qi = .false.                                                        ! wvt
+ flag_tr_qs = .false.                                                        ! wvt
+ flag_tr_qg = .false.                                                        ! wvt
+ if(present(f_tr_qv)) flag_tr_qv = f_tr_qv                                  ! wvt
+ if(present(f_tr_qc)) flag_tr_qc = f_tr_qc                                  ! wvt
+ if(present(f_tr_qr)) flag_tr_qr = f_tr_qr                                  ! wvt
+ if(present(f_tr_qi)) flag_tr_qi = f_tr_qi                                   ! wvt
+ if(present(f_tr_qs)) flag_tr_qs = f_tr_qs                                   ! wvt
+ if(present(f_tr_qg)) flag_tr_qg = f_tr_qg                                  ! wvt
+                                                                             ! wvt
+ l_do_tracers = flag_tr_qv .and. flag_tr_qc .and. flag_tr_qr .and.        & ! wvt
+                flag_tr_qi .and. flag_tr_qs .and. flag_tr_qg                 ! wvt
 
  do j = jts,jte
 
@@ -184,25 +184,25 @@
        enddo
     endif
 
-!--- copy WVT tracer arrays to 2D slices:                                   ! mvt
-    if(l_do_tracers) then                                                    ! mvt
-       do i = its,ite                                                        ! mvt
-          tr_rain_hv(i)    = tr_rainnc(i,j)                                 ! mvt
-          tr_snow_hv(i)    = tr_snownc(i,j)                                 ! mvt
-          tr_graupel_hv(i) = tr_graupelnc(i,j)                              ! mvt
-          do k = kts,kte                                                     ! mvt
-             tr_qv_hv(i,k) = tr_qv_curr(i,k,j)                             ! mvt
-             tr_qc_hv(i,k) = tr_qc_curr(i,k,j)                             ! mvt
-             tr_qr_hv(i,k) = tr_qr_curr(i,k,j)                             ! mvt
-             tr_qi_hv(i,k) = tr_qi_curr(i,k,j)                             ! mvt
-             tr_qs_hv(i,k) = tr_qs_curr(i,k,j)                             ! mvt
-             tr_qg_hv(i,k) = tr_qg_curr(i,k,j)                             ! mvt
-          enddo                                                              ! mvt
-       enddo                                                                 ! mvt
-    endif                                                                    ! mvt
+!--- copy WVT tracer arrays to 2D slices:                                   ! wvt
+    if(l_do_tracers) then                                                    ! wvt
+       do i = its,ite                                                        ! wvt
+          tr_rain_hv(i)    = tr_rainnc(i,j)                                 ! wvt
+          tr_snow_hv(i)    = tr_snownc(i,j)                                 ! wvt
+          tr_graupel_hv(i) = tr_graupelnc(i,j)                              ! wvt
+          do k = kts,kte                                                     ! wvt
+             tr_qv_hv(i,k) = tr_qv_curr(i,k,j)                             ! wvt
+             tr_qc_hv(i,k) = tr_qc_curr(i,k,j)                             ! wvt
+             tr_qr_hv(i,k) = tr_qr_curr(i,k,j)                             ! wvt
+             tr_qi_hv(i,k) = tr_qi_curr(i,k,j)                             ! wvt
+             tr_qs_hv(i,k) = tr_qs_curr(i,k,j)                             ! wvt
+             tr_qg_hv(i,k) = tr_qg_curr(i,k,j)                             ! wvt
+          enddo                                                              ! wvt
+       enddo                                                                 ! wvt
+    endif                                                                    ! wvt
 
 !--- call to cloud microphysics scheme:
-    if(l_do_tracers) then                                                    ! mvt
+    if(l_do_tracers) then                                                    ! wvt
     call mp_wsm6_run(t=t_hv,q=qv_hv,qc=qc_hv,qi=qi_hv,qr=qr_hv,qs=qs_hv,qg=qg_hv, &
                  den=den_hv,p=p_hv,delz=delz_hv,delt=delt,g=g,cpd=cpd,cpv=cpv,    &
                  rd=rd,rv=rv,t0c=t0c,ep1=ep1,ep2=ep2,qmin=qmin,xls=xls,xlv0=xlv0, &
@@ -213,12 +213,12 @@
 #if(WRF_CHEM == 1)
                  ,rainprod2d=rainprod_hv,evapprod2d=evapprod_hv                   &
 #endif
-                 ,tr_q=tr_qv_hv,tr_qc=tr_qc_hv,tr_qi=tr_qi_hv                   & ! mvt
-                 ,tr_qr=tr_qr_hv,tr_qs=tr_qs_hv,tr_qg=tr_qg_hv                  & ! mvt
-                 ,tr_rain=tr_rain_hv,tr_snow=tr_snow_hv,tr_graupel=tr_graupel_hv  & ! mvt
-                 ,do_tracers=l_do_tracers                                          & ! mvt
+                 ,tr_q=tr_qv_hv,tr_qc=tr_qc_hv,tr_qi=tr_qi_hv                   & ! wvt
+                 ,tr_qr=tr_qr_hv,tr_qs=tr_qs_hv,tr_qg=tr_qg_hv                  & ! wvt
+                 ,tr_rain=tr_rain_hv,tr_snow=tr_snow_hv,tr_graupel=tr_graupel_hv  & ! wvt
+                 ,do_tracers=l_do_tracers                                          & ! wvt
                     )
-    else                                                                     ! mvt
+    else                                                                     ! wvt
     call mp_wsm6_run(t=t_hv,q=qv_hv,qc=qc_hv,qi=qi_hv,qr=qr_hv,qs=qs_hv,qg=qg_hv, &
                  den=den_hv,p=p_hv,delz=delz_hv,delt=delt,g=g,cpd=cpd,cpv=cpv,    &
                  rd=rd,rv=rv,t0c=t0c,ep1=ep1,ep2=ep2,qmin=qmin,xls=xls,xlv0=xlv0, &
@@ -230,7 +230,7 @@
                  ,rainprod2d=rainprod_hv,evapprod2d=evapprod_hv                   &
 #endif
                     )
-    endif                                                                    ! mvt
+    endif                                                                    ! wvt
 
     do i = its,ite
        !inout arguments:
@@ -262,22 +262,22 @@
        enddo
     endif
 
-!--- copy WVT tracer 2D slices back to 3D arrays:                           ! mvt
-    if(l_do_tracers) then                                                    ! mvt
-       do i = its,ite                                                        ! mvt
-          tr_rainnc(i,j)    = tr_rain_hv(i)                                 ! mvt
-          tr_snownc(i,j)    = tr_snow_hv(i)                                 ! mvt
-          tr_graupelnc(i,j) = tr_graupel_hv(i)                              ! mvt
-          do k = kts,kte                                                     ! mvt
-             tr_qv_curr(i,k,j) = tr_qv_hv(i,k)                             ! mvt
-             tr_qc_curr(i,k,j) = tr_qc_hv(i,k)                             ! mvt
-             tr_qr_curr(i,k,j) = tr_qr_hv(i,k)                             ! mvt
-             tr_qi_curr(i,k,j) = tr_qi_hv(i,k)                             ! mvt
-             tr_qs_curr(i,k,j) = tr_qs_hv(i,k)                             ! mvt
-             tr_qg_curr(i,k,j) = tr_qg_hv(i,k)                             ! mvt
-          enddo                                                              ! mvt
-       enddo                                                                 ! mvt
-    endif                                                                    ! mvt
+!--- copy WVT tracer 2D slices back to 3D arrays:                           ! wvt
+    if(l_do_tracers) then                                                    ! wvt
+       do i = its,ite                                                        ! wvt
+          tr_rainnc(i,j)    = tr_rain_hv(i)                                 ! wvt
+          tr_snownc(i,j)    = tr_snow_hv(i)                                 ! wvt
+          tr_graupelnc(i,j) = tr_graupel_hv(i)                              ! wvt
+          do k = kts,kte                                                     ! wvt
+             tr_qv_curr(i,k,j) = tr_qv_hv(i,k)                             ! wvt
+             tr_qc_curr(i,k,j) = tr_qc_hv(i,k)                             ! wvt
+             tr_qr_curr(i,k,j) = tr_qr_hv(i,k)                             ! wvt
+             tr_qi_curr(i,k,j) = tr_qi_hv(i,k)                             ! wvt
+             tr_qs_curr(i,k,j) = tr_qs_hv(i,k)                             ! wvt
+             tr_qg_curr(i,k,j) = tr_qg_hv(i,k)                             ! wvt
+          enddo                                                              ! wvt
+       enddo                                                                 ! wvt
+    endif                                                                    ! wvt
 
 #if(WRF_CHEM == 1)
     if(wetscav_on) then

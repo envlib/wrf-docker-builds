@@ -3427,19 +3427,19 @@ CONTAINS
              ,its,ite, jts,jte, kts,kte                      &
              ,trigger                                        &
              ,DT,KTAU,DX,CUDT,ADAPT_STEP_FLAG                &
-             ,rho,RAINCV,PRATEC,TR_PRATEC,NCA                  & ! mvt
+             ,rho,RAINCV,PRATEC,TR_PRATEC,NCA                  & ! wvt
              ,U,V,TH,T,W,dz8w,Pcps,pi                        &
              ,W0AVG,XLV0,XLV1,XLS0,XLS1,CP,R,G,EP1           &
              ,EP2,SVP1,SVP2,SVP3,SVPT0                       &
              ,STEPCU,CU_ACT_FLAG,warm_rain,CUTOP,CUBOT       &
-             ,QV,TR_QV                                       & ! mvt
+             ,QV,TR_QV                                       & ! wvt
             ! optionals
              ,F_QV    ,F_QC    ,F_QR    ,F_QI    ,F_QS       &
-             ,F_TR_QV ,F_TR_QC ,F_TR_QR ,F_TR_QI ,F_TR_QS   & ! mvt
+             ,F_TR_QV ,F_TR_QC ,F_TR_QR ,F_TR_QI ,F_TR_QS   & ! wvt
              ,RTHCUTEN,RQVCUTEN,RQCCUTEN,RQRCUTEN            &
              ,RQICUTEN,RQSCUTEN, RQVFTEN                     &
-             ,RTRQVCUTEN,RTRQCCUTEN,RTRQRCUTEN               & ! mvt
-             ,RTRQICUTEN,RTRQSCUTEN                          & ! mvt
+             ,RTRQVCUTEN,RTRQCCUTEN,RTRQRCUTEN               & ! wvt
+             ,RTRQICUTEN,RTRQSCUTEN                          & ! wvt
 !ckay
              ,cldfra_dp_KF,cldfra_sh_KF                      &
              ,qc_KF,qi_KF,qr_KF,qs_KF                        & ! TWG
@@ -3481,7 +3481,7 @@ CONTAINS
                                                          TH, &
                                                           T, &
                                                          QV, &
-                                                      TR_QV, & ! mvt
+                                                      TR_QV, & ! wvt
                                                        dz8w, &
                                                        Pcps, &
                                                         rho, &
@@ -3507,8 +3507,8 @@ CONTAINS
    REAL,    DIMENSION( ims:ime , jms:jme ),                  &
           INTENT(INOUT) ::                           PRATEC
 
-   REAL,    DIMENSION( ims:ime , jms:jme ),                  & ! mvt
-          INTENT(INOUT) ::                       TR_PRATEC    ! mvt
+   REAL,    DIMENSION( ims:ime , jms:jme ),                  & ! wvt
+          INTENT(INOUT) ::                       TR_PRATEC    ! wvt
 
    REAL,    DIMENSION( ims:ime , jms:jme ),                  &
             INTENT(INOUT) ::                            NCA
@@ -3533,16 +3533,16 @@ CONTAINS
                                                    RQVFTEN,  &
                                                    RUCUTEN,  & !JTR
                                                    RVCUTEN
-! mvt - tracer optional tendency arrays
-   REAL, DIMENSION( ims:ime , kms:kme , jms:jme ),           & ! mvt
-         OPTIONAL,                                           & ! mvt
-         INTENT(INOUT) ::                                    & ! mvt
-                                                 RTRQVCUTEN, & ! mvt
-                                                 RTRQCCUTEN, & ! mvt
-                                                 RTRQRCUTEN, & ! mvt
-                                                 RTRQICUTEN, & ! mvt
-                                                 RTRQSCUTEN    ! mvt
-! mvt - end tracer optional tendency arrays
+! wvt - tracer optional tendency arrays
+   REAL, DIMENSION( ims:ime , kms:kme , jms:jme ),           & ! wvt
+         OPTIONAL,                                           & ! wvt
+         INTENT(INOUT) ::                                    & ! wvt
+                                                 RTRQVCUTEN, & ! wvt
+                                                 RTRQCCUTEN, & ! wvt
+                                                 RTRQRCUTEN, & ! wvt
+                                                 RTRQICUTEN, & ! wvt
+                                                 RTRQSCUTEN    ! wvt
+! wvt - end tracer optional tendency arrays
 !
 ! Flags relating to the optional tendency arrays declared above
 ! Models that carry the optional tendencies will provdide the
@@ -3557,12 +3557,12 @@ CONTAINS
                                                   ,F_QI      &
                                                   ,F_QS
 
-   LOGICAL, OPTIONAL ::                                      & ! mvt
-                                                   F_TR_QV   & ! mvt
-                                                  ,F_TR_QC   & ! mvt
-                                                  ,F_TR_QR   & ! mvt
-                                                  ,F_TR_QI   & ! mvt
-                                                  ,F_TR_QS     ! mvt
+   LOGICAL, OPTIONAL ::                                      & ! wvt
+                                                   F_TR_QV   & ! wvt
+                                                  ,F_TR_QC   & ! wvt
+                                                  ,F_TR_QR   & ! wvt
+                                                  ,F_TR_QI   & ! wvt
+                                                  ,F_TR_QS     ! wvt
 
 !ckay
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme )         , &
@@ -3613,7 +3613,7 @@ CONTAINS
 ! LOCAL VARS
 
    LOGICAL :: flag_qr, flag_qi, flag_qs
-   LOGICAL :: flag_tr_qr, flag_tr_qi, flag_tr_qs              ! mvt
+   LOGICAL :: flag_tr_qr, flag_tr_qi, flag_tr_qs              ! wvt
 
    REAL, DIMENSION( kts:kte ) ::                             &
                                                         U1D, &
@@ -3621,7 +3621,7 @@ CONTAINS
                                                         T1D, &
                                                        DZ1D, &
                                                        QV1D, &
-                                                    TR_QV1D, & ! mvt
+                                                    TR_QV1D, & ! wvt
                                                         P1D, &
                                                       RHO1D, &
                                                   tpart_v1D, &
@@ -3636,12 +3636,12 @@ CONTAINS
                                                       DQSDT, &
                                                        DTDT
 
-   REAL, DIMENSION( kts:kte )::                              & ! mvt
-                                                     DTRQDT, & ! mvt
-                                                    DTRQIDT, & ! mvt
-                                                    DTRQCDT, & ! mvt
-                                                    DTRQRDT, & ! mvt
-                                                    DTRQSDT    ! mvt
+   REAL, DIMENSION( kts:kte )::                              & ! wvt
+                                                     DTRQDT, & ! wvt
+                                                    DTRQIDT, & ! wvt
+                                                    DTRQCDT, & ! wvt
+                                                    DTRQRDT, & ! wvt
+                                                    DTRQSDT    ! wvt
 
   REAL, DIMENSION (its-1:ite+1,kts:kte,jts-1:jte+1) ::  aveh_t, aveh_q
   REAL, DIMENSION (its:ite,kts:kte,jts:jte) :: aveh_qmax, aveh_qmin
@@ -3678,14 +3678,14 @@ CONTAINS
    IF ( PRESENT(F_QR) ) flag_qr = F_QR
    IF ( PRESENT(F_QI) ) flag_qi = F_QI
    IF ( PRESENT(F_QS) ) flag_qs = F_QS
-! mvt - tracers
+! wvt - tracers
    flag_tr_qr = .FALSE.
    flag_tr_qi = .FALSE.
    flag_tr_qs = .FALSE.
    IF ( PRESENT(F_TR_QR) ) flag_tr_qr = F_TR_QR
    IF ( PRESENT(F_TR_QI) ) flag_tr_qi = F_TR_QI
    IF ( PRESENT(F_TR_QS) ) flag_tr_qs = F_TR_QS
-! mvt - end tracers
+! wvt - end tracers
 !
    if (lastdt < 0) then
       lastdt = dt
@@ -3892,13 +3892,13 @@ CONTAINS
                DQRDT(k)=0.
                DQSDT(k)=0.
                DTDT(k)=0.
-! mvt - tracers
+! wvt - tracers
                DTRQDT(k)=0.
                DTRQIDT(k)=0.
                DTRQCDT(k)=0.
                DTRQRDT(k)=0.
                DTRQSDT(k)=0.
-! mvt - end tracers
+! wvt - end tracers
                DUDT(k)=0.
                DVDT(k)=0.
 !ckay
@@ -3935,7 +3935,7 @@ CONTAINS
             CUTOP(I,J)=KTS
             CUBOT(I,J)=KTE+1
             PRATEC(I,J)=0.
-            TR_PRATEC(I,J)=0.                                    ! mvt
+            TR_PRATEC(I,J)=0.                                    ! wvt
 !
 ! assign vars from 3D to 1D
 
@@ -3945,7 +3945,7 @@ CONTAINS
                T1D(K) =T(I,K,J)
                RHO1D(K) =rho(I,K,J)
                QV1D(K)=QV(I,K,J)
-               TR_QV1D(K)=TR_QV(I,K,J)                          ! mvt
+               TR_QV1D(K)=TR_QV(I,K,J)                          ! wvt
                P1D(K) =Pcps(I,K,J)
                W0AVG1D(K) =W0AVG(I,K,J)
                DZ1D(k)=dz8w(I,K,J)
@@ -3964,17 +3964,17 @@ CONTAINS
             END IF
 
             CALL MSKF_eta_PARA(I, J,                  &
-                 U1D,V1D,T1D,QV1D,TR_QV1D,P1D,DZ1D,W0AVG1D, & ! mvt
+                 U1D,V1D,T1D,QV1D,TR_QV1D,P1D,DZ1D,W0AVG1D, & ! wvt
                  tpart_h1D,tpart_v1D,               &
                  trigger,                           &
                  DT,DX,DXSQ,RHO1D,                  &
                  XLV0,XLV1,XLS0,XLS1,CP,R,G,        &
                  EP2,SVP1,SVP2,SVP3,SVPT0,          &
                  DQDT,DQIDT,DQCDT,DQRDT,DQSDT,DTDT, &
-                 DTRQDT,DTRQIDT,DTRQCDT,DTRQRDT,DTRQSDT, & ! mvt
-                 RAINCV,PRATEC,TR_PRATEC,NCA,       & ! mvt
+                 DTRQDT,DTRQIDT,DTRQCDT,DTRQRDT,DTRQSDT, & ! wvt
+                 RAINCV,PRATEC,TR_PRATEC,NCA,       & ! wvt
                  flag_QI,flag_QS,warm_rain,         &
-                 flag_TR_QI,flag_TR_QS,             & ! mvt
+                 flag_TR_QI,flag_TR_QS,             & ! wvt
                  CUTOP,CUBOT,CUDT,                  &
                  ids,ide, jds,jde, kds,kde,         &
                  ims,ime, jms,jme, kms,kme,         &
@@ -4005,13 +4005,13 @@ CONTAINS
                  RQVCUTEN(I,K,J)=DQDT(K)
               ENDDO
 
-! mvt - tracer QV tendency
+! wvt - tracer QV tendency
             IF(PRESENT(rtrqvcuten)) THEN
               DO K=kts,kte
                  RTRQVCUTEN(I,K,J)=DTRQDT(K)
               ENDDO
             ENDIF
-! mvt - end tracer QV tendency
+! wvt - end tracer QV tendency
 
               IF( F_QR )THEN
                 DO K=kts,kte
@@ -4026,7 +4026,7 @@ CONTAINS
                 ENDDO
               ENDIF
 
-! mvt - tracer QR/QC tendency
+! wvt - tracer QR/QC tendency
             IF(PRESENT(rtrqrcuten).AND.PRESENT(rtrqccuten)) THEN
               IF( flag_tr_qr )THEN
                 DO K=kts,kte
@@ -4040,7 +4040,7 @@ CONTAINS
                 ENDDO
               ENDIF
             ENDIF
-! mvt - end tracer QR/QC tendency
+! wvt - end tracer QR/QC tendency
 
 !......     QSTEN STORES GRAUPEL TENDENCY IF IT EXISTS, OTHERISE SNOW (V2)
 
@@ -4050,7 +4050,7 @@ CONTAINS
                 ENDDO
               ENDIF
 
-! mvt - tracer QI tendency
+! wvt - tracer QI tendency
             IF(PRESENT( rtrqicuten )) THEN
               IF ( flag_tr_qi ) THEN
                 DO K=kts,kte
@@ -4058,7 +4058,7 @@ CONTAINS
                 ENDDO
               ENDIF
             ENDIF
-! mvt - end tracer QI tendency
+! wvt - end tracer QI tendency
 
               IF ( F_QS ) THEN
                 DO K=kts,kte
@@ -4066,7 +4066,7 @@ CONTAINS
                 ENDDO
               ENDIF
 
-! mvt - tracer QS tendency
+! wvt - tracer QS tendency
             IF(PRESENT( rtrqscuten )) THEN
               IF ( flag_tr_qs ) THEN
                 DO K=kts,kte
@@ -4074,7 +4074,7 @@ CONTAINS
                 ENDDO
               ENDIF
             ENDIF
-! mvt - end tracer QS tendency
+! wvt - end tracer QS tendency
 !
          ENDIF
        ENDDO     ! i-loop
@@ -4084,17 +4084,17 @@ CONTAINS
 ! ****************************************************************************
 !-----------------------------------------------------------
    SUBROUTINE MSKF_eta_PARA (I, J,                           &
-                      U0,V0,T0,QV0,TR_QV0,P0,DZQ,W0AVG1D, & ! mvt
+                      U0,V0,T0,QV0,TR_QV0,P0,DZQ,W0AVG1D, & ! wvt
                       TPART_H0,TPART_V0,                   &
                       trigger,                             &
                       DT,DX,DXSQ,rhoe,                     &
                       XLV0,XLV1,XLS0,XLS1,CP,R,G,          &
                       EP2,SVP1,SVP2,SVP3,SVPT0,            &
                       DQDT,DQIDT,DQCDT,DQRDT,DQSDT,DTDT,   &
-                      DTRQDT,DTRQIDT,DTRQCDT,DTRQRDT,DTRQSDT, & ! mvt
-                      RAINCV,PRATEC,TR_PRATEC,NCA,         & ! mvt
+                      DTRQDT,DTRQIDT,DTRQCDT,DTRQRDT,DTRQSDT, & ! wvt
+                      RAINCV,PRATEC,TR_PRATEC,NCA,         & ! wvt
                       F_QI,F_QS,warm_rain,                 &
-                      F_TR_QI,F_TR_QS,                     & ! mvt
+                      F_TR_QI,F_TR_QS,                     & ! wvt
                       CUTOP,CUBOT,CUDT,                    &
                       ids,ide, jds,jde, kds,kde,           &
                       ims,ime, jms,jme, kms,kme,           &
@@ -4127,7 +4127,7 @@ CONTAINS
           ! ,P_QI,P_QS,P_FIRST_SCALAR
       INTEGER, INTENT(IN   ) ::  trigger
 
-      LOGICAL, INTENT(IN   ) :: F_QI, F_QS, F_TR_QI, F_TR_QS ! mvt
+      LOGICAL, INTENT(IN   ) :: F_QI, F_QS, F_TR_QI, F_TR_QS ! wvt
 
       LOGICAL, INTENT(IN   ) :: warm_rain
 !
@@ -4138,7 +4138,7 @@ CONTAINS
                                                  TPART_V0, &
                                                        T0, &
                                                       QV0, &
-                                                   TR_QV0, & ! mvt
+                                                   TR_QV0, & ! wvt
                                                        P0, &
                                                      rhoe, &
                                                       DZQ, &
@@ -4172,12 +4172,12 @@ CONTAINS
                                                     DQRDT, &
                                                     DQSDT, &
                                                      DTDT
-      REAL, DIMENSION( kts:kte ), INTENT(INOUT) ::         & ! mvt
-                                                   DTRQDT, & ! mvt
-                                                  DTRQIDT, & ! mvt
-                                                  DTRQCDT, & ! mvt
-                                                  DTRQRDT, & ! mvt
-                                                  DTRQSDT    ! mvt
+      REAL, DIMENSION( kts:kte ), INTENT(INOUT) ::         & ! wvt
+                                                   DTRQDT, & ! wvt
+                                                  DTRQIDT, & ! wvt
+                                                  DTRQCDT, & ! wvt
+                                                  DTRQRDT, & ! wvt
+                                                  DTRQSDT    ! wvt
 
       REAL,    DIMENSION( ims:ime , jms:jme ),             &
             INTENT(INOUT) ::                          NCA
@@ -4221,7 +4221,7 @@ CONTAINS
 
       REAL, DIMENSION( ims:ime , jms:jme ),                &
             INTENT(INOUT) ::                       PRATEC, &
-                                                TR_PRATEC    ! mvt
+                                                TR_PRATEC    ! wvt
 
       REAL, DIMENSION( ims:ime , jms:jme ),                &
             INTENT(OUT) ::                          CUBOT, &
@@ -4244,11 +4244,11 @@ CONTAINS
             QLQOUT,QICOUT,PPTLIQ,PPTICE,DETLQ,DETIC,       &
             DETLQ2,DETIC2,RATIO,RATIO2
 
-      REAL, DIMENSION( kts:kte ) ::                        & ! mvt
-            TR_Q0,TR_QU,TR_QD,TR_QG,TR_QLIQ,TR_QICE,       & ! mvt
-            TR_QLQOUT,TR_QICOUT,                           & ! mvt
-            TR_PPTLIQ,TR_PPTICE,TR_DETLQ,TR_DETIC,         & ! mvt
-            TR_DETLQ2,TR_DETIC2                               ! mvt
+      REAL, DIMENSION( kts:kte ) ::                        & ! wvt
+            TR_Q0,TR_QU,TR_QD,TR_QG,TR_QLIQ,TR_QICE,       & ! wvt
+            TR_QLQOUT,TR_QICOUT,                           & ! wvt
+            TR_PPTLIQ,TR_PPTICE,TR_DETLQ,TR_DETIC,         & ! wvt
+            TR_DETLQ2,TR_DETIC2                               ! wvt
 
       REAL, DIMENSION( kts:kte ) ::                        &
             DOMGDP,EXN,TVQU,DP,RH,EQFRC,WSPD,              &
@@ -4258,15 +4258,15 @@ CONTAINS
             QRFXIN,QRFXOUT,QSPA,QSFXIN,QSFXOUT,            &
             QL0,QLG,QI0,QIG,QR0,QRG,QS0,QSG
 
-      REAL, DIMENSION( kts:kte ) ::                        & ! mvt
-            TR_QDT,TR_QPA,TR_QFXOUT,TR_QFXIN,TR_QLPA,TR_QLFXIN,   & ! mvt
-            TR_QLFXOUT,TR_QIPA,TR_QIFXIN,TR_QIFXOUT,TR_QRPA,& ! mvt
-            TR_QRFXIN,TR_QRFXOUT,TR_QSPA,TR_QSFXIN,TR_QSFXOUT,& ! mvt
-            TR_QL0,TR_QLG,TR_QI0,TR_QIG,TR_QR0,TR_QRG,TR_QS0,TR_QSG ! mvt
+      REAL, DIMENSION( kts:kte ) ::                        & ! wvt
+            TR_QDT,TR_QPA,TR_QFXOUT,TR_QFXIN,TR_QLPA,TR_QLFXIN,   & ! wvt
+            TR_QLFXOUT,TR_QIPA,TR_QIFXIN,TR_QIFXOUT,TR_QRPA,& ! wvt
+            TR_QRFXIN,TR_QRFXOUT,TR_QSPA,TR_QSFXIN,TR_QSFXOUT,& ! wvt
+            TR_QL0,TR_QLG,TR_QI0,TR_QIG,TR_QR0,TR_QRG,TR_QS0,TR_QSG ! wvt
 
       REAL, DIMENSION( kts:kte+1 ) :: OMG
       REAL, DIMENSION( kts:kte ) :: RAINFB,SNOWFB
-      REAL, DIMENSION( kts:kte ) :: TR_RAINFB,TR_SNOWFB     ! mvt
+      REAL, DIMENSION( kts:kte ) :: TR_RAINFB,TR_SNOWFB     ! wvt
       REAL, DIMENSION( kts:kte ) ::                        &
             CLDHGT,QSD,DILFRC,DDILFRC,TKE,TGU,QGU,THTEEG
 
@@ -4301,8 +4301,8 @@ CONTAINS
    REAL    ::    ASTRT,TP,VALUE,AINTRP,TKEMAX,QFRZ,&
                  QSS,PPTMLT,DTMELT,RHH,EVAC,BINC
 
-      REAL    :: TR_QMIX,TR_TRPPT,TR_QNEWLQ,TR_QNEWIC,     & ! mvt
-                 TR_PPTFL2,TR_PPTFLX,TRFR_Q0                   ! mvt
+      REAL    :: TR_QMIX,TR_TRPPT,TR_QNEWLQ,TR_QNEWIC,     & ! wvt
+                 TR_PPTFL2,TR_PPTFLX,TRFR_Q0                   ! wvt
 !
       INTEGER :: INDLU,NU,NUCHM,NNN,KLFS
    REAL    :: CHMIN,PM15,CHMAX,DTRH,RAD,DPPP
@@ -4495,14 +4495,14 @@ CONTAINS
          QI0(K)=0.
          QR0(K)=0.
          QS0(K)=0.
-! mvt - tracers
-         TR_Q0(K)=AMAX1(1.E-10,TR_Q0(K))
-         TR_Q0(K)=AMIN1(TR_QV0(K),Q0(K))
+! wvt - tracers
+         TR_Q0(K)=AMIN1(TR_QV0(K),Q0(K))                        ! wvt - initialize before bounding
+         TR_Q0(K)=AMAX1(1.E-10,TR_Q0(K))                        ! wvt
          TR_QL0(K)=0.
          TR_QI0(K)=0.
          TR_QR0(K)=0.
          TR_QS0(K)=0.
-! mvt - end tracers
+! wvt - end tracers
          RH(K) = Q0(K)/QES(K)
          DILFRC(K) = 1.
          TV0(K)=T0(K)*(1.+0.608*Q0(K))
@@ -4613,7 +4613,7 @@ usl:   DO
 !          THMIX=0.
            TMIX=0.
            QMIX=0.
-           TR_QMIX=0.                                          ! mvt
+           TR_QMIX=0.                                          ! wvt
            ZMIX=0.
            PMIX=0.
 !
@@ -4625,14 +4625,14 @@ usl:   DO
            DO NK=LC,KPBL
              TMIX=TMIX+DP(NK)*T0(NK)
              QMIX=QMIX+DP(NK)*Q0(NK)
-             TR_QMIX=TR_QMIX+DP(NK)*TR_Q0(NK)                ! mvt
+             TR_QMIX=TR_QMIX+DP(NK)*TR_Q0(NK)                ! wvt
              ZMIX=ZMIX+DP(NK)*Z0(NK)
              PMIX=PMIX+DP(NK)*P0(NK)
            ENDDO   
 !         THMIX=THMIX/DPTHMX
           TMIX=TMIX/DPTHMX
           QMIX=QMIX/DPTHMX
-          TR_QMIX=TR_QMIX/DPTHMX                              ! mvt
+          TR_QMIX=TR_QMIX/DPTHMX                              ! wvt
           ZMIX=ZMIX/DPTHMX
           PMIX=PMIX/DPTHMX
           EMIX=QMIX*PMIX/(0.622+QMIX)
@@ -4823,7 +4823,7 @@ usl:   DO
             PPTLIQ(K)=0.
             PPTICE(K)=0.
             IFLAG=0
-! mvt - tracer updraft init
+! wvt - tracer updraft init
             TR_TRPPT=0.
             TR_QU(K)=TR_QMIX
             TR_QLIQ(K)=0.
@@ -4834,7 +4834,7 @@ usl:   DO
             TR_DETIC(K)=0.
             TR_PPTLIQ(K)=0.
             TR_PPTICE(K)=0.
-! mvt - end tracer updraft init
+! wvt - end tracer updraft init
 !     
 !...TTEMP IS USED DURING CALCULATION OF THE LINEAR GLACIATION
 !...PROCESS; IT IS INITIALLY SET TO THE TEMPERATURE AT WHICH
@@ -4896,9 +4896,9 @@ updraft:    DO NK=K,KL-1
 !dkay
               QLIQ(NK1)=QLIQ(NK)
               QICE(NK1)=QICE(NK)
-              TR_QU(NK1)=TR_QU(NK)                               ! mvt
-              TR_QLIQ(NK1)=TR_QLIQ(NK)                           ! mvt
-              TR_QICE(NK1)=TR_QICE(NK)                           ! mvt
+              TR_QU(NK1)=TR_QU(NK)                               ! wvt
+              TR_QLIQ(NK1)=TR_QLIQ(NK)                           ! wvt
+              TR_QICE(NK1)=TR_QICE(NK)                           ! wvt
               call tpmix2(p0(nk1),theteu(nk1),tu(nk1),qu(nk1),qliq(nk1),        &
                      qice(nk1),qnewlq,qnewic,XLV1,XLV0,QSu)
 
@@ -4965,10 +4965,10 @@ updraft:    DO NK=K,KL-1
                 QNEWLQ=QNEWLQ-QNEWLQ*FRC1
                 QICE(NK1) = QICE(NK1)+QLIQ(NK1)*FRC1
                 QLIQ(NK1) = QLIQ(NK1)-QLIQ(NK1)*FRC1
-                TR_QNEWIC=TR_QNEWLQ*FRC1                       ! mvt
-                TR_QNEWLQ=TR_QNEWLQ-TR_QNEWLQ*FRC1             ! mvt
-                TR_QICE(NK1) = TR_QICE(NK1)+TR_QLIQ(NK1)*FRC1   ! mvt
-                TR_QLIQ(NK1) = TR_QLIQ(NK1)-TR_QLIQ(NK1)*FRC1   ! mvt
+                TR_QNEWIC=TR_QNEWLQ*FRC1                       ! wvt
+                TR_QNEWLQ=TR_QNEWLQ-TR_QNEWLQ*FRC1             ! wvt
+                TR_QICE(NK1) = TR_QICE(NK1)+TR_QLIQ(NK1)*FRC1   ! wvt
+                TR_QLIQ(NK1) = TR_QLIQ(NK1)-TR_QLIQ(NK1)*FRC1   ! wvt
                 CALL DTFRZNEW(TU(NK1),P0(NK1),THETEU(NK1),QU(NK1),QFRZ,         &
                           QICE(NK1),ALIQ,BLIQ,CLIQ,DLIQ)
               ENDIF
@@ -5004,19 +5004,19 @@ updraft:    DO NK=K,KL-1
                end if
               CALL CONDLOAD(QLIQ(NK1),QICE(NK1),WTW,DZZ,BOTERM,ENTERM,      &
                    RATE_kay,QNEWLQ,QNEWIC,QLQOUT(NK1),QICOUT(NK1),G)
-! mvt - tracer condensate fallout (proportional to water species)
-              IF(TR_QU(NK1).LT.1.E-10)THEN                      ! mvt
-                TRFR_Q0=0.                                      ! mvt
-              ELSE                                               ! mvt
-                TRFR_Q0=min(TR_QU(NK1)/(QU(NK1)+1.E-10),1.)    ! mvt
-              ENDIF                                              ! mvt
-              TR_QLQOUT(NK1)=QLQOUT(NK1)*TRFR_Q0               ! mvt
-              TR_QICOUT(NK1)=QICOUT(NK1)*TRFR_Q0               ! mvt
-              TR_QLIQ(NK1)=QLIQ(NK1)*TRFR_Q0                   ! mvt
-              TR_QICE(NK1)=QICE(NK1)*TRFR_Q0                   ! mvt
-              TR_QNEWLQ=0.                                      ! mvt
-              TR_QNEWIC=0.                                      ! mvt
-! mvt - end tracer condensate fallout
+! wvt - tracer condensate fallout (proportional to water species)
+              IF(TR_QU(NK1).LT.1.E-10)THEN                      ! wvt
+                TRFR_Q0=0.                                      ! wvt
+              ELSE                                               ! wvt
+                TRFR_Q0=min(TR_QU(NK1)/(QU(NK1)+1.E-10),1.)    ! wvt
+              ENDIF                                              ! wvt
+              TR_QLQOUT(NK1)=QLQOUT(NK1)*TRFR_Q0               ! wvt
+              TR_QICOUT(NK1)=QICOUT(NK1)*TRFR_Q0               ! wvt
+              TR_QLIQ(NK1)=QLIQ(NK1)*TRFR_Q0                   ! wvt
+              TR_QICE(NK1)=QICE(NK1)*TRFR_Q0                   ! wvt
+              TR_QNEWLQ=0.                                      ! wvt
+              TR_QNEWIC=0.                                      ! wvt
+! wvt - end tracer condensate fallout
 
 !
 !...IF VERT VELOCITY IS LESS THAN ZERO, EXIT THE UPDRAFT LOOP AND,
@@ -5152,14 +5152,14 @@ updraft:    DO NK=K,KL-1
                 THETEU(NK1)=(THETEU(NK1)*UPOLD+THETEE(NK1)*UER(NK1))/UPNEW
                 QLIQ(NK1)=QLIQ(NK1)*UPOLD/UPNEW
                 QICE(NK1)=QICE(NK1)*UPOLD/UPNEW
-! mvt - tracers updraft entrainment/detrainment
+! wvt - tracers updraft entrainment/detrainment
                 TR_DETLQ(NK1)=TR_QLIQ(NK1)*UDR(NK1)
                 TR_DETIC(NK1)=TR_QICE(NK1)*UDR(NK1)
                 TR_QDT(NK1)=TR_QU(NK1)
                 TR_QU(NK1)=(UPOLD*TR_QU(NK1)+UER(NK1)*TR_Q0(NK1))/UPNEW
                 TR_QLIQ(NK1)=TR_QLIQ(NK1)*UPOLD/UPNEW
                 TR_QICE(NK1)=TR_QICE(NK1)*UPOLD/UPNEW
-! mvt - end tracers updraft entrainment/detrainment
+! wvt - end tracers updraft entrainment/detrainment
 !
 !...PPTLIQ IS THE RATE OF GENERATION (FALLOUT) OF
 !...LIQUID PRECIP AT A GIVEN MODEL LVL, PPTICE THE SAME FOR ICE,
@@ -5168,11 +5168,11 @@ updraft:    DO NK=K,KL-1
 !
                 PPTLIQ(NK1)=QLQOUT(NK1)*UMF(NK)
                 PPTICE(NK1)=QICOUT(NK1)*UMF(NK)
-                TR_PPTLIQ(NK1)=TR_QLQOUT(NK1)*UMF(NK)           ! mvt
-                TR_PPTICE(NK1)=TR_QICOUT(NK1)*UMF(NK)           ! mvt
+                TR_PPTLIQ(NK1)=TR_QLQOUT(NK1)*UMF(NK)           ! wvt
+                TR_PPTICE(NK1)=TR_QICOUT(NK1)*UMF(NK)           ! wvt
 !
                 TRPPT=TRPPT+PPTLIQ(NK1)+PPTICE(NK1)
-                TR_TRPPT=TR_TRPPT+TR_PPTLIQ(NK1)+TR_PPTICE(NK1) ! mvt
+                TR_TRPPT=TR_TRPPT+TR_PPTLIQ(NK1)+TR_PPTICE(NK1) ! wvt
                 IF(NK1.LE.KPBL)UER(NK1)=UER(NK1)+VMFLCL*DP(NK1)/DPTHMX
               ENDIF
 
@@ -5553,8 +5553,8 @@ updraft:    DO NK=K,KL-1
       UDR(LTOP)=UMF(LTOP)+UDR(LTOP)-UER(LTOP)
       DETLQ(LTOP)=QLIQ(LTOP)*UDR(LTOP)*UPNEW/UPOLD
       DETIC(LTOP)=QICE(LTOP)*UDR(LTOP)*UPNEW/UPOLD
-      TR_DETLQ(LTOP)=TR_QLIQ(LTOP)*UDR(LTOP)*UPNEW/UPOLD ! mvt
-      TR_DETIC(LTOP)=TR_QICE(LTOP)*UDR(LTOP)*UPNEW/UPOLD ! mvt
+      TR_DETLQ(LTOP)=TR_QLIQ(LTOP)*UDR(LTOP)*UPNEW/UPOLD ! wvt
+      TR_DETIC(LTOP)=TR_QICE(LTOP)*UDR(LTOP)*UPNEW/UPOLD ! wvt
       UER(LTOP)=0.
       UMF(LTOP)=0.
     ELSE 
@@ -5583,28 +5583,28 @@ updraft:    DO NK=K,KL-1
           UER(NK) = 0.
           DETLQ(NK) = UDR(NK)*QLIQ(NK)*DILFRC(NK)
           DETIC(NK) = UDR(NK)*QICE(NK)*DILFRC(NK)
-          TR_DETLQ(NK) = UDR(NK)*TR_QLIQ(NK)*DILFRC(NK)     ! mvt
-          TR_DETIC(NK) = UDR(NK)*TR_QICE(NK)*DILFRC(NK)     ! mvt
+          TR_DETLQ(NK) = UDR(NK)*TR_QLIQ(NK)*DILFRC(NK)     ! wvt
+          TR_DETIC(NK) = UDR(NK)*TR_QICE(NK)*DILFRC(NK)     ! wvt
         ELSE
           UMF(NK)=UMF(NK-1)-DP(NK)*DUMFDP
           UER(NK)=UMF(NK)*(1.-1./DILFRC(NK))
           UDR(NK)=UMF(NK-1)-UMF(NK)+UER(NK)
           DETLQ(NK)=UDR(NK)*QLIQ(NK)*DILFRC(NK)
           DETIC(NK)=UDR(NK)*QICE(NK)*DILFRC(NK)
-          TR_DETLQ(NK)=UDR(NK)*TR_QLIQ(NK)*DILFRC(NK)       ! mvt
-          TR_DETIC(NK)=UDR(NK)*TR_QICE(NK)*DILFRC(NK)       ! mvt
+          TR_DETLQ(NK)=UDR(NK)*TR_QLIQ(NK)*DILFRC(NK)       ! wvt
+          TR_DETIC(NK)=UDR(NK)*TR_QICE(NK)*DILFRC(NK)       ! wvt
         ENDIF
         IF(NK.GE.LET+2)THEN
           TRPPT=TRPPT-PPTLIQ(NK)-PPTICE(NK)
           PPTLIQ(NK)=UMF(NK-1)*QLQOUT(NK)
           PPTICE(NK)=UMF(NK-1)*QICOUT(NK)
           TRPPT=TRPPT+PPTLIQ(NK)+PPTICE(NK)
-! mvt - tracers
+! wvt - tracers
           TR_TRPPT=TR_TRPPT-TR_PPTLIQ(NK)-TR_PPTICE(NK)
           TR_PPTLIQ(NK)=UMF(NK-1)*TR_QLQOUT(NK)
           TR_PPTICE(NK)=UMF(NK-1)*TR_QICOUT(NK)
           TR_TRPPT=TR_TRPPT+TR_PPTLIQ(NK)+TR_PPTICE(NK)
-! mvt - end tracers
+! wvt - end tracers
         ENDIF
       ENDDO
     ENDIF
@@ -5628,12 +5628,12 @@ updraft:    DO NK=K,KL-1
         ENDIF
         TU(NK)=TMIX+(Z0(NK)-ZMIX)*GDRY
         QU(NK)=QMIX
-        TR_QU(NK)=TR_QMIX                                     ! mvt
+        TR_QU(NK)=TR_QMIX                                     ! wvt
         WU(NK)=WLCL
       ELSE
         TU(NK)=0.
         QU(NK)=0.
-        TR_QU(NK)=0.                                           ! mvt
+        TR_QU(NK)=0.                                           ! wvt
         UMF(NK)=0.
         WU(NK)=0.
         UER(NK)=0.
@@ -5670,7 +5670,7 @@ updraft:    DO NK=K,KL-1
       RATIO2(NK)=0.
       CALL ENVIRTHT(P0(NK),T0(NK),Q0(NK),THETEE(NK),ALIQ,BLIQ,CLIQ,DLIQ)
       EQFRC(NK)=1.0
-! mvt - tracer
+! wvt - tracer
       TR_QDT(NK)=0.
       TR_QLIQ(NK)=0.
       TR_QICE(NK)=0.
@@ -5680,7 +5680,7 @@ updraft:    DO NK=K,KL-1
       TR_PPTICE(NK)=0.
       TR_DETLQ(NK)=0.
       TR_DETIC(NK)=0.
-! mvt - end tracer
+! wvt - end tracer
     ENDDO
 !     
       LTOP1=LTOP+1
@@ -5701,7 +5701,7 @@ updraft:    DO NK=K,KL-1
         DETIC(NK)=0.
         PPTLIQ(NK)=0.
         PPTICE(NK)=0.
-! mvt - tracer
+! wvt - tracer
         TR_QDT(NK)=0.
         TR_QLIQ(NK)=0.
         TR_QICE(NK)=0.
@@ -5711,11 +5711,11 @@ updraft:    DO NK=K,KL-1
         TR_DETIC(NK)=0.
         TR_PPTLIQ(NK)=0.
         TR_PPTICE(NK)=0.
-! mvt - end tracer
+! wvt - end tracer
         IF(NK.GT.LTOP1)THEN
           TU(NK)=0.
           QU(NK)=0.
-          TR_QU(NK)=0.                                         ! mvt
+          TR_QU(NK)=0.                                         ! wvt
           WU(NK)=0.
 !ckay
           cldfra_dp_KF(I,NK,J)=0.
@@ -5748,13 +5748,13 @@ updraft:    DO NK=K,KL-1
         QRG(NK)=0.
         QSG(NK)=0.
         OMG(NK)=0.
-! mvt - tracer
+! wvt - tracer
         TR_QG(NK)=TR_Q0(NK)
         TR_QLG(NK)=0.
         TR_QIG(NK)=0.
         TR_QRG(NK)=0.
         TR_QSG(NK)=0.
-! mvt - end tracer
+! wvt - end tracer
       ENDDO
         OMG(KX+1)=0.
         DO NK=1,LTOP
@@ -5910,7 +5910,7 @@ updraft:    DO NK=K,KL-1
         IF((P0(KSTART)-P0(LFS)).GT.50.E2)THEN
           THETED(LFS) = THETEE(LFS)
           QD(LFS) = Q0(LFS)
-          TR_QD(LFS) = TR_Q0(LFS)                             ! mvt
+          TR_QD(LFS) = TR_Q0(LFS)                             ! wvt
 !
 !...call tpmix2dd to find wet-bulb temp, qv...
 !
@@ -5934,7 +5934,7 @@ updraft:    DO NK=K,KL-1
             DMF(ND)=DMF(ND1)+DER(ND)
             THETED(ND)=(THETED(ND1)*DMF(ND1)+THETEE(ND)*DER(ND))/DMF(ND)
             QD(ND)=(QD(ND1)*DMF(ND1)+Q0(ND)*DER(ND))/DMF(ND)    
-            TR_QD(ND)=(TR_QD(ND1)*DMF(ND1)+TR_Q0(ND)*DER(ND))/DMF(ND) ! mvt
+            TR_QD(ND)=(TR_QD(ND1)*DMF(ND1)+TR_Q0(ND)*DER(ND))/DMF(ND) ! wvt
             DPTT = DPTT+DP(ND)
             RHBAR = RHBAR+RH(ND)*DP(ND)
           ENDDO
@@ -5971,7 +5971,7 @@ updraft:    DO NK=K,KL-1
             DPDD = DPDD+DP(ND)
             THETED(ND) = THETED(KSTART)
             QD(ND)     = QD(KSTART)       
-            TR_QD(ND)     = TR_QD(KSTART)                    ! mvt
+            TR_QD(ND)     = TR_QD(KSTART)                    ! wvt
 !
 !...call tpmix2dd to find wet bulb temp, saturation mixing ratio...
 !
@@ -6016,7 +6016,7 @@ updraft:    DO NK=K,KL-1
               DER(ND) = 0.
               DMF(ND) = DMF(ND1)+DDR(ND)
               TDER=TDER+(QSD(nd)-QD(ND))*DDR(ND)
-              TR_QD(ND)=TR_QD(ND)+(QSD(nd)-QD(ND))*TR_TRPPT/TRPPT ! mvt
+              TR_QD(ND)=TR_QD(ND)+(QSD(nd)-QD(ND))*TR_TRPPT/AMAX1(1.E-10,TRPPT) ! wvt
               QD(ND)=QSD(nd)
               THTAD(ND)=TZ(ND)*(P00/P0(ND))**(0.2854*(1.-0.28*QD(ND)))
             ENDDO
@@ -6031,7 +6031,7 @@ d_mf:   IF(TDER.LT.1.)THEN
 !           WRITE(98,3004)I,J 
 !3004       FORMAT(' ','No Downdraft!;  I=',I3,2X,'J=',I3,'ISHALL =',I2)
           PPTFLX=TRPPT
-          TR_PPTFLX=TR_TRPPT                                  ! mvt
+          TR_PPTFLX=TR_TRPPT                                  ! wvt
           CPR=TRPPT
           TDER=0.
           CNDTNF=0.
@@ -6045,7 +6045,7 @@ d_mf:   IF(TDER.LT.1.)THEN
             WD(NDK)=0.
             TZ(NDK)=0.
             QD(NDK)=0.
-            TR_QD(NDK)=0.                                      ! mvt
+            TR_QD(NDK)=0.                                      ! wvt
           ENDDO
           AINCM2=100.
         ELSE 
@@ -6062,7 +6062,7 @@ d_mf:   IF(TDER.LT.1.)THEN
           ENDDO
          CPR=TRPPT
          PPTFLX = TRPPT-TDER
-         TR_PPTFLX = TR_TRPPT * (1.-TDER/TRPPT)              ! mvt
+         TR_PPTFLX = TR_TRPPT * (1.-TDER/AMAX1(1.E-10,TRPPT)) ! wvt
          PEFF=PPTFLX/TRPPT
          IF(IPRNT)THEN
 !           write(98,*)'PRECIP EFFICIENCY =',PEFF
@@ -6098,7 +6098,7 @@ d_mf:   IF(TDER.LT.1.)THEN
              WD(NK)=0.
              TZ(NK)=0.
              QD(NK)=0.
-             TR_QD(NK)=0.                                      ! mvt
+             TR_QD(NK)=0.                                      ! wvt
              THTAD(NK)=0.
            ENDDO
          ENDIF
@@ -6109,13 +6109,13 @@ d_mf:   IF(TDER.LT.1.)THEN
            WD(NK)=0.
            TZ(NK)=0.
            QD(NK)=0.
-           TR_QD(NK)=0.                                        ! mvt
+           TR_QD(NK)=0.                                        ! wvt
            THTAD(NK)=0.
          ENDDO
          DO NK=LDT+1,LFS-1
            TZ(NK)=0.
            QD(NK)=0.
-           TR_QD(NK)=0.                                        ! mvt
+           TR_QD(NK)=0.                                        ! wvt
            THTAD(NK)=0.
          ENDDO
        ENDIF d_mf
@@ -6141,12 +6141,12 @@ d_mf:   IF(TDER.LT.1.)THEN
 !     
        TDER2=TDER
        PPTFL2=PPTFLX
-       TR_PPTFL2=TR_PPTFLX                                    ! mvt
+       TR_PPTFL2=TR_PPTFLX                                    ! wvt
        DO NK=1,LTOP
          DETLQ2(NK)=DETLQ(NK)
          DETIC2(NK)=DETIC(NK)
-         TR_DETLQ2(NK)=TR_DETLQ(NK)                           ! mvt
-         TR_DETIC2(NK)=TR_DETIC(NK)                            ! mvt
+         TR_DETLQ2(NK)=TR_DETLQ(NK)                           ! wvt
+         TR_DETIC2(NK)=TR_DETIC(NK)                            ! wvt
          UDR2(NK)=UDR(NK)
          UER2(NK)=UER(NK)
          DDR2(NK)=DDR(NK)
@@ -6186,14 +6186,14 @@ d_mf:   IF(TDER.LT.1.)THEN
           AINC = EVAC*DPTHMX*DXSQ/(VMFLCL*G*TIMEC)
           TDER=TDER2*AINC
           PPTFLX=PPTFL2*AINC
-          TR_PPTFLX=TR_PPTFL2*AINC                             ! mvt
+          TR_PPTFLX=TR_PPTFL2*AINC                             ! wvt
           DO NK=1,LTOP
             UMF(NK)=UMF2(NK)*AINC
             DMF(NK)=DMF2(NK)*AINC
             DETLQ(NK)=DETLQ2(NK)*AINC
             DETIC(NK)=DETIC2(NK)*AINC
-            TR_DETLQ(NK)=TR_DETLQ2(NK)*AINC                   ! mvt
-            TR_DETIC(NK)=TR_DETIC2(NK)*AINC                    ! mvt
+            TR_DETLQ(NK)=TR_DETLQ2(NK)*AINC                   ! wvt
+            TR_DETIC(NK)=TR_DETIC2(NK)*AINC                    ! wvt
             UDR(NK)=UDR2(NK)*AINC
             UER(NK)=UER2(NK)*AINC
             DER(NK)=DER2(NK)*AINC
@@ -6229,7 +6229,7 @@ iter:     DO NCOUNT=1,10
             DO NK=1,LTOP
               THPA(NK)=THTA0(NK)
               QPA(NK)=Q0(NK)
-              TR_QPA(NK)=TR_Q0(NK)                             ! mvt
+              TR_QPA(NK)=TR_Q0(NK)                             ! wvt
               NSTEP=NINT(TIMEC/DTT+1)
               DTIME=TIMEC/FLOAT(NSTEP)
               FXM(NK)=OMG(NK)*DXSQ/G
@@ -6247,24 +6247,24 @@ iter:     DO NCOUNT=1,10
               THFXOUT(NK)=0.
               QFXIN(NK)=0.
               QFXOUT(NK)=0.
-              TR_QFXIN(NK)=0.                                  ! mvt
-              TR_QFXOUT(NK)=0.                                 ! mvt
+              TR_QFXIN(NK)=0.                                  ! wvt
+              TR_QFXOUT(NK)=0.                                 ! wvt
             ENDDO
             DO NK=2,LTOP
               IF(OMG(NK).LE.0.)THEN
                 THFXIN(NK)=-FXM(NK)*THPA(NK-1)
                 QFXIN(NK)=-FXM(NK)*QPA(NK-1)
-                TR_QFXIN(NK)=-FXM(NK)*TR_QPA(NK-1)            ! mvt
+                TR_QFXIN(NK)=-FXM(NK)*TR_QPA(NK-1)            ! wvt
                 THFXOUT(NK-1)=THFXOUT(NK-1)+THFXIN(NK)
                 QFXOUT(NK-1)=QFXOUT(NK-1)+QFXIN(NK)
-                TR_QFXOUT(NK-1)=TR_QFXOUT(NK-1)+TR_QFXIN(NK) ! mvt
+                TR_QFXOUT(NK-1)=TR_QFXOUT(NK-1)+TR_QFXIN(NK) ! wvt
               ELSE
                 THFXOUT(NK)=FXM(NK)*THPA(NK)
                 QFXOUT(NK)=FXM(NK)*QPA(NK)
-                TR_QFXOUT(NK)=FXM(NK)*TR_QPA(NK)              ! mvt
+                TR_QFXOUT(NK)=FXM(NK)*TR_QPA(NK)              ! wvt
                 THFXIN(NK-1)=THFXIN(NK-1)+THFXOUT(NK)
                 QFXIN(NK-1)=QFXIN(NK-1)+QFXOUT(NK)
-                TR_QFXIN(NK-1)=TR_QFXIN(NK-1)+TR_QFXOUT(NK)  ! mvt
+                TR_QFXIN(NK-1)=TR_QFXIN(NK-1)+TR_QFXOUT(NK)  ! wvt
               ENDIF
             ENDDO
 !     
@@ -6276,14 +6276,14 @@ iter:     DO NCOUNT=1,10
                        DTIME*EMSD(NK)
               QPA(NK)=QPA(NK)+(QFXIN(NK)+UDR(NK)*QDT(NK)+DDR(NK)*QD(NK)-    &
                       QFXOUT(NK)-(UER(NK)-DER(NK))*Q0(NK))*DTIME*EMSD(NK)
-              TR_QPA(NK)=TR_QPA(NK)+(TR_QFXIN(NK)+UDR(NK)*TR_QDT(NK)+DDR(NK)*TR_QD(NK)-    & ! mvt
-                      TR_QFXOUT(NK)-(UER(NK)-DER(NK))*TR_Q0(NK))*DTIME*EMSD(NK) ! mvt
+              TR_QPA(NK)=TR_QPA(NK)+(TR_QFXIN(NK)+UDR(NK)*TR_QDT(NK)+DDR(NK)*TR_QD(NK)-    & ! wvt
+                      TR_QFXOUT(NK)-(UER(NK)-DER(NK))*TR_Q0(NK))*DTIME*EMSD(NK) ! wvt
             ENDDO   
           ENDDO   
           DO NK=1,LTOP
             THTAG(NK)=THPA(NK)
             QG(NK)=QPA(NK)
-            TR_QG(NK)=TR_QPA(NK)                               ! mvt
+            TR_QG(NK)=TR_QPA(NK)                               ! wvt
           ENDDO
 !     
 !...CHECK TO SEE IF MIXING RATIO DIPS BELOW ZERO ANYWHERE;  IF SO, BORROW
@@ -6522,7 +6522,7 @@ iter:     DO NCOUNT=1,10
 !            AINC=AMAX1(AINC,0.05)                        ! JSK MODS
             TDER=TDER2*AINC
             PPTFLX=PPTFL2*AINC
-            TR_PPTFLX=TR_PPTFL2*AINC                           ! mvt
+            TR_PPTFLX=TR_PPTFL2*AINC                           ! wvt
 !           IF (XTIME.LT.10.)THEN
 !           WRITE(98,1080)LFS,LDB,LDT,TIMEC,TADVEC,NSTEP,NCOUNT,
 !          *              FABEOLD,AINCOLD 
@@ -6532,8 +6532,8 @@ iter:     DO NCOUNT=1,10
               DMF(NK)=DMF2(NK)*AINC
               DETLQ(NK)=DETLQ2(NK)*AINC
               DETIC(NK)=DETIC2(NK)*AINC
-              TR_DETLQ(NK)=TR_DETLQ2(NK)*AINC                 ! mvt
-              TR_DETIC(NK)=TR_DETIC2(NK)*AINC                  ! mvt
+              TR_DETLQ(NK)=TR_DETLQ2(NK)*AINC                 ! wvt
+              TR_DETIC(NK)=TR_DETIC2(NK)*AINC                  ! wvt
               UDR(NK)=UDR2(NK)*AINC
               UER(NK)=UER2(NK)*AINC
               DER(NK)=DER2(NK)*AINC
@@ -6620,14 +6620,14 @@ iter:     DO NCOUNT=1,10
           QSPA(NK)=QS0(NK)
           RAINFB(NK)=PPTLIQ(NK)*AINC*FBFRC*FRC2   !  PPT FB MODS
           SNOWFB(NK)=PPTICE(NK)*AINC*FBFRC*FRC2   !  PPT FB MODS
-! mvt - tracers
+! wvt - tracers
           TR_QLPA(NK)=TR_QL0(NK)
           TR_QIPA(NK)=TR_QI0(NK)
           TR_QRPA(NK)=TR_QR0(NK)
           TR_QSPA(NK)=TR_QS0(NK)
           TR_RAINFB(NK)=TR_PPTLIQ(NK)*AINC*FBFRC*FRC2
           TR_SNOWFB(NK)=TR_PPTICE(NK)*AINC*FBFRC*FRC2
-! mvt - end tracers
+! wvt - end tracers
         ENDDO
         DO NTC=1,NSTEP
 !     
@@ -6643,7 +6643,7 @@ iter:     DO NCOUNT=1,10
             QRFXOUT(NK)=0.
             QSFXIN(NK)=0.
             QSFXOUT(NK)=0.
-! mvt - tracers
+! wvt - tracers
             TR_QLFXIN(NK)=0.
             TR_QLFXOUT(NK)=0.
             TR_QIFXIN(NK)=0.
@@ -6652,7 +6652,7 @@ iter:     DO NCOUNT=1,10
             TR_QRFXOUT(NK)=0.
             TR_QSFXIN(NK)=0.
             TR_QSFXOUT(NK)=0.
-! mvt - end tracers
+! wvt - end tracers
           ENDDO   
           DO NK=2,LTOP
             IF(OMG(NK).LE.0.)THEN
@@ -6664,7 +6664,7 @@ iter:     DO NCOUNT=1,10
               QIFXOUT(NK-1)=QIFXOUT(NK-1)+QIFXIN(NK)
               QRFXOUT(NK-1)=QRFXOUT(NK-1)+QRFXIN(NK)
               QSFXOUT(NK-1)=QSFXOUT(NK-1)+QSFXIN(NK)
-! mvt - tracers
+! wvt - tracers
               TR_QLFXIN(NK)=-FXM(NK)*TR_QLPA(NK-1)
               TR_QIFXIN(NK)=-FXM(NK)*TR_QIPA(NK-1)
               TR_QRFXIN(NK)=-FXM(NK)*TR_QRPA(NK-1)
@@ -6673,7 +6673,7 @@ iter:     DO NCOUNT=1,10
               TR_QIFXOUT(NK-1)=TR_QIFXOUT(NK-1)+TR_QIFXIN(NK)
               TR_QRFXOUT(NK-1)=TR_QRFXOUT(NK-1)+TR_QRFXIN(NK)
               TR_QSFXOUT(NK-1)=TR_QSFXOUT(NK-1)+TR_QSFXIN(NK)
-! mvt - end tracers
+! wvt - end tracers
             ELSE
               QLFXOUT(NK)=FXM(NK)*QLPA(NK)
               QIFXOUT(NK)=FXM(NK)*QIPA(NK)
@@ -6683,7 +6683,7 @@ iter:     DO NCOUNT=1,10
               QIFXIN(NK-1)=QIFXIN(NK-1)+QIFXOUT(NK)
               QRFXIN(NK-1)=QRFXIN(NK-1)+QRFXOUT(NK)
               QSFXIN(NK-1)=QSFXIN(NK-1)+QSFXOUT(NK)
-! mvt - tracers
+! wvt - tracers
               TR_QLFXOUT(NK)=FXM(NK)*TR_QLPA(NK)
               TR_QIFXOUT(NK)=FXM(NK)*TR_QIPA(NK)
               TR_QRFXOUT(NK)=FXM(NK)*TR_QRPA(NK)
@@ -6692,7 +6692,7 @@ iter:     DO NCOUNT=1,10
               TR_QIFXIN(NK-1)=TR_QIFXIN(NK-1)+TR_QIFXOUT(NK)
               TR_QRFXIN(NK-1)=TR_QRFXIN(NK-1)+TR_QRFXOUT(NK)
               TR_QSFXIN(NK-1)=TR_QSFXIN(NK-1)+TR_QSFXOUT(NK)
-! mvt - end tracers
+! wvt - end tracers
             ENDIF
           ENDDO   
 !     
@@ -6703,12 +6703,12 @@ iter:     DO NCOUNT=1,10
             QIPA(NK)=QIPA(NK)+(QIFXIN(NK)+DETIC(NK)-QIFXOUT(NK))*DTIME*EMSD(NK)
             QRPA(NK)=QRPA(NK)+(QRFXIN(NK)-QRFXOUT(NK)+RAINFB(NK))*DTIME*EMSD(NK)         !  PPT FB MODS
             QSPA(NK)=QSPA(NK)+(QSFXIN(NK)-QSFXOUT(NK)+SNOWFB(NK))*DTIME*EMSD(NK)         !  PPT FB MODS
-! mvt - tracers
+! wvt - tracers
             TR_QLPA(NK)=TR_QLPA(NK)+(TR_QLFXIN(NK)+TR_DETLQ(NK)-TR_QLFXOUT(NK))*DTIME*EMSD(NK)
             TR_QIPA(NK)=TR_QIPA(NK)+(TR_QIFXIN(NK)+TR_DETIC(NK)-TR_QIFXOUT(NK))*DTIME*EMSD(NK)
             TR_QRPA(NK)=TR_QRPA(NK)+(TR_QRFXIN(NK)-TR_QRFXOUT(NK)+TR_RAINFB(NK))*DTIME*EMSD(NK)
             TR_QSPA(NK)=TR_QSPA(NK)+(TR_QSFXIN(NK)-TR_QSFXOUT(NK)+TR_SNOWFB(NK))*DTIME*EMSD(NK)
-! mvt - end tracers
+! wvt - end tracers
           ENDDO     
         ENDDO
         DO NK=1,LTOP
@@ -6716,12 +6716,12 @@ iter:     DO NCOUNT=1,10
           QIG(NK)=QIPA(NK)
           QRG(NK)=QRPA(NK)
           QSG(NK)=QSPA(NK)
-! mvt - tracers
+! wvt - tracers
           TR_QLG(NK)=TR_QLPA(NK)
           TR_QIG(NK)=TR_QIPA(NK)
           TR_QRG(NK)=TR_QRPA(NK)
           TR_QSG(NK)=TR_QSPA(NK)
-! mvt - end tracers
+! wvt - end tracers
         ENDDO   
 
 !kf_edrates
@@ -6948,12 +6948,12 @@ iter:     DO NCOUNT=1,10
             DQIDT(K)=0.
             DQRDT(K)=(QRG(K)+QSG(K)-QR0(K)-QS0(K))/TIMEC
             DQSDT(K)=0.
-! mvt - tracers
+! wvt - tracers
             DTRQCDT(K)=(TR_QLG(K)+TR_QIG(K)-TR_QL0(K)-TR_QI0(K))/TIMEC
             DTRQIDT(K)=0.
             DTRQRDT(K)=(TR_QRG(K)+TR_QSG(K)-TR_QR0(K)-TR_QS0(K))/TIMEC
             DTRQSDT(K)=0.
-! mvt - end tracers
+! wvt - end tracers
           ELSEIF(.NOT. F_QS)THEN
 !
 !...IF ICE PHASE IS ALLOWED, BUT MIXED PHASE IS NOT, MELT FROZEN HYDROMETEORS
@@ -6969,12 +6969,12 @@ iter:     DO NCOUNT=1,10
             DQIDT(K)=0.
             DQRDT(K)=(QRG(K)+QSG(K)-QR0(K)-QS0(K))/TIMEC
             DQSDT(K)=0.
-! mvt - tracers
+! wvt - tracers
             DTRQCDT(K)=(TR_QLG(K)+TR_QIG(K)-TR_QL0(K)-TR_QI0(K))/TIMEC
             DTRQIDT(K)=0.
             DTRQRDT(K)=(TR_QRG(K)+TR_QSG(K)-TR_QR0(K)-TR_QS0(K))/TIMEC
             DTRQSDT(K)=0.
-! mvt - end tracers
+! wvt - end tracers
           ELSEIF(F_QS) THEN
 !
 !...IF MIXED PHASE HYDROMETEORS ARE ALLOWED, FEED BACK CONVECTIVE TENDENCIES
@@ -6983,17 +6983,17 @@ iter:     DO NCOUNT=1,10
             DQCDT(K)=(QLG(K)-QL0(K))/TIMEC
             DQSDT(K)=(QSG(K)-QS0(K))/TIMEC
             DQRDT(K)=(QRG(K)-QR0(K))/TIMEC
-! mvt - tracers
+! wvt - tracers
             DTRQCDT(K)=(TR_QLG(K)-TR_QL0(K))/TIMEC
             DTRQSDT(K)=(TR_QSG(K)-TR_QS0(K))/TIMEC
             DTRQRDT(K)=(TR_QRG(K)-TR_QR0(K))/TIMEC
-! mvt - end tracers
+! wvt - end tracers
             IF (F_QI) THEN
                DQIDT(K)=(QIG(K)-QI0(K))/TIMEC
-               DTRQIDT(K)=(TR_QIG(K)-TR_QI0(K))/TIMEC         ! mvt
+               DTRQIDT(K)=(TR_QIG(K)-TR_QI0(K))/TIMEC         ! wvt
             ELSE
                DQSDT(K)=DQSDT(K)+(QIG(K)-QI0(K))/TIMEC
-               DTRQSDT(K)=DTRQSDT(K)+(TR_QIG(K)-TR_QI0(K))/TIMEC ! mvt
+               DTRQSDT(K)=DTRQSDT(K)+(TR_QIG(K)-TR_QI0(K))/TIMEC ! wvt
             ENDIF
           ELSE
 !              PRINT *,'THIS COMBINATION OF IMOIST, IEXICE, IICE NOT ALLOWED!'
@@ -7001,7 +7001,7 @@ iter:     DO NCOUNT=1,10
           ENDIF
           DTDT(K)=(TG(K)-T0(K))/TIMEC
           DQDT(K)=(QG(K)-Q0(K))/TIMEC
-          DTRQDT(K)=(TR_QG(K)-TR_Q0(K))/TIMEC                 ! mvt
+          DTRQDT(K)=(TR_QG(K)-TR_Q0(K))/TIMEC                 ! wvt
         ENDDO
 
 !JTR Begin CMT
@@ -7184,7 +7184,7 @@ iter:     DO NCOUNT=1,10
 !JTR End CMT
         
         PRATEC(I,J)=PPTFLX*(1.-FBFRC)/DXSQ
-        TR_PRATEC(I,J)=TR_PPTFLX*(1.-FBFRC)/DXSQ             ! mvt
+        TR_PRATEC(I,J)=TR_PPTFLX*(1.-FBFRC)/DXSQ             ! wvt
         RAINCV(I,J)=DT*PRATEC(I,J)
 !        RAINCV(I,J)=.1*.5*DT*PPTFLX/DXSQ               !  PPT FB MODS
 !         RNC=0.1*TIMEC*PPTFLX/DXSQ
@@ -7642,9 +7642,9 @@ iter:     DO NCOUNT=1,10
 !====================================================================
    SUBROUTINE mskf_init(RTHCUTEN,RQVCUTEN,RQCCUTEN,RQRCUTEN,        &
                      RQICUTEN,RQSCUTEN,                             &
-                     RTRQVCUTEN,RTRQCCUTEN,                         & ! mvt
-                     RTRQRCUTEN,RTRQICUTEN,RTRQSCUTEN,              & ! mvt
-                     NCA,W0AVG,P_QI,P_QS,P_TR_QI,P_TR_QS,          & ! mvt
+                     RTRQVCUTEN,RTRQCCUTEN,                         & ! wvt
+                     RTRQRCUTEN,RTRQICUTEN,RTRQSCUTEN,              & ! wvt
+                     NCA,W0AVG,P_QI,P_QS,P_TR_QI,P_TR_QS,          & ! wvt
                      SVP1,SVP2,SVP3,SVPT0,                          &
                      P_FIRST_SCALAR,restart,allowed_to_read,        &
                      ids, ide, jds, jde, kds, kde,                  &
@@ -7659,7 +7659,7 @@ iter:     DO NCOUNT=1,10
    INTEGER , INTENT(IN)           ::  ids, ide, jds, jde, kds, kde, &
                                       ims, ime, jms, jme, kms, kme, &
                                       its, ite, jts, jte, kts, kte
-   INTEGER , INTENT(IN)           ::  P_QI,P_QS,P_TR_QI,P_TR_QS,P_FIRST_SCALAR ! mvt
+   INTEGER , INTENT(IN)           ::  P_QI,P_QS,P_TR_QI,P_TR_QS,P_FIRST_SCALAR ! wvt
 
 
    REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       &
@@ -7672,12 +7672,12 @@ iter:     DO NCOUNT=1,10
                                                            RUCUTEN, &
                                                            RVCUTEN
 
-   REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       & ! mvt
-                                                        RTRQVCUTEN, & ! mvt
-                                                        RTRQCCUTEN, & ! mvt
-                                                        RTRQRCUTEN, & ! mvt
-                                                        RTRQICUTEN, & ! mvt
-                                                        RTRQSCUTEN    ! mvt
+   REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       & ! wvt
+                                                        RTRQVCUTEN, & ! wvt
+                                                        RTRQCCUTEN, & ! wvt
+                                                        RTRQRCUTEN, & ! wvt
+                                                        RTRQICUTEN, & ! wvt
+                                                        RTRQSCUTEN    ! wvt
 
    REAL ,   DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) :: W0AVG
 
@@ -7726,7 +7726,7 @@ iter:     DO NCOUNT=1,10
          ENDDO
       ENDIF
 
-! mvt - tracer init
+! wvt - tracer init
       DO j=jts,jtf
       DO k=kts,ktf
       DO i=its,itf
@@ -7756,7 +7756,7 @@ iter:     DO NCOUNT=1,10
          ENDDO
          ENDDO
       ENDIF
-! mvt - end tracer init
+! wvt - end tracer init
 
       DO j=jts,jtf
       DO i=its,itf

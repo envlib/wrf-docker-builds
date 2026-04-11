@@ -39,10 +39,10 @@
                   ims,ime, jms,jme, kms,kme,                                   &
                   its,ite, jts,jte, kts,kte,                                   &
                   errmsg,errflg,                                               &
-                  tr_qv3d,tr_qc3d,tr_qi3d,                                    & ! mvt - WVT tracer mixing ratios
-                  rtrqvblten,rtrqcblten,rtrqiblten,                            & ! mvt - WVT tracer tendencies
-                  trqfx,                                                       & ! mvt - WVT tracer surface flux
-                  f_tr_qv,f_tr_qc,f_tr_qi                                     & ! mvt - WVT tracer flags
+                  tr_qv3d,tr_qc3d,tr_qi3d,                                    & ! wvt - WVT tracer mixing ratios
+                  rtrqvblten,rtrqcblten,rtrqiblten,                            & ! wvt - WVT tracer tendencies
+                  trqfx,                                                       & ! wvt - WVT tracer surface flux
+                  f_tr_qv,f_tr_qc,f_tr_qi                                     & ! wvt - WVT tracer flags
                  )
 !-------------------------------------------------------------------------------
   implicit none
@@ -116,16 +116,16 @@
 !-- dl_u_bep    modified length scale Martilli et al. (2002) Eq. 22
 !-- sf_bep      fraction of vertical surface not occupied by buildings
 !-- vl_bep      volume fraction of grid cell not occupied by buildings
-!-- tr_qv3d     3d WVT water vapor tracer mixing ratio (kg/kg)        ! mvt
-!-- tr_qc3d     3d WVT cloud water tracer mixing ratio (kg/kg)        ! mvt
-!-- tr_qi3d     3d WVT cloud ice tracer mixing ratio (kg/kg)          ! mvt
-!-- rtrqvblten  WVT tracer qv tendency from PBL (kg/kg/s)             ! mvt
-!-- rtrqcblten  WVT tracer qc tendency from PBL (kg/kg/s)             ! mvt
-!-- rtrqiblten  WVT tracer qi tendency from PBL (kg/kg/s)             ! mvt
-!-- trqfx       WVT tracer surface moisture flux (kg/m^2/s)           ! mvt
-!-- f_tr_qv     flag for WVT tracer water vapor                       ! mvt
-!-- f_tr_qc     flag for WVT tracer cloud water                       ! mvt
-!-- f_tr_qi     flag for WVT tracer cloud ice                         ! mvt
+!-- tr_qv3d     3d WVT water vapor tracer mixing ratio (kg/kg)        ! wvt
+!-- tr_qc3d     3d WVT cloud water tracer mixing ratio (kg/kg)        ! wvt
+!-- tr_qi3d     3d WVT cloud ice tracer mixing ratio (kg/kg)          ! wvt
+!-- rtrqvblten  WVT tracer qv tendency from PBL (kg/kg/s)             ! wvt
+!-- rtrqcblten  WVT tracer qc tendency from PBL (kg/kg/s)             ! wvt
+!-- rtrqiblten  WVT tracer qi tendency from PBL (kg/kg/s)             ! wvt
+!-- trqfx       WVT tracer surface moisture flux (kg/m^2/s)           ! wvt
+!-- f_tr_qv     flag for WVT tracer water vapor                       ! wvt
+!-- f_tr_qc     flag for WVT tracer cloud water                       ! wvt
+!-- f_tr_qi     flag for WVT tracer cloud ice                         ! wvt
 !-- ids         start index for i in domain
 !-- ide         end index for i in domain
 !-- jds         start index for j in domain
@@ -241,24 +241,24 @@
    character(len=*), intent(out)   ::                                  errmsg
    integer,          intent(out)   ::                                  errflg
 !
-! mvt - WVT tracer optional arguments begin
+! wvt - WVT tracer optional arguments begin
    real(kind=kind_phys),     dimension( ims:ime, kms:kme, jms:jme )          , &
              optional                                                        , &
-             intent(inout)   ::                                       tr_qv3d, & ! mvt
-                                                                      tr_qc3d, & ! mvt
-                                                                      tr_qi3d    ! mvt
+             intent(inout)   ::                                       tr_qv3d, & ! wvt
+                                                                      tr_qc3d, & ! wvt
+                                                                      tr_qi3d    ! wvt
    real(kind=kind_phys),     dimension( ims:ime, kms:kme, jms:jme )          , &
              optional                                                        , &
-             intent(inout)   ::                                    rtrqvblten, & ! mvt
-                                                                   rtrqcblten, & ! mvt
-                                                                   rtrqiblten    ! mvt
+             intent(inout)   ::                                    rtrqvblten, & ! wvt
+                                                                   rtrqcblten, & ! wvt
+                                                                   rtrqiblten    ! wvt
    real(kind=kind_phys),     dimension( ims:ime, jms:jme )                   , &
              optional                                                        , &
-             intent(inout)   ::                                         trqfx    ! mvt
-   logical,  optional, intent(in)  ::                                f_tr_qv, & ! mvt
-                                                                     f_tr_qc, & ! mvt
-                                                                     f_tr_qi    ! mvt
-! mvt - WVT tracer optional arguments end
+             intent(inout)   ::                                         trqfx    ! wvt
+   logical,  optional, intent(in)  ::                                f_tr_qv, & ! wvt
+                                                                     f_tr_qc, & ! wvt
+                                                                     f_tr_qi    ! wvt
+! wvt - WVT tracer optional arguments end
 !
 !local
    integer ::  i,j,k
@@ -267,19 +267,19 @@
 !mixed in subroutine bl_ysu_run:
    logical:: l_topdown_pblmix
 
-   integer :: nmix                                                               ! mvt - dynamic nmix replaces parameter
+   integer :: nmix                                                               ! wvt - dynamic nmix replaces parameter
    integer :: n
 
-   real(kind=kind_phys),   allocatable, dimension(:,:,:,:) ::          qmix      ! mvt - allocatable for dynamic nmix
-   real(kind=kind_phys),   allocatable, dimension(:,:,:,:) ::    rqmixblten      ! mvt - allocatable for dynamic nmix
+   real(kind=kind_phys),   allocatable, dimension(:,:,:,:) ::          qmix      ! wvt - allocatable for dynamic nmix
+   real(kind=kind_phys),   allocatable, dimension(:,:,:,:) ::    rqmixblten      ! wvt - allocatable for dynamic nmix
 
    !  Local tile-sized arrays for contiguous data for bl_ysu_run call.
 
-   real(kind=kind_phys),   allocatable, dimension(:,:,:)   ::                  & ! mvt - allocatable for dynamic nmix
+   real(kind=kind_phys),   allocatable, dimension(:,:,:)   ::                  & ! wvt - allocatable for dynamic nmix
                                                              qmix_hv          , &
                                                              rqmixblten_hv
-   real(kind=kind_phys),   allocatable, dimension(:,:)     ::                  & ! mvt
-                                                             qmix_sflx_hv       ! mvt
+   real(kind=kind_phys),   allocatable, dimension(:,:)     ::                  & ! wvt
+                                                             qmix_sflx_hv       ! wvt
 
    real(kind=kind_phys),   dimension(its:ite,kts:kte)      ::              &
                                                              u3d_hv      , &
@@ -347,35 +347,35 @@
 
 !-----------------------------------------------------------------------------------------------------------------
 
-! mvt - Determine nmix based on WVT tracer flags
+! wvt - Determine nmix based on WVT tracer flags
    nmix = 0
    if (present(f_tr_qv) .and. present(f_tr_qc)) then
       if (f_tr_qv .and. f_tr_qc) then
-         nmix = 2                                                                ! mvt - tracer qv + tracer qc
+         nmix = 2                                                                ! wvt - tracer qv + tracer qc
          if (present(f_tr_qi)) then
-            if (f_tr_qi) nmix = 3                                                ! mvt - tracer qv + qc + qi
+            if (f_tr_qi) nmix = 3                                                ! wvt - tracer qv + qc + qi
          endif
       endif
    endif
-! mvt - end nmix determination
+! wvt - end nmix determination
 
-! mvt - Allocate qmix arrays based on dynamic nmix
+! wvt - Allocate qmix arrays based on dynamic nmix
    allocate( qmix(ims:ime, kms:kme, jms:jme, max(nmix,1)) )
    allocate( rqmixblten(ims:ime, kms:kme, jms:jme, max(nmix,1)) )
    allocate( qmix_hv(its:ite, kts:kte, max(nmix,1)) )
    allocate( rqmixblten_hv(its:ite, kts:kte, max(nmix,1)) )
-   allocate( qmix_sflx_hv(its:ite, max(nmix,1)) )                       ! mvt
+   allocate( qmix_sflx_hv(its:ite, max(nmix,1)) )                       ! wvt
    qmix = 0.0_kind_phys
    rqmixblten = 0.0_kind_phys
    qmix_hv = 0.0_kind_phys
    rqmixblten_hv = 0.0_kind_phys
-   qmix_sflx_hv = 0.0_kind_phys                                          ! mvt
-! mvt - end allocation
+   qmix_sflx_hv = 0.0_kind_phys                                          ! wvt
+! wvt - end allocation
 
    l_topdown_pblmix = .false.
    if(ysu_topdown_pblmix .eq. 1) l_topdown_pblmix = .true.
 
-! mvt - Pack WVT tracer fields into qmix (full domain arrays)
+! wvt - Pack WVT tracer fields into qmix (full domain arrays)
    if (nmix >= 1 .and. present(tr_qv3d)) then
       qmix(ims:ime,kms:kme,jms:jme,1) = tr_qv3d(ims:ime,kms:kme,jms:jme)
    endif
@@ -385,7 +385,7 @@
    if (nmix >= 3 .and. present(tr_qi3d)) then
       qmix(ims:ime,kms:kme,jms:jme,3) = tr_qi3d(ims:ime,kms:kme,jms:jme)
    endif
-! mvt - end tracer packing
+! wvt - end tracer packing
 
    do j = jts,jte
 !
@@ -473,13 +473,13 @@
          ctopo_hv(i) = ctopo(i,j)
          ctopo2_hv(i) = ctopo2(i,j)
       end do
-!     mvt - build qmix surface flux array from trqfx
-      if (nmix >= 1 .and. present(trqfx)) then                          ! mvt
-         do i = its, ite                                                 ! mvt
-            qmix_sflx_hv(i,1) = trqfx(i,j)                             ! mvt - qv_tr gets tracer surface flux
-         enddo                                                           ! mvt
-         ! qc_tr and qi_tr have no direct surface flux                   ! mvt
-      endif                                                              ! mvt
+!     wvt - build qmix surface flux array from trqfx
+      if (nmix >= 1 .and. present(trqfx)) then                          ! wvt
+         do i = its, ite                                                 ! wvt
+            qmix_sflx_hv(i,1) = trqfx(i,j)                             ! wvt - qv_tr gets tracer surface flux
+         enddo                                                           ! wvt
+         ! qc_tr and qi_tr have no direct surface flux                   ! wvt
+      endif                                                              ! wvt
 !
       call bl_ysu_run(ux=u3d_hv,vx=v3d_hv                                      &
               ,tx=t3d_hv                                                       &
@@ -492,7 +492,7 @@
               ,ttnp=rthblten_hv,qvtnp=rqvblten_hv                              &
               ,qctnp=rqcblten_hv,qitnp=rqiblten_hv                             &
               ,qmixtnp=rqmixblten_hv                                           &
-              ,qmix_sflx=qmix_sflx_hv                                         & ! mvt
+              ,qmix_sflx=qmix_sflx_hv                                         & ! wvt
               ,cp=cp,g=g,rovcp=rovcp,rd=rd,rovg=rovg                           &
               ,xlv=xlv,rv=rv                                                   &
               ,ep1=ep1,ep2=ep2,karman=karman                                   &
@@ -531,7 +531,7 @@
          end do
       end do
 
-! mvt - Unpack WVT tracer tendencies from rqmixblten_hv
+! wvt - Unpack WVT tracer tendencies from rqmixblten_hv
       if (nmix >= 1 .and. present(rtrqvblten)) then
          do k = kts, kte
             do i = its, ite
@@ -553,7 +553,7 @@
             end do
          end do
       endif
-! mvt - end tracer tendency unpacking
+! wvt - end tracer tendency unpacking
 
       do k = kts, kte
          do i = its, ite
@@ -582,13 +582,13 @@
       end do
    enddo
 
-! mvt - Deallocate dynamic arrays
+! wvt - Deallocate dynamic arrays
    deallocate( qmix )
    deallocate( rqmixblten )
    deallocate( qmix_hv )
    deallocate( rqmixblten_hv )
-   deallocate( qmix_sflx_hv )                                            ! mvt
-! mvt - end deallocation
+   deallocate( qmix_sflx_hv )                                            ! wvt
+! wvt - end deallocation
 
  end subroutine ysu
 

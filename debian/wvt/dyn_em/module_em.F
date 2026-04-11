@@ -19,7 +19,7 @@ MODULE module_em
                             chk_ieva, ww_split, calc_mut_new
   USE module_state_description, only: param_first_scalar, p_qr, p_qv, p_qc, p_qg, p_qi, p_qs, tiedtkescheme,ntiedtkescheme, heldsuarez, &
         positivedef, gdscheme, g3scheme, gfscheme, kfetascheme, mskfscheme, monotonic, wenopd_scalar, weno_scalar, weno_mom,  &
-        p_qr_tr, p_qv_tr, p_qc_tr, p_qg_tr, p_qi_tr, p_qs_tr ! mvt
+        p_qr_tr, p_qv_tr, p_qc_tr, p_qg_tr, p_qi_tr, p_qs_tr ! wvt
 
    USE module_damping_em, only: held_suarez_damp
 
@@ -2082,12 +2082,12 @@ SUBROUTINE calculate_phy_tend (config_flags,c1,c2,                     &
                      RTHRATEN,                                         &
                      RUBLTEN,RVBLTEN,RTHBLTEN,                         &
                      RQVBLTEN,RQCBLTEN,RQIBLTEN,                       &
-                     RTRQVBLTEN,RTRQCBLTEN,RTRQIBLTEN,                 & ! mvt
+                     RTRQVBLTEN,RTRQCBLTEN,RTRQIBLTEN,                 & ! wvt
                      RUCUTEN,RVCUTEN,RTHCUTEN,                         &
                      RQVCUTEN,RQCCUTEN,RQRCUTEN,                       &
                      RQICUTEN,RQSCUTEN,                                &
-                     RTRQVCUTEN,RTRQCCUTEN,RTRQRCUTEN,                 & ! mvt
-                     RTRQICUTEN,RTRQSCUTEN,                            & ! mvt
+                     RTRQVCUTEN,RTRQCCUTEN,RTRQRCUTEN,                 & ! wvt
+                     RTRQICUTEN,RTRQSCUTEN,                            & ! wvt
                      RUSHTEN,RVSHTEN,RTHSHTEN,                         &
                      RQVSHTEN,RQCSHTEN,RQRSHTEN,                       &
                      RQISHTEN,RQSSHTEN,RQGSHTEN,                       &
@@ -2154,7 +2154,7 @@ SUBROUTINE calculate_phy_tend (config_flags,c1,c2,                     &
                                                              RQISHTEN, &
                                                              RQSSHTEN, &
                                                              RQGSHTEN, &
-                                                           RTRQVCUTEN, & ! mvt
+                                                           RTRQVCUTEN, & ! wvt
                                                            RTRQCCUTEN, &
                                                            RTRQRCUTEN, &
                                                            RTRQICUTEN, &
@@ -2169,7 +2169,7 @@ SUBROUTINE calculate_phy_tend (config_flags,c1,c2,                     &
                                                              RQVBLTEN, &
                                                              RQCBLTEN, &
                                                              RQIBLTEN, &
-                                                           RTRQVBLTEN, & ! mvt
+                                                           RTRQVBLTEN, & ! wvt
                                                            RTRQCBLTEN, &
                                                            RTRQIBLTEN
 
@@ -2314,7 +2314,7 @@ SUBROUTINE calculate_phy_tend (config_flags,c1,c2,                     &
          ENDDO
       ENDIF
 
-! mvt: tracers
+! wvt: tracers
 
       IF (P_QV_TR .ge. PARAM_FIRST_SCALAR)THEN
          DO J=jts,jtf
@@ -2366,7 +2366,7 @@ SUBROUTINE calculate_phy_tend (config_flags,c1,c2,                     &
          ENDDO
       ENDIF
 
-! mvt
+! wvt
 
    ENDIF
 
@@ -2481,7 +2481,7 @@ SUBROUTINE calculate_phy_tend (config_flags,c1,c2,                     &
          ENDDO
       ENDIF
 
-! mvt: tracers
+! wvt: tracers
 
       IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) THEN
          DO J=jts,jtf
@@ -2513,7 +2513,7 @@ SUBROUTINE calculate_phy_tend (config_flags,c1,c2,                     &
          ENDDO
       ENDIF
 
-! mvt
+! wvt
 
     ENDIF
 
@@ -2572,7 +2572,7 @@ SUBROUTINE calculate_phy_tend (config_flags,c1,c2,                     &
 
 ! 4d couple scalar tendencies that have only uncoupled physics tendencies at this point
 
- IF(config_flags%scalar_pblmix .GT. 0)THEN ! mvt
+ IF(config_flags%scalar_pblmix .GT. 0)THEN ! wvt
    DO im = PARAM_FIRST_SCALAR,num_scalar
          DO J=jts,jtf
          DO K=kts,ktf
@@ -2584,7 +2584,7 @@ SUBROUTINE calculate_phy_tend (config_flags,c1,c2,                     &
    ENDDO
  ENDIF
 
- IF(config_flags%tracer_pblmix .GT. 0)THEN ! mvt
+ IF(config_flags%tracer_pblmix .GT. 0)THEN ! wvt
    DO im = PARAM_FIRST_SCALAR,num_tracer
          DO J=jts,jtf
          DO K=kts,ktf

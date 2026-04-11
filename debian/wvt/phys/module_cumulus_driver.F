@@ -19,7 +19,7 @@ CONTAINS
                      ,cudtacttime                                     & 
                      ,ccldfra,convcld,qcconv,qiconv                   &
                      ,bmj_rad_feedback                                & 
-                     ,rainc,tr_rainc,raincv,pratec,tr_pratec,nca      & ! mvt
+                     ,rainc,tr_rainc,raincv,pratec,tr_pratec,nca      & ! wvt
                      ,cldfra_dp,cldfra_sh                             &
                      ,udr_kf,ddr_kf,uer_kf,der_kf,timec_kf,kf_edrates & !kf_edrates
                      ,QC_CU,QI_CU                                     &
@@ -76,7 +76,7 @@ CONTAINS
                      ,qi_curr, qs_curr, qg_curr                       & 
                      ,qv_prev, qc_prev, qr_prev                       & 
                      ,qi_prev, qs_prev, qg_prev                       &
-                 ! mvt: optional ET tracers
+                 ! wvt: optional ET tracers
                      ,tr_qv_curr, tr_qc_curr, tr_qr_curr              &
                      ,tr_qi_curr, tr_qs_curr, tr_qg_curr              &
                  ! Optional arguments for GD scheme
@@ -118,15 +118,15 @@ CONTAINS
                      ,rqvblten,rqvften                                &
                      ,rucuten,rvcuten                                 &
                      ,rthcuten,rthraten,rthblten,rthften              &
-                     ,rtrqvcuten,rtrqccuten,rtrqrcuten                &     !mvt
-                     ,rtrqicuten,rtrqscuten,rtrqgcuten                &     !mvt
+                     ,rtrqvcuten,rtrqccuten,rtrqrcuten                &     !wvt
+                     ,rtrqicuten,rtrqscuten,rtrqgcuten                &     !wvt
                      ,mommix,store_rand                               &
 ! Optional variables for tiedtke scheme - add by ZCX&YQW 
                      ,znu                                             &
                  ! Optional moisture tracer flags 
                      ,f_qv,f_qc,f_qr                                  &
                      ,f_qi,f_qs,f_qg                                  &
-                 ! mvt: optional moisture tracer flags
+                 ! wvt: optional moisture tracer flags
                      ,f_tr_qv,f_tr_qc,f_tr_qr                         &
                      ,f_tr_qi,f_tr_qs,f_tr_qg                         &
                      ,CFU1,CFD1,DFU1,EFU1,DFD1,EFD1,f_flux            &
@@ -502,7 +502,7 @@ CONTAINS
 
    REAL, DIMENSION( ims:ime , jms:jme ),                         &
           INTENT(INOUT) ::                                RAINC  &
-                                                    ,  TR_RAINC  &  ! mvt
+                                                    ,  TR_RAINC  &  ! wvt
                                                     ,    RAINCV  &
                                                     ,       NCA  & 
                                                     ,      HTOP  & 
@@ -518,7 +518,7 @@ CONTAINS
 
    REAL, DIMENSION( ims:ime , jms:jme ),INTENT(INOUT),OPTIONAL :: &
         PRATEC,MAVAIL,PBLH,PSFC,TSK,TPERT2D,UST,HFX,QFX
-   REAL, DIMENSION( ims:ime , jms:jme ),INTENT(INOUT),OPTIONAL :: TR_PRATEC    !mvt
+   REAL, DIMENSION( ims:ime , jms:jme ),INTENT(INOUT),OPTIONAL :: TR_PRATEC    !wvt
    REAL, DIMENSION( ims:ime , jms:jme ),INTENT(INOUT)          :: &
                                                       HPBL_HOLD
 !ckay
@@ -526,7 +526,7 @@ CONTAINS
          OPTIONAL, INTENT(INOUT) ::                         ZOL
 
    REAL, DIMENSION( ims:ime , jms:jme ) :: tmppratec
-   REAL, DIMENSION( ims:ime , jms:jme ) :: tr_tmppratec                 ! mvt
+   REAL, DIMENSION( ims:ime , jms:jme ) :: tr_tmppratec                 ! wvt
 
    INTEGER, DIMENSION( ims:ime , jms:jme ),                      &
                     INTENT(IN) ::                          KPBL
@@ -581,15 +581,15 @@ CONTAINS
                       ! 2 time levels; if only one then use CURR
                       qv_curr, qc_curr, qr_curr                  &
                      ,qi_curr, qs_curr, qg_curr                  &
-                     ,tr_qv_curr, tr_qc_curr, tr_qr_curr         &  ! mvt
-                     ,tr_qi_curr, tr_qs_curr, tr_qg_curr         &  ! mvt
+                     ,tr_qv_curr, tr_qc_curr, tr_qr_curr         &  ! wvt
+                     ,tr_qi_curr, tr_qs_curr, tr_qg_curr         &  ! wvt
                      ,qv_prev, qc_prev, qr_prev                  &
                      ,qi_prev, qs_prev, qg_prev                  &
                       ! optional moisture and other tendencies
                      ,rqvcuten,rqccuten,rqrcuten                 &
                      ,rqicuten,rqscuten,rqgcuten                 &
-                     ,rtrqvcuten,rtrqccuten,rtrqrcuten           &  ! mvt
-                     ,rtrqicuten,rtrqscuten,rtrqgcuten           &  ! mvt
+                     ,rtrqvcuten,rtrqccuten,rtrqrcuten           &  ! wvt
+                     ,rtrqicuten,rtrqscuten,rtrqgcuten           &  ! wvt
                      ,rqcncuten,rqincuten                        &
                      ,rqvblten,rqvften                           &
                      ,rthraten,rthblten                          &
@@ -716,7 +716,7 @@ CONTAINS
                                                      ,f_qi      &
                                                      ,f_qs      &
                                                      ,f_qg
-! mvt: tracers
+! wvt: tracers
    LOGICAL, INTENT(IN), OPTIONAL ::                             &
                                                       f_tr_qv   &
                                                      ,f_tr_qc   &
@@ -752,7 +752,7 @@ CONTAINS
    INTEGER :: i,j,k,its,ite,jts,jte,ij,trigger_kf,dx_factor_nsas
    logical :: l_flux
    LOGICAL :: decided , run_param , doing_adapt_dt
-   LOGICAL :: flag_tr_qv, flag_tr_qc, flag_tr_qr, flag_tr_qi, flag_tr_qs, flag_tr_qg ! mvt
+   LOGICAL :: flag_tr_qv, flag_tr_qc, flag_tr_qr, flag_tr_qi, flag_tr_qs, flag_tr_qg ! wvt
 
 #if (EM_CORE == 1)
    INTEGER,  INTENT(IN)        :: alevsiz_cu, num_months, no_src_types_cu 
@@ -809,7 +809,7 @@ CONTAINS
       tmppratec(:,:) = 0.
    end if
 
-! mvt: tracer
+! wvt: tracer
 
    if ( PRESENT ( tr_pratec ) ) then  !tracer
       tr_tmppratec(:,:) = tr_pratec(:,:)
@@ -817,7 +817,7 @@ CONTAINS
       tr_tmppratec(:,:) = 0.
    end if
 
-! mvt
+! wvt
 
    if (.not. PRESENT(kfeta_trigger)) then
       trigger_kf = 1
@@ -921,7 +921,7 @@ CONTAINS
       !$OMP END PARALLEL DO
       endif
 
-! mvt: tracer
+! wvt: tracer
 
   flag_tr_qv = .FALSE. ; IF ( PRESENT( F_TR_QV ) ) flag_tr_qv = F_TR_QV
   flag_tr_qc = .FALSE. ; IF ( PRESENT( F_TR_QC ) ) flag_tr_qc = F_TR_QC
@@ -930,7 +930,7 @@ CONTAINS
   flag_tr_qs = .FALSE. ; IF ( PRESENT( F_TR_QS ) ) flag_tr_qs = F_TR_QS
   flag_tr_qg = .FALSE. ; IF ( PRESENT( F_TR_QG ) ) flag_tr_qg = F_TR_QG
 
-! mvt
+! wvt
 
       IF ( cu_physics == G3SCHEME .OR.  cu_physics == GFSCHEME .OR.     &
            cu_physics == KFETASCHEME .OR. cu_physics == MSKFSCHEME) THEN
@@ -1059,7 +1059,7 @@ CONTAINS
                                                                 )
 
      CASE (KFETASCHEME)
-! mvt: native WVT integration - tracer args are optional
+! wvt: native WVT integration - tracer args are optional
           CALL wrf_debug(100,'in kf_eta_cps')
           CALL KF_ETA_CPS(                                      &
                 U=u ,V=v ,TH=th ,T=t ,W=w ,RHO=rho              &
@@ -1088,14 +1088,15 @@ CONTAINS
                ,RQSCUTEN=rqscuten, RQVFTEN=RQVFTEN              &
                ,F_QV=f_qv,F_QC=f_qc,F_QR=f_qr                   &
                ,F_QI=f_qi,F_QS=f_qs                             &
-              ! mvt: optional WVT tracer arguments
+              ! wvt: optional WVT tracer arguments
                ,TR_PRATEC=tr_tmppratec                          &
                ,TR_QV=tr_qv_curr                                &
                ,RTRQVCUTEN=rtrqvcuten ,RTRQCCUTEN=rtrqccuten    &
                ,RTRQRCUTEN=rtrqrcuten ,RTRQICUTEN=rtrqicuten    &
                ,RTRQSCUTEN=rtrqscuten                           &
-               ,F_TR_QV=f_tr_qv,F_TR_QC=f_tr_qc,F_TR_QR=f_tr_qr &
-               ,F_TR_QI=f_tr_qi,F_TR_QS=f_tr_qs                 &
+               ,F_TR_QV=flag_tr_qv,F_TR_QC=flag_tr_qc            & ! wvt - use local flags, not raw optionals
+               ,F_TR_QR=flag_tr_qr,F_TR_QI=flag_tr_qi           & ! wvt
+               ,F_TR_QS=flag_tr_qs                               & ! wvt
                ,CLDFRA_DP_KF=cldfra_dp                          & ! ckay for sub-grid cloud
                ,CLDFRA_SH_KF=cldfra_sh                          &
                ,QC_KF=QC_CU,QI_KF=QI_CU                         &
@@ -1145,13 +1146,13 @@ CONTAINS
                ,AERCU_FCT=aercu_fct,AERCU_OPT=aercu_opt        &
                ,EFCS=EFCS,EFIS=EFIS,EFSS=EFSS                   &
                ,RUCUTEN=RUCUTEN,RVCUTEN=RVCUTEN,XLAND=XLAND        & !JTR
-               ,TR_QV=tr_qv_curr,TR_PRATEC=tr_tmppratec          & ! mvt
-               ,RTRQVCUTEN=rtrqvcuten,RTRQCCUTEN=rtrqccuten      & ! mvt
-               ,RTRQRCUTEN=rtrqrcuten,RTRQICUTEN=rtrqicuten      & ! mvt
-               ,RTRQSCUTEN=rtrqscuten                            & ! mvt
-               ,F_TR_QV=flag_tr_qv,F_TR_QC=flag_tr_qc            & ! mvt
-               ,F_TR_QR=flag_tr_qr,F_TR_QI=flag_tr_qi            & ! mvt
-               ,F_TR_QS=flag_tr_qs                               & ! mvt
+               ,TR_QV=tr_qv_curr,TR_PRATEC=tr_tmppratec          & ! wvt
+               ,RTRQVCUTEN=rtrqvcuten,RTRQCCUTEN=rtrqccuten      & ! wvt
+               ,RTRQRCUTEN=rtrqrcuten,RTRQICUTEN=rtrqicuten      & ! wvt
+               ,RTRQSCUTEN=rtrqscuten                            & ! wvt
+               ,F_TR_QV=flag_tr_qv,F_TR_QC=flag_tr_qc            & ! wvt
+               ,F_TR_QR=flag_tr_qr,F_TR_QI=flag_tr_qi            & ! wvt
+               ,F_TR_QS=flag_tr_qs                               & ! wvt
                                                                  )
 #endif  
  
@@ -1501,15 +1502,15 @@ CONTAINS
                ,GRAV=g,XLF=xlf,XLS=xls,XLV=xlv                  &
                ,RD=r_d,RV=r_v,CP=cp                             &
                ,errmsg=errmsg,errflg=errflg                     &
-               ,tr_qv_curr=tr_qv_curr                           & ! mvt
-               ,tr_qc_curr=tr_qc_curr                           & ! mvt
-               ,tr_qi_curr=tr_qi_curr                           & ! mvt
-               ,tr_pratec=tr_tmppratec                           & ! mvt
-               ,tr_rainc=tr_rainc                                & ! mvt
-               ,rtrqvcuten=rtrqvcuten                            & ! mvt
-               ,rtrqccuten=rtrqccuten                            & ! mvt
-               ,rtrqicuten=rtrqicuten                            & ! mvt
-               ,f_tr_qv=flag_tr_qv                               & ! mvt
+               ,tr_qv_curr=tr_qv_curr                           & ! wvt
+               ,tr_qc_curr=tr_qc_curr                           & ! wvt
+               ,tr_qi_curr=tr_qi_curr                           & ! wvt
+               ,tr_pratec=tr_tmppratec                           & ! wvt
+               ,tr_rainc=tr_rainc                                & ! wvt
+               ,rtrqvcuten=rtrqvcuten                            & ! wvt
+               ,rtrqccuten=rtrqccuten                            & ! wvt
+               ,rtrqicuten=rtrqicuten                            & ! wvt
+               ,f_tr_qv=flag_tr_qv                               & ! wvt
                                                              )
 
 ! New KIM SAS SCHEME - (KIAPS, South Korea)
@@ -1733,7 +1734,7 @@ CONTAINS
       pratec(:,:) = tmppratec(:,:)
    endif
 
-   if (PRESENT(TR_PRATEC)) then   ! mvt
+   if (PRESENT(TR_PRATEC)) then   ! wvt
       tr_pratec(:,:) = tr_tmppratec(:,:)
    endif
 

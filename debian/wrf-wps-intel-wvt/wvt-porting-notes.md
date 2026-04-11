@@ -7,7 +7,7 @@ This document details the Fortran source code changes made to integrate WRF-WVT 
 For each file modified by WRF-WVT, the porting process was:
 
 1. Start with the unmodified WRF 4.7.1 source file
-2. Identify WVT-specific additions in the 4.3.3-based WVT file (marked with `! mvt` comments and tracer-specific variable names)
+2. Identify WVT-specific additions in the 4.3.3-based WVT file (marked with `! wvt` comments and tracer-specific variable names)
 3. Apply those additions to the equivalent locations in the 4.7.1 file
 
 Three new modules (`module_mp_wsm6_tr.F`, `module_bl_ysu_tr.F`, `module_cu_kfeta_tr.F`) were copied from the WRF-WVT repository without modification, as they have minimal dependencies on WRF internals.
@@ -194,6 +194,7 @@ The legacy physics limitations above apply to the initial v1.0 implementation. I
 - **Kain-Fritsch**: Tracer transport added directly to the 4.7.1 `module_cu_kfeta.F`. Retains all 4.7.1 improvements (SPP hooks, gray-zone triggering).
 - **New Tiedtke** (cu_physics=16): Tracer flux-divergence transport added to `physics_mmm/cu_ntiedtke.F90` (CCPP core) and `module_cu_ntiedtke.F` (wrapper). Tracers follow the Tiedtke mass flux framework through updrafts, downdrafts, detrainment, and precipitation. All 4.7.1 improvements retained.
 - **Multi-scale KF** (cu_physics=11): Tracer transport added directly to `module_cu_mskf.F` following the same pattern as KF. Scale-awareness (`Scale_Fac`) inherited automatically by tracers. All 4.7.1 improvements retained including integrated microphysics and momentum transport.
+- **SMS-3DTKE** (km_opt=5, bl_pbl_physics=0): Tracer surface flux (`TRQFX`) injected into the implicit tridiagonal solver in `dyn_em/module_diffusion_em.F`. The diffusion module's existing generic tracer loop handles vertical mixing with the same `xkhv` diffusivity as moisture. Also added injection to the explicit solver (`vertical_diffusion_2`) for `km_opt=2` compatibility.
 
 ### Validation Results
 
@@ -214,18 +215,19 @@ Small differences are expected from the 4.7.1 physics improvements (effective ra
 
 All three cumulus schemes tested with WVT on the same domain (12km, 6h, ocean source mask, WRF 4.7.1 gfortran) against the WRF 4.3.3 + original KF WVT reference:
 
-| Metric | KF (cu=1) | New Tiedtke (cu=16) | MSKF (cu=11) | KF 4.3.3 ref |
-|--------|-----------|--------------------|--------------|-|
-| `qv_tr/QVAPOR` mean | 2.64% | 2.72% | 2.64% | 2.67% |
-| `TR_RAINC/RAINC` mean | 5.2% | 5.6% | 3.3% | 3.7% |
-| `TR_RAINNC/RAINNC` mean | 0.24% | 0.44% | 0.76% | 1.05% |
-| `TR_RAINC` max (mm) | 7.18 | 1.97 | 2.86 | 2.46 |
-| `TR_RAINNC` max (mm) | 4.87 | 5.64 | 7.96 | 5.59 |
-| `qc_tr` max | 9.0e-5 | 1.7e-4 | 1.7e-4 | 1.6e-4 |
-| `qi_tr` max | 1.9e-5 | 1.7e-5 | 1.5e-5 | 1.4e-5 |
-| Constraint violations | 0 | 1 (minor) | 0 | 0 |
+| Metric | KF (cu=1) | NTiedtke (cu=16) | MSKF (cu=11) | SMS-3DTKE+NTiedtke | KF 4.3.3 ref |
+|--------|-----------|-----------------|--------------|-------------------|--|
+| `qv_tr/QVAPOR` mean | 2.57% | 2.72% | 2.64% | 2.61% | 2.67% |
+| `TR_RAINC/RAINC` mean | 3.3% | 5.6% | 3.3% | 5.3% | 3.7% |
+| `TR_RAINNC/RAINNC` mean | 0.96% | 0.44% | 0.76% | 0.60% | 1.05% |
+| `TR_RAINC` max (mm) | 2.20 | 1.97 | 2.86 | 1.72 | 2.46 |
+| `TR_RAINNC` max (mm) | 9.23 | 5.64 | 7.96 | 8.31 | 5.59 |
+| `qc_tr` max | 1.2e-4 | 1.7e-4 | 1.7e-4 | 1.1e-4 | 1.6e-4 |
+| `qi_tr` max | 1.6e-5 | 1.7e-5 | 1.5e-5 | 1.5e-5 | 1.4e-5 |
+| NaN count | 0 | 0 | 0 | 0 | 0 |
+| Constraint violations | 0 | 1 (minor) | 0 | 0 | 0 |
 
-All schemes produce consistent `qv_tr/QVAPOR` ratios (~2.6-2.7%) and physically reasonable tracer precipitation. The New Tiedtke `qc_tr` and `qi_tr` values are higher than KF because Tiedtke explicitly detrains more cloud condensate back to the environment (rather than precipitating it). Differences in `TR_RAINC` vs `TR_RAINNC` partitioning reflect each scheme's different convective vs grid-scale precipitation balance.
+All schemes produce consistent `qv_tr/QVAPOR` ratios (~2.6-2.7%) and physically reasonable tracer precipitation. SMS-3DTKE produces more grid-scale tracer precipitation (higher `TR_RAINNC`) and less parameterized (lower `TR_RAINC`) due to the 3D TKE mixing replacing column PBL. Differences in `TR_RAINC` vs `TR_RAINNC` partitioning reflect each scheme's different convective vs grid-scale precipitation balance.
 
 ## Summary
 

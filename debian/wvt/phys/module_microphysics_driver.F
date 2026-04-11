@@ -47,7 +47,7 @@ SUBROUTINE microphysics_driver(                                          &
 #endif
 !======================                                   
                       ,qv_curr,qc_curr,qr_curr,qi_curr,qs_curr,qg_curr   &
-                      ,tr_qv_curr,tr_qc_curr,tr_qr_curr,tr_qi_curr,tr_qs_curr,tr_qg_curr  & ! mvt
+                      ,tr_qv_curr,tr_qc_curr,tr_qr_curr,tr_qi_curr,tr_qs_curr,tr_qg_curr  & ! wvt
                       ,qic_curr,qip_curr,qid_curr &
                       ,qnic_curr,qnip_curr,qnid_curr &
                       ,qndrop_curr,qni_curr,qh_curr,qnh_curr             &
@@ -71,7 +71,7 @@ SUBROUTINE microphysics_driver(                                          &
                       ,f_qv,f_qc,f_qr,f_qi,f_qs,f_qg,f_qndrop,f_qni      &
                       ,f_qns,f_qnr,f_qng,f_qnc,f_qnn,f_qh,f_qnh          &
                       ,            f_qzr,f_qzi,f_qzs,f_qzg,f_qzh         &
-                      ,f_tr_qv,f_tr_qc,f_tr_qr,f_tr_qi,f_tr_qs,f_tr_qg   & ! mvt
+                      ,f_tr_qv,f_tr_qc,f_tr_qr,f_tr_qi,f_tr_qs,f_tr_qg   & ! wvt
                       ,f_qvolg,f_qvolh                                   &
                       ,f_qic,f_qip,f_qid &
                       ,f_qnic,f_qnip,f_qnid &
@@ -102,10 +102,10 @@ SUBROUTINE microphysics_driver(                                          &
 !NUWRF JJS 20110525 ^^^^^
 !                     ,ccntype                                           & ! for mp_milbrandt2mom
                       ,u,v,w,z                                          &   
-                      ,rainnc,    rainncv,  tr_rainnc                    & ! mvt
-                      ,snownc,    snowncv,  tr_snownc                    & ! mvt
+                      ,rainnc,    rainncv,  tr_rainnc                    & ! wvt
+                      ,snownc,    snowncv,  tr_snownc                    & ! wvt
                       ,hailnc,    hailncv                                &
-                      ,graupelnc, graupelncv,  tr_graupelnc              & ! mvt
+                      ,graupelnc, graupelncv,  tr_graupelnc              & ! wvt
                       ,hail_maxk1, hail_max2d                            &
 #if ( WRF_CHEM == 1 )
                       ,rainprod, evapprod                                &
@@ -637,7 +637,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   u,v,w, z, t8w                                       &
                  ,cldfra, cldfra_old, exch_h                      &
                  ,qv_curr,qc_curr,qr_curr,qi_curr,qs_curr,qg_curr &
-                 ,tr_qv_curr,tr_qc_curr,tr_qr_curr,tr_qi_curr,tr_qs_curr,tr_qg_curr & ! mvt
+                 ,tr_qv_curr,tr_qc_curr,tr_qr_curr,tr_qi_curr,tr_qs_curr,tr_qg_curr & ! wvt
                  ,qt_curr,qndrop_curr,qni_curr,qh_curr,qnh_curr   &
                  ,qns_curr,qnr_curr,qng_curr,qnn_curr,qnc_curr    &
                  ,qic_curr,qip_curr,qid_curr &
@@ -686,13 +686,13 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
          OPTIONAL   ::                                            &
                                                            RAINNC &
                                                          ,RAINNCV &
-                                                       ,TR_RAINNC & ! mvt
+                                                       ,TR_RAINNC & ! wvt
                                                           ,SNOWNC &
                                                          ,SNOWNCV &
-                                                       ,TR_SNOWNC & ! mvt
+                                                       ,TR_SNOWNC & ! wvt
                                                        ,GRAUPELNC &
                                                       ,GRAUPELNCV &
-                                                    ,TR_GRAUPELNC & ! mvt
+                                                    ,TR_GRAUPELNC & ! wvt
                                                           ,HAILNC &
                                                          ,HAILNCV &
 														 ,CLOUDNC &
@@ -730,7 +730,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                       ,f_qic,f_qip,f_qid &
                       ,f_qnic,f_qnip,f_qnid                                  &
                        ,f_qzi,f_qzs,f_qzg,f_qzh,f_qvolg,f_qvolh              &
-                       ,f_tr_qv,f_tr_qc,f_tr_qr,f_tr_qi,f_tr_qs,f_tr_qg      & ! mvt
+                       ,f_tr_qv,f_tr_qc,f_tr_qr,f_tr_qi,f_tr_qs,f_tr_qg      & ! wvt
                        ,f_qrimef                                             &
                        ,f_qir,f_qib                                          & ! for P3
                        ,f_qi2,f_qni2,f_qir2,f_qib2                           & ! for P3
@@ -782,7 +782,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
 
    INTEGER :: i,j,k,its,ite,jts,jte,ij,sz,n
    LOGICAL :: channel
-   LOGICAL :: flag_tr_qv, flag_tr_qc, flag_tr_qr, flag_tr_qi, flag_tr_qs, flag_tr_qg ! mvt
+   LOGICAL :: flag_tr_qv, flag_tr_qc, flag_tr_qr, flag_tr_qi, flag_tr_qs, flag_tr_qg ! wvt
    LOGICAL :: nssl_progn = .false.
    REAL    :: z0, z1, z2, w1, w2
 
@@ -819,7 +819,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
      sz = 0
    ENDIF
 
-! mvt: tracer
+! wvt: tracer
 
   flag_tr_qv = .FALSE. ; IF ( PRESENT( F_TR_QV ) ) flag_tr_qv = F_TR_QV
   flag_tr_qc = .FALSE. ; IF ( PRESENT( F_TR_QC ) ) flag_tr_qc = F_TR_QC
@@ -828,7 +828,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
   flag_tr_qs = .FALSE. ; IF ( PRESENT( F_TR_QS ) ) flag_tr_qs = F_TR_QS
   flag_tr_qg = .FALSE. ; IF ( PRESENT( F_TR_QG ) ) flag_tr_qg = F_TR_QG
 
-! mvt
+! wvt
 
 ! set this to true to print out the global max/min for W on each time step.
    IF ( .false. ) THEN
@@ -2421,7 +2421,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   PRESENT( QS_CURR ) .AND. PRESENT ( QG_CURR ) .AND.  &
                   PRESENT( RAINNC  ) .AND. PRESENT ( RAINNCV )  ) THEN
 
-! mvt: native WVT integration - tracer args are optional
+! wvt: native WVT integration - tracer args are optional
              CALL wsm6(                                             &
                   TH=th                                             &
                  ,Q=qv_curr                                         &
@@ -2455,15 +2455,15 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,re_ice=re_ice                                     &
                  ,re_snow=re_snow                                   &  ! for radiation -
                  ,errmsg=errmsg, errflg=errflg                      &
-! mvt: optional WVT tracer arguments
-                 ,tr_qv_curr=tr_qv_curr,tr_qc_curr=tr_qc_curr      & ! mvt
-                 ,tr_qr_curr=tr_qr_curr,tr_qi_curr=tr_qi_curr      & ! mvt
-                 ,tr_qs_curr=tr_qs_curr,tr_qg_curr=tr_qg_curr      & ! mvt
-                 ,tr_rainnc=tr_rainnc,tr_snownc=tr_snownc           & ! mvt
-                 ,tr_graupelnc=tr_graupelnc                         & ! mvt
-                 ,f_tr_qv=flag_tr_qv,f_tr_qc=flag_tr_qc            & ! mvt
-                 ,f_tr_qr=flag_tr_qr,f_tr_qi=flag_tr_qi            & ! mvt
-                 ,f_tr_qs=flag_tr_qs,f_tr_qg=flag_tr_qg            & ! mvt
+! wvt: optional WVT tracer arguments
+                 ,tr_qv_curr=tr_qv_curr,tr_qc_curr=tr_qc_curr      & ! wvt
+                 ,tr_qr_curr=tr_qr_curr,tr_qi_curr=tr_qi_curr      & ! wvt
+                 ,tr_qs_curr=tr_qs_curr,tr_qg_curr=tr_qg_curr      & ! wvt
+                 ,tr_rainnc=tr_rainnc,tr_snownc=tr_snownc           & ! wvt
+                 ,tr_graupelnc=tr_graupelnc                         & ! wvt
+                 ,f_tr_qv=flag_tr_qv,f_tr_qc=flag_tr_qc            & ! wvt
+                 ,f_tr_qr=flag_tr_qr,f_tr_qi=flag_tr_qi            & ! wvt
+                 ,f_tr_qs=flag_tr_qs,f_tr_qg=flag_tr_qg            & ! wvt
                  ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &
                  ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
                  ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &

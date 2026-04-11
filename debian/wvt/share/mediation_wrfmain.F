@@ -110,7 +110,7 @@ use module_io
        ENDIF
 !gmm
 
-!mvt: add input for tracer 3D region source here
+!wvt: add input for tracer 3D region source here
 
      IF ( config_flags%tracer_opt.eq.4 .and. (config_flags%tracer3dsource.eq.1 .or.  config_flags%tracer2dsource.eq.1 .or.  config_flags%tracer3dsink.eq.1) ) THEN
 
@@ -139,7 +139,7 @@ use module_io
 
        ENDIF
 
-!mvt
+!wvt
 
 #ifdef MOVE_NESTS
 #if ( EM_CORE == 1 )

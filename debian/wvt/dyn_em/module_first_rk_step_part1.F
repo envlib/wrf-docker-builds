@@ -209,7 +209,7 @@ BENCH_END(init_zero_tend_tim)
                         grid%mut, grid%muu, grid%muv,                    &
                         grid%c1h, grid%c2h, grid%c1f, grid%c2f,          &
                         grid%u_2, grid%v_2, grid%p, grid%pb, grid%alt,   &
-                        grid%ph_2, grid%phb, grid%t_2, moist, num_moist, tracer, num_tracer,   & !mvt
+                        grid%ph_2, grid%phb, grid%t_2, moist, num_moist, tracer, num_tracer,   & !wvt
                         grid%itimestep, grid%dt,                         & !gmm & are
                         grid%rho,th_phy, grid%th_phy_m_t0,               &
                         p_phy, pi_phy, grid%u_phy, grid%v_phy,           &
@@ -1076,7 +1076,7 @@ BENCH_START(surf_driver_tim)
      &        ,ZOL=grid%ZOL                                                                             &
      &        ,SDA_HFX=grid%SDA_HFX, SDA_QFX=grid%SDA_QFX,HFX_BOTH=grid%HFX_BOTH                        &  !fasdas
      &        ,QFX_BOTH=grid%QFX_BOTH,QNORM=grid%QNORM,fasdas=config_flags%fasdas                       &  !fasdas
-     &        ,trqfx=grid%trqfx,trmask=grid%trmask,tr_qv_curr=tracer(ims,kms,jms,P_QV_TR),F_TR_QV=F_QV_TR     & ! mvt
+     &        ,trqfx=grid%trqfx,trmask=grid%trmask,tr_qv_curr=tracer(ims,kms,jms,P_QV_TR),F_TR_QV=F_QV_TR     & ! wvt
      &        ,XLAIDYN=grid%XLAIDYN                                                                     &
      &        ,spp_lsm=config_flags%spp_lsm,pattern_spp_lsm=grid%pattern_spp_lsm     & !SPP
      &        ,field_sf=grid%field_sf                                                & !SPP
@@ -1311,7 +1311,7 @@ BENCH_START(pbl_driver_tim)
      &        ,TRACER=tracer,TRACER_TEND=tracer_tend,NUM_TRACER=num_tracer&
      &        ,SCALAR_PBLMIX=config_flags%scalar_pblmix                   &
      &        ,TRACER_PBLMIX=config_flags%tracer_pblmix                   &
-! mvt: tracers for moisture
+! wvt: tracers for moisture
      &        ,TR_QV_CURR=tracer(ims,kms,jms,P_QV_TR), F_TR_QV=F_QV_TR   &
      &        ,TR_QC_CURR=tracer(ims,kms,jms,P_QC_TR), F_TR_QC=F_QC_TR   &
      &        ,TR_QR_CURR=tracer(ims,kms,jms,P_QR_TR), F_TR_QR=F_QR_TR   &
@@ -1320,7 +1320,7 @@ BENCH_START(pbl_driver_tim)
      &        ,TR_QG_CURR=tracer(ims,kms,jms,P_QG_TR), F_TR_QG=F_QG_TR   &
      &        ,RTRQCBLTEN=grid%rtrqcblten  ,RTRQIBLTEN=grid%rtrqiblten   &
      &        ,RTRQVBLTEN=grid%rtrqvblten,TRQFX=grid%trqfx               &
-! mvt
+! wvt
 #if (WRF_CHEM == 1)
      &        ,mynn_chem_vertmx=config_flags%mynn_chem_vertmx             &
      &        ,CHEM=chem,VD=grid%dep_vel                                  &
@@ -1400,7 +1400,7 @@ BENCH_START(cu_driver_tim)
      &             ,QCCONV=grid%qcconv     ,QICONV=grid%qiconv                         &
      &             ,CUDTACTTIME=grid%cudtacttime                                       & 
      &             ,RAINC=grid%rainc   ,RAINCV=grid%raincv   ,PRATEC=grid%pratec       &
-     &             ,TR_RAINC=grid%tr_rainc  ,TR_PRATEC=grid%tr_pratec                  & ! mvt
+     &             ,TR_RAINC=grid%tr_rainc  ,TR_PRATEC=grid%tr_pratec                  & ! wvt
      &             ,NCA=grid%nca                                                       &
      &             ,CLDFRA_DP=grid%cldfra_dp  ,CLDFRA_SH=grid%cldfra_sh                &
      &             ,QC_CU=grid%QC_CU, QI_CU=grid%QI_CU, QR_CU=grid%QR_CU, QS_CU=grid%QS_CU &
@@ -1522,7 +1522,7 @@ BENCH_START(cu_driver_tim)
      &             ,RTHRATEN=grid%rthraten , RTHBLTEN=grid%rthblten       &
      &             ,RUCUTEN=grid%rucuten   , RVCUTEN=grid%rvcuten         &
      &             ,RTHCUTEN=grid%rthcuten , RTHFTEN=grid%rthften         &
-                 ! mvt: tracer tendencies
+                 ! wvt: tracer tendencies
      &             ,RTRQVCUTEN=grid%rtrqvcuten , RTRQCCUTEN=grid%rtrqccuten &
      &             ,RTRQSCUTEN=grid%rtrqscuten , RTRQICUTEN=grid%rtrqicuten &
      &             ,RTRQRCUTEN=grid%rtrqrcuten                              &
@@ -1534,7 +1534,7 @@ BENCH_START(cu_driver_tim)
      &             ,QS_CURR=moist(ims,kms,jms,P_QS), F_QS=F_QS            &
      &             ,QG_CURR=moist(ims,kms,jms,P_QG), F_QG=F_QG            &
      &             ,ZOL=grid%ZOL                                          & !ckay
-                 ! mvt: tracer arguments
+                 ! wvt: tracer arguments
      &             ,TR_QV_CURR=tracer(ims,kms,jms,P_QV_TR), F_TR_QV=F_QV_TR           &
      &             ,TR_QC_CURR=tracer(ims,kms,jms,P_QC_TR), F_TR_QC=F_QC_TR           &
      &             ,TR_QR_CURR=tracer(ims,kms,jms,P_QR_TR), F_TR_QR=F_QR_TR           &

@@ -129,7 +129,7 @@ CONTAINS
                , tpert2d,qpert2d,wpert2d,wsedl3d                     &
                , turbtype3d,smaw3d                                   &
                , fnm,fnp                                             &
- !mvt: optional tracers for moisture from land ET
+ !wvt: optional tracers for moisture from land ET
                  ,tr_qv_curr, tr_qc_curr, tr_qr_curr                 &
                  ,tr_qi_curr, tr_qs_curr, tr_qg_curr                 &
                  ,rtrqvblten,rtrqcblten,rtrqiblten                   &
@@ -137,7 +137,7 @@ CONTAINS
                  ,f_tr_qv,f_tr_qc,f_tr_qr                            &
                  ,f_tr_qi,f_tr_qs,f_tr_qg                            &
                  ,trqfx                                              &
- !mvt
+ !wvt
 ! variables required for camuwpbl scheme (optional)
                ,qnc_curr,f_qnc,qni_curr,f_qni,rqniblten              &
                ,IS_CAMMGMP_USED                                      &
@@ -717,7 +717,7 @@ CONTAINS
                      ,qnc_curr,qni_curr                          & !used in CAMUWPBL
                      ,rqvblten,rqcblten,rqrblten                 &
                      ,rqiblten,rqsblten,rqgblten,rqniblten         !rqniblten  used in CAMUWPBL
- !mvt: same as above but for the corresponding tracers
+ !wvt: same as above but for the corresponding tracers
    LOGICAL, INTENT(IN), OPTIONAL ::                             &
                                                       f_tr_qv      &
                                                      ,f_tr_qc      &
@@ -737,7 +737,7 @@ CONTAINS
    REAL,       DIMENSION( ims:ime, jms:jme )                    , &
                OPTIONAL                                         , &
                INTENT(INOUT)    ::                           TRQFX
- !mvt
+ !wvt
 
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ) ::   & !local: added for MYNN
                       rqncblten,rqnwfablten,rqnifablten,rqnbcablten
@@ -857,7 +857,7 @@ CONTAINS
    LOGICAL :: flag_myjsfc
    LOGICAL :: flag_qv, flag_qc, flag_qr, flag_qi, flag_qs, flag_qg, &
               flag_qnc,flag_qni, flag_qnwfa, flag_qnifa, flag_qnbca
-   LOGICAL :: flag_tr_qv, flag_tr_qc, flag_tr_qr, flag_tr_qi, flag_tr_qs, flag_tr_qg !mvt
+   LOGICAL :: flag_tr_qv, flag_tr_qc, flag_tr_qr, flag_tr_qi, flag_tr_qs, flag_tr_qg !wvt
    CHARACTER*256 :: message
    REAL    :: next_bl_time
    LOGICAL :: run_param , doing_adapt_dt , decided
@@ -911,7 +911,7 @@ CONTAINS
   flag_qnifa = .FALSE. ; IF ( PRESENT( F_QNIFA ) ) flag_qnifa = F_QNIFA
   flag_qnbca = .FALSE. ; IF ( PRESENT( F_QNBCA ) ) flag_qnbca = F_QNBCA
 
- !mvt: tracer
+ !wvt: tracer
 
   flag_tr_qv = .FALSE. ; IF ( PRESENT( F_TR_QV ) ) flag_tr_qv = F_TR_QV
   flag_tr_qc = .FALSE. ; IF ( PRESENT( F_TR_QC ) ) flag_tr_qc = F_TR_QC
@@ -920,7 +920,7 @@ CONTAINS
   flag_tr_qs = .FALSE. ; IF ( PRESENT( F_TR_QS ) ) flag_tr_qs = F_TR_QS
   flag_tr_qg = .FALSE. ; IF ( PRESENT( F_TR_QG ) ) flag_tr_qg = F_TR_QG
 
- !mvt
+ !wvt
 
   if (bl_pbl_physics .eq. 0) return
 
@@ -1093,7 +1093,7 @@ CONTAINS
             ENDDO
          ENDIF
 
- !mvt: tracers
+ !wvt: tracers
          IF (flag_TR_QV .AND. PRESENT(RTRQVBLTEN) ) THEN
             DO k=kts,min(kte+1,kde)
                RTRQVBLTEN(I,K,J)=0.
@@ -1111,7 +1111,7 @@ CONTAINS
             ENDDO
          ENDIF
 
- ! mvt
+ ! wvt
 
       ENDDO
       ENDDO
@@ -1274,7 +1274,7 @@ CONTAINS
                 PRESENT( rqvblten ) .AND. PRESENT( rqcblten ) .AND. &
                 PRESENT( rqiblten )                           .AND. &
                 PRESENT( hol      ) ) THEN
-! mvt: native WVT integration - tracer args are optional
+! wvt: native WVT integration - tracer args are optional
              CALL ysu(                                              &
                U3D=u_phytmp,V3D=v_phytmp,T3D=t_phy                  &
               ,QV3D=qv_curr,QC3D=qc_curr,QI3D=qi_curr               &
@@ -1308,7 +1308,7 @@ CONTAINS
 ! for grims shallow convection with ysupbl
               ,WSTAR=wstar,DELTA=delta                              &
               ,errmsg=errmsg,errflg=errflg                          &
-! mvt: optional WVT tracer arguments
+! wvt: optional WVT tracer arguments
               ,tr_qv3d=tr_qv_curr,tr_qc3d=tr_qc_curr               &
               ,tr_qi3d=tr_qi_curr                                   &
               ,rtrqvblten=rtrqvblten,rtrqcblten=rtrqcblten          &

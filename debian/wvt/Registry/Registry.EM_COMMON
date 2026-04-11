@@ -2098,12 +2098,12 @@ state   real  prec_acc_c       ij       misc        1         -     rhdu     "pr
 state   real  prec_acc_nc      ij       misc        1         -     rhdu     "prec_acc_nc"      "ACCUMULATED GRID SCALE  PRECIPITATION OVER prec_acc_dt PERIODS OF TIME"   "mm"
 state   real  snow_acc_nc      ij       misc        1         -     rhdu     "snow_acc_nc"      "ACCUMULATED SNOW WATER EQUIVALENT OVER prec_acc_dt PERIODS OF TIME"       "mm"
 
-#mvt & are: moisture cinematic flux
+#wvt & are: moisture cinematic flux
 
 state   real  thum_u_phy_dt    ikj      misc        1         -     rh03      "thum_u_phy_dt"     "total humidity * x-wind component * dt"      "kg kg-1 m"
 state   real  thum_v_phy_dt    ikj      misc        1         -     rh03      "thum_v_phy_dt"     "total humidity * y-wind component * dt"      "kg kg-1 m"
 
-#mvt & are
+#wvt & are
 
 # Placeholder for decoupled advective tendency diagnostics for non-chem
 state   real  -               ikjf      advh_t      1         -     -         -

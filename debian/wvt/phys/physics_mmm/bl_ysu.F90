@@ -56,7 +56,7 @@
    subroutine bl_ysu_run(ux,vx,tx,qvx,qcx,qix,nmix,qmix,p2d,p2di,pi2d,     &
                          f_qc,f_qi,                                        &
                          utnp,vtnp,ttnp,qvtnp,qctnp,qitnp,qmixtnp,         &
-                         qmix_sflx,                                        & ! mvt
+                         qmix_sflx,                                        & ! wvt
                          cp,g,rovcp,rd,rovg,ep1,ep2,karman,xlv,rv,         &
                          dz8w2d,psfcpa,                                    &
                          znt,ust,hpbl,dusfc,dvsfc,dtsfc,dqsfc,psim,psih,   &
@@ -191,8 +191,8 @@
    real(kind=kind_phys),     dimension( its:,:,: )                           , &
              intent(out  )   ::                                       qmixtnp
 !
-   real(kind=kind_phys),     dimension( its:,: )                             , & ! mvt
-             optional, intent(in)  ::                                qmix_sflx   ! mvt
+   real(kind=kind_phys),     dimension( its:,: )                             , & ! wvt
+             optional, intent(in)  ::                                qmix_sflx   ! wvt
 !
    real(kind=kind_phys),     dimension( its:,: )                             , &
              intent(in   )   ::                                          p2di
@@ -1232,14 +1232,14 @@
             r1(i,k) = f1(i,k)
          enddo
       enddo
-!     mvt: inject surface flux at bottom level for qmix species
+!     wvt: inject surface flux at bottom level for qmix species
 !     (mirrors qfx injection for moisture at line ~1135)
 !     Note: tridin_ysu uses r1 as the RHS, so the flux must be added to r1
-      if (present(qmix_sflx)) then                                    ! mvt
-         do i = its,ite                                                ! mvt
-            r1(i,1) = r1(i,1)+(1.0-bepswitch)*qmix_sflx(i,n)*g/del(i,1)*dt2  ! mvt
-         enddo                                                         ! mvt
-      endif                                                            ! mvt
+      if (present(qmix_sflx)) then                                    ! wvt
+         do i = its,ite                                                ! wvt
+            r1(i,1) = r1(i,1)+(1.0-bepswitch)*qmix_sflx(i,n)*g/del(i,1)*dt2  ! wvt
+         enddo                                                         ! wvt
+      endif                                                            ! wvt
       call tridin_ysu(al,ad,cu,r1,au,f1,its,ite,kts,kte,1)
 
       do i = its,ite

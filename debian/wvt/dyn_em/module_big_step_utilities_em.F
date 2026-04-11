@@ -16,7 +16,7 @@ MODULE module_big_step_utilities_em
    USE module_model_constants
    USE module_state_description, only: p_qg, p_qs, p_qi, gdscheme, tiedtkescheme, ntiedtkescheme, kfetascheme, mskfscheme, &
        g3scheme, gfscheme,p_qv, param_first_scalar, p_qr, p_qc, DFI_FWD, &
-       p_qv_tr, p_qc_tr, p_qi_tr, p_qr_tr, p_qs_tr !mvt
+       p_qv_tr, p_qc_tr, p_qi_tr, p_qr_tr, p_qs_tr !wvt
    USE module_configure, ONLY : grid_config_rec_type
    USE module_wrf_error
 
@@ -4733,7 +4733,7 @@ END SUBROUTINE pole_point_bc
                          c1h, c2h, c1f, c2f,                          &
                          u, v, p, pb, alt, ph,                        &  ! input
                          phb, t, moist, n_moist,                      &  ! input
-                         tracer, n_tracer,                            &  ! mvt
+                         tracer, n_tracer,                            &  ! wvt
                          itimestep, dt,                               &  ! gmm & are
                          rho, th_phy, th_phy_m_t0,                    &  ! output
                          p_phy , pi_phy ,                             &  ! output
@@ -4742,7 +4742,7 @@ END SUBROUTINE pole_point_bc
                          p_hyd, p_hyd_w, dnw,                         &  ! output
                          fzm, fzp, znw, p_top,                        &  ! params
                          thum_u_phy_dt, thum_v_phy_dt,                &  ! gmm & are
-                         tr_thum_u_phy_dt, tr_thum_v_phy_dt,          &  ! mvt
+                         tr_thum_u_phy_dt, tr_thum_v_phy_dt,          &  ! wvt
                          ids, ide, jds, jde, kds, kde,                &
                          ims, ime, jms, jme, kms, kme,                &
                          its, ite, jts, jte, kts, kte                )
@@ -4756,7 +4756,7 @@ END SUBROUTINE pole_point_bc
                                        ims, ime, jms, jme, kms, kme, &
                                        its, ite, jts, jte, kts, kte
    INTEGER ,          INTENT(IN   ) :: n_moist
-   INTEGER ,          INTENT(IN   ) :: n_tracer ! mvt
+   INTEGER ,          INTENT(IN   ) :: n_tracer ! wvt
 
    INTEGER ,        INTENT(IN   ) :: itimestep ! gmm & are
 
@@ -4765,11 +4765,11 @@ END SUBROUTINE pole_point_bc
 
    REAL, DIMENSION( ims:ime, kms:kme , jms:jme , n_moist ), INTENT(IN) :: moist
 
-   REAL, DIMENSION( ims:ime, kms:kme , jms:jme , n_tracer ), INTENT(IN) :: tracer ! mvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme , n_tracer ), INTENT(IN) :: tracer ! wvt
 
    REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: thum_u_phy_dt, thum_v_phy_dt ! gmm & are
 
-   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt, tr_thum_v_phy_dt ! mvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt, tr_thum_v_phy_dt ! wvt
 
 
    REAL , DIMENSION( ims:ime, jms:jme ), INTENT(IN   )   ::     mut, muu, muv
@@ -4887,7 +4887,7 @@ END SUBROUTINE pole_point_bc
                              ims, ime, jms, jme, kms, kme,     &
                              its, ite, jts, jte, kts, kte  )
 
-! mvt
+! wvt
 
  IF (n_tracer .ge. PARAM_FIRST_SCALAR) THEN
    CALL calc_moist_fluxes(   dt, itimestep, tracer, n_tracer,    &
@@ -5025,9 +5025,9 @@ END SUBROUTINE phy_prep
                          RUCUTEN,  RVCUTEN,  RTHCUTEN,                &
                          RQVCUTEN, RQCCUTEN, RQRCUTEN,                &
                          RQICUTEN, RQSCUTEN,                          &
-                         RTRQVBLTEN, RTRQCBLTEN, RTRQIBLTEN,          &  ! mvt
-                         RTRQVCUTEN, RTRQCCUTEN, RTRQRCUTEN,          &  ! mvt
-                         RTRQICUTEN, RTRQSCUTEN,                      &  ! mvt
+                         RTRQVBLTEN, RTRQCBLTEN, RTRQIBLTEN,          &  ! wvt
+                         RTRQVCUTEN, RTRQCCUTEN, RTRQRCUTEN,          &  ! wvt
+                         RTRQICUTEN, RTRQSCUTEN,                      &  ! wvt
                          RUSHTEN,  RVSHTEN,  RTHSHTEN,                &
                          RQVSHTEN, RQCSHTEN, RQRSHTEN,                &
                          RQISHTEN, RQSSHTEN, RQGSHTEN,                &
@@ -5080,7 +5080,7 @@ END SUBROUTINE phy_prep
                                                            RQCBLTEN, &
                                                            RQIBLTEN
 
-! mvt: now tracers
+! wvt: now tracers
 
    REAL,  DIMENSION( ims:ime , kms:kme, jms:jme ),                   &
           INTENT(INOUT)   ::                             RTRQVCUTEN, &
@@ -5092,7 +5092,7 @@ END SUBROUTINE phy_prep
                                                          RTRQCBLTEN, &
                                                          RTRQIBLTEN
 
-! mvt
+! wvt
 
    REAL,  DIMENSION( ims:ime, kms:kme, jms:jme )                   , &
           INTENT(INOUT)   ::                                RTHFTEN, &
@@ -5220,7 +5220,7 @@ END SUBROUTINE phy_prep
          ENDDO
       ENDIF
 
-!mvt: now tracers
+!wvt: now tracers
 
       IF (P_QV_TR .ge. PARAM_FIRST_SCALAR)THEN
          DO J=j_start,j_end
@@ -5272,7 +5272,7 @@ END SUBROUTINE phy_prep
          ENDDO
       ENDIF
 
-!mvt
+!wvt
 
    ENDIF
 
@@ -5392,7 +5392,7 @@ END SUBROUTINE phy_prep
          ENDDO
       ENDIF
 
-!mvt: now tracers
+!wvt: now tracers
 
       IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) THEN
          DO J=j_start,j_end
@@ -5424,7 +5424,7 @@ END SUBROUTINE phy_prep
          ENDDO
       ENDIF
 
-!mvt
+!wvt
 
     ENDIF
 

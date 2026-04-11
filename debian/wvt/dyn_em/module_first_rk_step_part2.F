@@ -394,12 +394,12 @@ BENCH_START(cal_phy_tend)
                      grid%rthraten,                                    &
                      grid%rublten,grid%rvblten,grid%rthblten,          &
                      grid%rqvblten,grid%rqcblten,grid%rqiblten,        &
-                     grid%rtrqvblten,grid%rtrqcblten,grid%rtrqiblten,  &        ! mvt: tracer tendencies
+                     grid%rtrqvblten,grid%rtrqcblten,grid%rtrqiblten,  &        ! wvt: tracer tendencies
                      grid%rucuten,grid%rvcuten,grid%rthcuten,          &
                      grid%rqvcuten,grid%rqccuten,grid%rqrcuten,        &
                      grid%rqicuten,grid%rqscuten,                      &
-                     grid%rtrqvcuten,grid%rtrqccuten,grid%rtrqrcuten,  &        ! mvt: tracer tendencies
-                     grid%rtrqicuten,grid%rtrqscuten,                  &        ! mvt: tracer tendencies
+                     grid%rtrqvcuten,grid%rtrqccuten,grid%rtrqrcuten,  &        ! wvt: tracer tendencies
+                     grid%rtrqicuten,grid%rtrqscuten,                  &        ! wvt: tracer tendencies
                      grid%rushten,grid%rvshten,grid%rthshten,          &
                      grid%rqvshten,grid%rqcshten,grid%rqrshten,        &
                      grid%rqishten,grid%rqsshten,grid%rqgshten,        &
@@ -802,7 +802,7 @@ BENCH_START(update_phy_ten_tim)
          ENDIF
 #endif
          CALL update_phy_ten(ph_tendf,t_tendf, ru_tendf, rv_tendf,moist_tend ,&
-                           scalar_tend, mu_tendf,tracer_tend,               & !mvt
+                           scalar_tend, mu_tendf,tracer_tend,               & !wvt
                            grid%rthraten,grid%rthblten,grid%rthcuten,grid%rthshten, &
                            grid%rublten,grid%rucuten,grid%rushten,          &
                            grid%rvblten,grid%rvcuten,grid%rvshten,          &
@@ -818,9 +818,9 @@ BENCH_START(update_phy_ten_tim)
                            grid%RVNDGDTEN,grid%RTHNDGDTEN,grid%RPHNDGDTEN,  &
                            grid%RQVNDGDTEN,grid%RMUNDGDTEN,                 &
                            grid%rthfrten,grid%rqvfrten,                     &  ! fire
-                           grid%rtrqvblten,grid%rtrqcblten,grid%rtrqiblten,num_tracer, & !mvt
-                           grid%rtrqvcuten,grid%rtrqccuten,grid%rtrqrcuten, &   !mvt
-                           grid%rtrqicuten,grid%rtrqscuten,                 &   !mvt
+                           grid%rtrqvblten,grid%rtrqcblten,grid%rtrqiblten,num_tracer, & !wvt
+                           grid%rtrqvcuten,grid%rtrqccuten,grid%rtrqrcuten, &   !wvt
+                           grid%rtrqicuten,grid%rtrqscuten,                 &   !wvt
                            grid%ruiauten,grid%rviauten,grid%rthiauten,      &
                            grid%rqviauten,grid%rqciauten,grid%rqriauten,    &
                            grid%rqiiauten,grid%rqsiauten,grid%rqgiauten,    &
@@ -1048,6 +1048,7 @@ BENCH_END(tke_rhs_tim)
                                                grid%xkmv, grid%xkhv, grid%xkmh, config_flags%km_opt,      &
                                                grid%fnm, grid%fnp, grid%dn, grid%dnw, grid%rdz, grid%rdzw,&
                                                grid%hfx, grid%qfx, grid%ustm, grid%rho,                   &
+                                               grid%trqfx,                                               & ! wvt
                                                grid%nlflux, grid%gamu, grid%gamv,                         & 
                                                grid%xkmv_meso, grid%l_diss,                               &
                                                grid%c1h, grid%c2h, grid%c1f, grid%c2f,                    &
@@ -1082,6 +1083,7 @@ BENCH_START(vert_diff_tim)
                                       grid%xkmv, grid%xkhv, grid%xkmh, config_flags%km_opt,       & ! xkmh added Oct2013
                                       grid%fnm, grid%fnp, grid%dn, grid%dnw, grid%rdz, grid%rdzw, &
                                       grid%hfx, grid%qfx, grid%ustm, grid%rho,   &
+                                      grid%trqfx,                                & ! wvt
                                       ids, ide, jds, jde, kds, kde,              &
                                       ims, ime, jms, jme, kms, kme,              &
                                       grid%i_start(ij), grid%i_end(ij),          &

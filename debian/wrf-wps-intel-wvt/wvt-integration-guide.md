@@ -200,6 +200,55 @@ The wrapper integration required **zero changes to the CCPP physics code** -- al
 
 When `nmix=0`, arrays declared as `dimension(its:ite, kts:kte, nmix)` become zero-sized. This is valid Fortran but some compilers may warn. Use `ALLOCATABLE` arrays and allocate with `max(nmix, 1)` to avoid zero-sized allocations, then guard access with `if (nmix >= 1)`.
 
+## Integration Pattern 2b: SMS-3DTKE (bl_pbl_physics=0, km_opt=5)
+
+### Principle
+
+When `bl_pbl_physics=0`, the PBL driver is skipped entirely. Vertical mixing of all fields (including tracers) is handled by the diffusion module (`dyn_em/module_diffusion_em.F`) using 3D TKE-based diffusivity coefficients. The diffusion module already has a generic tracer loop -- the only addition needed is TRQFX surface flux injection.
+
+### Critical: Implicit vs Explicit Solver
+
+WRF routes vertical diffusion based on `km_opt`:
+- `km_opt=2`: calls `vertical_diffusion_2` (explicit solver)
+- `km_opt=5` (SMS-3DTKE): calls `vertical_diffusion_implicit` (implicit tridiagonal solver)
+
+**You must add the surface flux injection to BOTH solvers.** See Pitfall #11.
+
+### Implicit solver injection (`vertical_diffusion_implicit`)
+
+The implicit solver builds a tridiagonal system `[a, b, c, d]` for each column. The surface flux enters as a boundary condition in the RHS vector `d(k)` at `k=kts`:
+
+```fortran
+IF (config_flags%tracer_opt == 4 .AND. im == P_QV_TR) THEN
+   d(k) = var_mix(i,kts,j) + dt*rdz_w*trqfx(i,j)
+ELSE
+   d(k) = var_mix(i,kts,j)
+ENDIF
+```
+
+This mirrors how QFX enters for moisture in the same solver.
+
+### Explicit solver injection (`vertical_diffusion_2`)
+
+The explicit solver uses `vertical_diffusion_s` with a tendency array. The surface flux is injected BEFORE the solver call (inside the tracer loop):
+
+```fortran
+IF (config_flags%tracer_opt == 4 .AND. im == P_QV_TR) THEN
+   tracer_tendf(i,kts,j,im) = tracer_tendf(i,kts,j,im) - g*trqfx(i,j)/dnw(kts)
+ENDIF
+CALL vertical_diffusion_s(tracer_tendf(...), ...)
+```
+
+### Required namelist settings
+
+```
+bl_pbl_physics = 0
+km_opt = 5
+diff_opt = 2
+scalar_pblmix = 1    # diffusion module handles mixing (required when bl=0)
+tracer_pblmix = 1    # diffusion module handles mixing (required when bl=0)
+```
+
 ## Integration Pattern 3: Cumulus Scheme
 
 ### Principle
@@ -318,9 +367,9 @@ Add tracer keyword arguments to the scheme's `CALL` statement. All tracer args a
 ! In the CASE (YOUR_SCHEME) block:
 CALL your_scheme(                                                 &
     <existing base arguments...>                                  &
-   ,tr_qv_curr=tr_qv_curr, tr_qc_curr=tr_qc_curr               & ! mvt
-   ,rtrqvblten=rtrqvblten                                       & ! mvt
-   ,f_tr_qv=flag_tr_qv, f_tr_qc=flag_tr_qc                     & ! mvt
+   ,tr_qv_curr=tr_qv_curr, tr_qc_curr=tr_qc_curr               & ! wvt
+   ,rtrqvblten=rtrqvblten                                       & ! wvt
+   ,f_tr_qv=flag_tr_qv, f_tr_qc=flag_tr_qc                     & ! wvt
    ... )
 ```
 
@@ -449,6 +498,66 @@ rtrqicuten(i,k,j) = (tr_qi_hv(i,kte-k+kts) - tr_qi_curr(i,k,j)) / (dt*stepcu)
 
 Then ensure all three tendencies are accumulated in `module_physics_addtendc.F` via `add_a2a` calls for `P_QV_TR`, `P_QC_TR`, and `P_QI_TR`.
 
+### 11. SMS-3DTKE: Inject Into the Implicit Solver, Not Just the Explicit One
+
+WRF has TWO vertical diffusion solvers in `module_diffusion_em.F`:
+- `vertical_diffusion_2` (explicit, used when `km_opt=2`)
+- `vertical_diffusion_implicit` (implicit tridiagonal, used when `km_opt=5`)
+
+The routing happens in `module_first_rk_step_part2.F` based on `km_opt`. If you only add the TRQFX injection to `vertical_diffusion_2`, it will never execute when running SMS-3DTKE (`km_opt=5`). The tracer surface flux will appear to be computed correctly (`TRQFX` will have valid values) but `qv_tr` will be ~1000x too small because the flux never enters the solver.
+
+The injection mechanisms differ between the two solvers:
+- **Explicit**: Add to `tracer_tendf(i,kts,j)` BEFORE calling `vertical_diffusion_s`
+- **Implicit**: Add to the RHS vector `d(k)` at `k=kts` as `d(k) = var_mix(i,kts,j) + dt*rdz_w*trqfx(i,j)`
+
+Always add the injection to BOTH solvers and pass `trqfx` through BOTH call sites in `module_first_rk_step_part2.F`.
+
+### 12. Pass Local Flag Variables, Not Raw Optional Dummy Arguments
+
+When the cumulus driver passes tracer flags to a scheme, use the **local** `flag_tr_*` variables (which are guaranteed to be initialized from `PRESENT()` checks), not the raw `f_tr_*` dummy arguments from the driver's own signature (which may not be PRESENT).
+
+```fortran
+! WRONG - f_tr_qv may not be PRESENT, causing undefined behavior:
+,F_TR_QV=f_tr_qv, F_TR_QC=f_tr_qc
+
+! CORRECT - flag_tr_qv is always initialized:
+,F_TR_QV=flag_tr_qv, F_TR_QC=flag_tr_qc
+```
+
+In Fortran, evaluating an OPTIONAL argument that is NOT PRESENT causes undefined behavior -- it may read garbage memory that randomly evaluates to `.TRUE.` or `.FALSE.`, silently corrupting mass conservation.
+
+### 13. Guard Division by Precipitation Total (TRPPT)
+
+In KF-family schemes, tracer precipitation evaporation in the downdraft divides by `TRPPT` (total updraft precipitation). If the updraft is weak or dry, `TRPPT` can be zero, causing NaN injection:
+
+```fortran
+! WRONG - division by zero when TRPPT=0:
+TR_QD(ND) = TR_QD(ND) + (QSD(nd)-QD(ND)) * TR_TRPPT/TRPPT
+TR_PPTFLX = TR_TRPPT * (1.-TDER/TRPPT)
+
+! CORRECT - guard denominator:
+TR_QD(ND) = TR_QD(ND) + (QSD(nd)-QD(ND)) * TR_TRPPT/AMAX1(1.E-10,TRPPT)
+TR_PPTFLX = TR_TRPPT * (1.-TDER/AMAX1(1.E-10,TRPPT))
+```
+
+This applies to both KF (`module_cu_kfeta.F`) and MSKF (`module_cu_mskf.F`) which share identical code structure.
+
+### 14. Initialize Before Bounding (Uninitialized Memory)
+
+When initializing tracer column arrays from environment values, ensure the array is populated BEFORE applying bounds:
+
+```fortran
+! WRONG - AMAX1 reads uninitialized TR_Q0(K), then AMIN1 overwrites it:
+TR_Q0(K) = AMAX1(1.E-10, TR_Q0(K))    ! reads garbage
+TR_Q0(K) = AMIN1(TR_QV0(K), Q0(K))    ! overwrites, losing the lower bound
+
+! CORRECT - initialize first, then bound:
+TR_Q0(K) = AMIN1(TR_QV0(K), Q0(K))    ! populate from environment
+TR_Q0(K) = AMAX1(1.E-10, TR_Q0(K))    ! apply lower bound
+```
+
+Reading uninitialized memory can produce NaN on some platforms, and the lower bound is never actually applied in the wrong order.
+
 ## Namelist Validation
 
 WRF validates namelist settings in `share/module_check_a_mundo.F` before the simulation starts. The WVT overlay adds checks that enforce compatible scheme selections when `tracer_opt=4`. If a user configures an unsupported scheme, WRF fatals at `real.exe` with a specific error message.
@@ -458,11 +567,13 @@ WRF validates namelist settings in `share/module_check_a_mundo.F` before the sim
 | Setting | Allowed Values | Error if wrong |
 |---------|---------------|----------------|
 | `mp_physics` | 6 (WSM6) | `tracer_opt=4 (WVT) requires mp_physics=6 (WSM6)` |
-| `bl_pbl_physics` | 1 (YSU) or 0 | `tracer_opt=4 (WVT) requires bl_pbl_physics=1 (YSU) or 0` |
+| `bl_pbl_physics` | 1 (YSU) or 0 (SMS-3DTKE) | `tracer_opt=4 (WVT) requires bl_pbl_physics=1 (YSU) or 0` |
 | `cu_physics` | 1 (KF), 11 (MSKF), 16 (NTiedtke), or 0 | `tracer_opt=4 (WVT) requires cu_physics=1 (KF), 11 (MSKF), 16 (NTiedtke), or 0` |
-| `scalar_pblmix` | 0 | `tracer_opt=4 (WVT) requires scalar_pblmix=0` |
-| `tracer_pblmix` | 0 | `tracer_opt=4 (WVT) requires tracer_pblmix=0` |
+| `scalar_pblmix` | 0 (with PBL) or 1 (without PBL) | Conditional on `bl_pbl_physics` |
+| `tracer_pblmix` | 0 (with PBL) or 1 (without PBL) | `tracer_pblmix=0` with YSU; `tracer_pblmix=1` with `bl_pbl_physics=0` |
 | `tracer_adv_opt` | 4 | `tracer_opt=4 (WVT) requires tracer_adv_opt=4` |
+
+**Note on `scalar_pblmix` / `tracer_pblmix`:** These control whether the diffusion module mixes scalars/tracers vertically. With a PBL scheme (bl=1), set to 0 to avoid double-mixing. With `bl_pbl_physics=0` (SMS-3DTKE), set to 1 since the diffusion module is the ONLY path for vertical mixing.
 
 ### Updating when adding a new scheme
 
@@ -487,7 +598,7 @@ IF ( model_config_rec % cu_physics(i) .NE. 1 .AND. &
      model_config_rec % cu_physics(i) .NE. 0 ) THEN
 ```
 
-The validation block is near the end of `subroutine check_nml_consistency`, just before the "MUST BE AFTER ALL OF THE PHYSICS CHECKS" comment. Search for `mvt: WVT` to find it.
+The validation block is near the end of `subroutine check_nml_consistency`, just before the "MUST BE AFTER ALL OF THE PHYSICS CHECKS" comment. Search for `wvt: WVT` to find it.
 
 ## Testing Checklist
 

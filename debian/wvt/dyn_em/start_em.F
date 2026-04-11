@@ -1020,14 +1020,14 @@ endif
                       grid%rucuten, grid%rvcuten, grid%rthcuten,             &
                       grid%rqvcuten, grid%rqrcuten, grid%rqccuten,           &
                       grid%rqscuten, grid%rqicuten,                          &
-                      grid%rtrqvcuten, grid%rtrqrcuten, grid%rtrqccuten,     & !mvt
-                      grid%rtrqscuten, grid%rtrqicuten,                      & !mvt
+                      grid%rtrqvcuten, grid%rtrqrcuten, grid%rtrqccuten,     & !wvt
+                      grid%rtrqscuten, grid%rtrqicuten,                      & !wvt
                       grid%rushten, grid%rvshten, grid%rthshten,             &
                       grid%rqvshten, grid%rqrshten, grid%rqcshten,           &
                       grid%rqsshten, grid%rqishten, grid%rqgshten,           &
                       grid%rublten,grid%rvblten,grid%rthblten,               &
                       grid%rqvblten,grid%rqcblten,grid%rqiblten,             &
-                      grid%rtrqvblten,grid%rtrqcblten,grid%rtrqiblten,       & !mvt
+                      grid%rtrqvblten,grid%rtrqcblten,grid%rtrqiblten,       & !wvt
                       grid%rthraten,grid%rthratenlw,grid%rthratensw,         &
                       grid%this_is_an_ideal_run,                             &
                       !BSINGH - For WRFCuP scheme(11/12/2013)
@@ -1038,7 +1038,7 @@ endif
                       grid%stepbl,grid%stepra,grid%stepcu,                   &
                       grid%w0avg, grid%rainnc, grid%rainc, grid%raincv, grid%rainncv,  &
                       grid%snownc, grid%snowncv, grid%graupelnc, grid%graupelncv,  &
-                      grid%tr_rainnc, grid%tr_rainc,grid%tr_snownc,grid%tr_graupelnc,   &  !mvt
+                      grid%tr_rainnc, grid%tr_rainc,grid%tr_snownc,grid%tr_graupelnc,   &  !wvt
                       z_at_q, grid%alt, grid%qnwfa2d, grid%qnbca2d,     & ! G. Thompson
                       scalar(ims,kms,jms,1), num_scalar,                & ! G. Thompson
                       grid%re_cloud, grid%re_ice, grid%re_snow,         & ! G. Thompson
@@ -1270,7 +1270,7 @@ endif
                       ,grid%G_URB2D_mosaic,grid%RN_URB2D_mosaic                                      & ! danli mosaic
                       ,grid%TS_URB2D_mosaic                                                          & ! danli mosaic
                       ,grid%TS_RUL2D_mosaic                                                          & ! danli mosaic
-                      ,grid%trmask           &   !mvt
+                      ,grid%trmask           &   !wvt
                       ,grid%irr_rand_field,config_flags%irr_ph,config_flags%irr_freq                 &
                       ,grid%QR_CU, grid%QS_CU                                                        &
                       ,grid%NC_CU, grid%NI_CU, grid%NR_CU, grid%NS_CU,grid%CCN_CU                    &
