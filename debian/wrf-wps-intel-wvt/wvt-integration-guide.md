@@ -558,6 +558,24 @@ TR_Q0(K) = AMAX1(1.E-10, TR_Q0(K))    ! apply lower bound
 
 Reading uninitialized memory can produce NaN on some platforms, and the lower bound is never actually applied in the wrong order.
 
+### 15. Do Not Accumulate TR_RAINC in Both the Wrapper and advance_ppt
+
+`TR_RAINC` (accumulated tracer convective precipitation) must be accumulated in exactly ONE place. In WRF, `advance_ppt` in `module_physics_addtendc.F` accumulates `TR_RAINC += TR_PRATEC * DT` for all KF-family schemes. If the cumulus wrapper ALSO accumulates it (e.g., `tr_rainc = tr_rainc + tr_pratec * dt`), the tracer precipitation is double-counted.
+
+**Symptom:** `TR_RAINC / RAINC` systematically exceeds 1.0 (e.g., mean ~1.2). This is physically impossible since tracer precipitation cannot exceed base precipitation.
+
+**The rule:** The cumulus wrapper should only set `TR_PRATEC` (the rate). Never accumulate `TR_RAINC` in the wrapper -- let `advance_ppt` handle it.
+
+## Notes on 3D Source Behavior
+
+When using `tracer3dsource=1`, the 3D source continuously forces `tr_species = base_species` throughout the masked volume at every timestep. This is a strong forcing that results in:
+
+- `qv_tr/QVAPOR` approaching 1.0 within the source region (nearly all moisture tagged)
+- `TR_RAINNC/RAINNC` and `TR_RAINC/RAINC` close to 1.0 for precipitation originating from the source region
+- `qv_tr/QVAPOR` can transiently exceed 1.0 at some grid points due to advection between forcing steps -- this is inherent to the continuous forcing mechanism and matches the original WVT implementation
+
+The 3D source fully encompasses the 2D surface source (`tracer2dsource`) when using the same mask region. Enabling both simultaneously produces identical results to 3D-only, since the 3D forcing already tags all moisture including surface evaporation.
+
 ## Namelist Validation
 
 WRF validates namelist settings in `share/module_check_a_mundo.F` before the simulation starts. The WVT overlay adds checks that enforce compatible scheme selections when `tracer_opt=4`. If a user configures an unsupported scheme, WRF fatals at `real.exe` with a specific error message.

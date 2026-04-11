@@ -331,8 +331,8 @@
           enddo                                                                            ! wvt
        enddo                                                                               ! wvt
        do i = its,ite                                                                      ! wvt
-          tr_rainc(i,j) = tr_rainc(i,j) + tr_pratec_hv(i)*dt                               ! wvt
           tr_pratec(i,j) = tr_pratec_hv(i)                                                 ! wvt
+!         TR_RAINC accumulated in advance_ppt (module_physics_addtendc.F), not here         ! wvt
        enddo                                                                               ! wvt
     endif                                                                                  ! wvt
 
