@@ -566,6 +566,21 @@ Reading uninitialized memory can produce NaN on some platforms, and the lower bo
 
 **The rule:** The cumulus wrapper should only set `TR_PRATEC` (the rate). Never accumulate `TR_RAINC` in the wrapper -- let `advance_ppt` handle it.
 
+### 16. Broadcast WVT Namelist Variables to All Domains
+
+WRF's `tracer_opt`, `tracer_adv_opt`, `tracer2dsource`, `tracer3dsource`, and `tracer3dsink` are `max_domains` arrays in the registry. If written as scalars in `namelist.input` (e.g., `tracer_opt = 4`), WRF applies the value only to domain 1 and defaults to 0 for all nests.
+
+This causes a **fatal heap corruption**: domain 1 allocates 6 tracer species, domain 2 allocates 1 (the default). During nested boundary forcing, domain 1 writes 6 tracers into domain 2's memory space, overrunning the buffer. The crash manifests as `free(): invalid pointer` in HDF5 during wrfout_d02 creation -- far from the actual cause.
+
+**The fix**: Always broadcast these values to all domains in the namelist:
+```
+tracer_opt = 4, 4
+tracer_adv_opt = 4, 4
+tracer2dsource = 1, 1
+```
+
+In the auto-runs pipeline, these keys are in `DYNAMICS_PER_DOMAIN_FIELDS` so they're broadcast automatically.
+
 ## Notes on 3D Source Behavior
 
 When using `tracer3dsource=1`, the 3D source continuously forces `tr_species = base_species` throughout the masked volume at every timestep. This is a strong forcing that results in:

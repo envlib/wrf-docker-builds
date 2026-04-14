@@ -177,7 +177,7 @@ Second part of first RK step:
 
 WRF main mediation layer:
 
-- Added `auxinput8` I/O block for reading tracer source/sink masks. When `tracer_opt==4` and any of `tracer3dsource`, `tracer2dsource`, or `tracer3dsink` is enabled, opens and reads the `AUXINPUT8` dataset (containing TRMASK/TRMASK3D/TRMASK3D2 fields) at each timestep. Placed after the existing `auxinput7` block.
+- Added `auxinput8` I/O block for reading tracer source/sink masks. When `tracer_opt==4` and any of `tracer3dsource`, `tracer2dsource`, or `tracer3dsink` is enabled, opens and reads the `AUXINPUT8` dataset (containing TRMASK/TRMASK3D/TRMASK3D2 fields) once at initialization. Placed after the existing `auxinput7` block.
 
 **share/module_check_a_mundo.F** (+50 lines)
 

@@ -110,7 +110,7 @@ use module_io
        ENDIF
 !gmm
 
-!wvt: add input for tracer 3D region source here
+!wvt: read tracer mask from auxinput8
 
      IF ( config_flags%tracer_opt.eq.4 .and. (config_flags%tracer3dsource.eq.1 .or.  config_flags%tracer2dsource.eq.1 .or.  config_flags%tracer3dsink.eq.1) ) THEN
 
@@ -122,9 +122,6 @@ use module_io
      endif
 
         CALL open_r_dataset ( grid%auxinput8_oid, TRIM(inpname) , grid , config_flags , "DATASET=AUXINPUT8", ierr )
-
-!        call set_first_operation(grid%auxinput8_oid)
-
 
         IF ( ierr .NE. 0 ) THEN
           WRITE( wrf_err_message , * ) 'program wrf: error opening ',TRIM(inpname),' for reading ierr=',ierr
