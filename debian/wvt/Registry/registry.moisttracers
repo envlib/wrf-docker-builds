@@ -20,6 +20,9 @@ state    real  TR_GRAUPELNC       ij      misc        1         -      rhdu     
 state    real  TR_RAINC           ij      misc        1         -      rhdu     "TR_RAINC"                "ACCUMULATED TOTAL CUMULUS PRECIPITATION FROM MOISTURE TRACERS"         "mm"
 state    real  TR_PRATEC          ij      misc        1         -      r        "TR_PRATEC"               "TRACER PRECIP RATE FROM CUMULUS SCHEME"                         "mm s-1"
 
+state    integer  I_TR_RAINNC    ij      misc        1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_RAINNC"     "BUCKET FOR TR_RAINNC"     ""
+state    integer  I_TR_RAINC     ij      misc        1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_RAINC"      "BUCKET FOR TR_RAINC"      ""
+
 state   real  tr_thum_u_phy_dt   ikj      misc        1         -      rh       "tr_thum_u_phy_dt"        "tracer total humidity * x-wind component * dt"      "kg kg-1 m"
 state   real  tr_thum_v_phy_dt   ikj      misc        1         -      rh       "tr_thum_v_phy_dt"        "tracer total humidity * y-wind component * dt"      "kg kg-1 m"
 
