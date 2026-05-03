@@ -108,7 +108,12 @@ RUN cd /WPS/external/jasper-1.900.29 \
     && make -j$(nproc) && make install
 
 # WPS option 9 = Intel oneAPI compilers, serial (--build-grib2-libs removes NO_GRIB2 entries, shifting numbering)
+# Inject -heap-arrays so automatic Fortran arrays are heap-allocated instead of stack-allocated.
+# Without it, metgrid.exe segfaults in libc partway through long preprocessing runs.
 RUN echo 9 | ./configure --build-grib2-libs \
+    && sed -i 's|^FFLAGS *=.*|FFLAGS = -FR -convert big_endian -heap-arrays|' configure.wps \
+    && sed -i 's|^F77FLAGS *=.*|F77FLAGS = -FI -convert big_endian -heap-arrays|' configure.wps \
+    && grep -E '^(FFLAGS|F77FLAGS) *=' configure.wps \
     && ./compile
 
 RUN rm /WPS/namelist.wps && rm /WRF/run/namelist.input

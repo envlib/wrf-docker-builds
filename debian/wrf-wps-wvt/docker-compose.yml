@@ -3,7 +3,7 @@ services:
     build:
       context: ../
       dockerfile: wrf-wps-wvt/Dockerfile
-    image: mullenkamp/wrf-wps-wvt-debian:1.1
+    image: mullenkamp/wrf-wps-wvt-debian:1.2
     stdin_open: true
     tty: true
     shm_size: '1gb'
