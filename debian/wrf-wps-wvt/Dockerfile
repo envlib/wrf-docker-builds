@@ -33,10 +33,11 @@ WORKDIR /WPS
 
 COPY patches/output_module.F /WPS/geogrid/src/
 
+# WPS option 2 = Linux x86_64, gfortran (dmpar) — enables parallel metgrid.exe via mpirun.
 # Inject -fno-stack-arrays so automatic Fortran arrays are heap-allocated instead of stack-allocated.
 # Without it, metgrid.exe risks the same kind of stack-array memory bug that segfaults the Intel build on long preprocessing runs.
 RUN sed -i '163s/.*/    NETCDFF="-lnetcdff"/' configure \
-    && echo 1 | ./configure --build-grib2-libs \
+    && echo 2 | ./configure --build-grib2-libs \
     && sed -i 's|^FFLAGS *=.*|FFLAGS = $(FORMAT_FREE) -O -fconvert=big-endian -frecord-marker=4 -fno-stack-arrays|' configure.wps \
     && sed -i 's|^F77FLAGS *=.*|F77FLAGS = $(FORMAT_FIXED) -O -fconvert=big-endian -frecord-marker=4 -fno-stack-arrays|' configure.wps \
     && grep -E '^(FFLAGS|F77FLAGS) *=' configure.wps \
