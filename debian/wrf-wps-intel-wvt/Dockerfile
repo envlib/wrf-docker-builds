@@ -107,10 +107,11 @@ RUN cd /WPS/external/jasper-1.900.29 \
     && CC=gcc ./configure --prefix=/WPS/grib2 --disable-shared \
     && make -j$(nproc) && make install
 
-# WPS option 9 = Intel oneAPI compilers, serial (--build-grib2-libs removes NO_GRIB2 entries, shifting numbering)
+# WPS option 10 = Intel oneAPI compilers, dmpar (--build-grib2-libs removes NO_GRIB2 entries, shifting numbering).
+# dmpar enables parallel metgrid.exe via mpirun -n N, matching the gfortran build's capability.
 # Inject -heap-arrays so automatic Fortran arrays are heap-allocated instead of stack-allocated.
 # Without it, metgrid.exe segfaults in libc partway through long preprocessing runs.
-RUN echo 9 | ./configure --build-grib2-libs \
+RUN echo 10 | ./configure --build-grib2-libs \
     && sed -i 's|^FFLAGS *=.*|FFLAGS = -FR -convert big_endian -heap-arrays|' configure.wps \
     && sed -i 's|^F77FLAGS *=.*|F77FLAGS = -FI -convert big_endian -heap-arrays|' configure.wps \
     && grep -E '^(FFLAGS|F77FLAGS) *=' configure.wps \

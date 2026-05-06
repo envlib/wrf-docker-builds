@@ -42,7 +42,7 @@ wrf-base (Debian 13 + gfortran + mpich + HDF5 + NetCDF + tools)
 
 intel/oneapi-hpckit (multi-stage — builder + runtime)
 ├── wrf-wps-intel-ubuntu:1.0     — WRF 4.7.1 + WPS 4.6.0 (Intel oneAPI, serial WPS)
-└── wrf-wps-intel-wvt-ubuntu:1.2 — WRF 4.7.1 + WPS 4.6.0 + WVT (Intel oneAPI, serial WPS, -heap-arrays)
+└── wrf-wps-intel-wvt-ubuntu:1.3 — WRF 4.7.1 + WPS 4.6.0 + WVT (Intel oneAPI, dmpar WPS, -heap-arrays)
 
 wps-geog-nz (separate, no base dependency) — WPS geographical static data
 ```
@@ -63,7 +63,8 @@ When upgrading WPS or modifying these Dockerfiles, **preserve the heap-arrays in
 ## WPS configure options
 
 - `wrf-wps-debian:1.3` and `wrf-wps-wvt-debian:1.3`: WPS option **2** (`Linux x86_64, gfortran (dmpar)`). Enables `mpirun -n N metgrid.exe` for parallel preprocessing. Selected via `echo 2 | ./configure --build-grib2-libs`.
-- `wrf-wps-intel-ubuntu:1.0` and `wrf-wps-intel-wvt-ubuntu:1.2`: WPS option **9** (`Linux x86_64, Intel oneAPI (serial)`). Selected via `echo 9 | ./configure --build-grib2-libs`. The Intel WPS could be rebuilt dmpar (option 10) if a future need arises, but currently Intel WPS isn't used for preprocessing in the split-pipeline workflow — only its `wrf.exe` binary is consumed.
+- `wrf-wps-intel-ubuntu:1.0`: WPS option **9** (`Linux x86_64, Intel oneAPI (serial)`). Selected via `echo 9 | ./configure --build-grib2-libs`.
+- `wrf-wps-intel-wvt-ubuntu:1.3`: WPS option **10** (`Linux x86_64, Intel oneAPI compilers (dmpar)`). Selected via `echo 10 | ./configure --build-grib2-libs`. dmpar is required for the Phase 3 unified per-chunk pipeline where the same image runs both preprocess (parallel `metgrid.exe` / `real.exe` / `ndown.exe`) and WRF.
 
 ## Architecture
 
@@ -99,7 +100,7 @@ docker run --rm mullenkamp/wrf-wps-wvt-debian:1.3 \
 # Expect: libmpich + libmpichfort, FFLAGS containing -fno-stack-arrays
 
 # Intel (serial metgrid):
-docker run --rm mullenkamp/wrf-wps-intel-wvt-ubuntu:1.2 \
+docker run --rm mullenkamp/wrf-wps-intel-wvt-ubuntu:1.3 \
     bash -c "grep -E '^(FFLAGS|F77FLAGS) *=' /WPS/configure.wps"
 # Expect: FFLAGS containing -heap-arrays
 ```
