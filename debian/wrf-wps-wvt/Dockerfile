@@ -15,6 +15,7 @@ COPY wvt/dyn_em/ /WRF/dyn_em/
 COPY wvt/share/ /WRF/share/
 COPY wvt/Registry/ /WRF/Registry/
 COPY wvt/main/depend.common /WRF/main/depend.common
+COPY wvt/main/ndown_em.F /WRF/main/ndown_em.F
 COPY wvt/run/README.tracers /WRF/run/
 COPY wvt/run/namelist.input.tracers /WRF/run/
 

@@ -2668,7 +2668,9 @@ BENCH_START(tracer_adv_tim)
 ! spec_bdy are only called for nests. For boundary conditions from global model or larger domain,
 ! chem is uncoupled, and only used for one row/column on inflow (if have_bcs_chem=.true.) 
 !
-           IF( ( config_flags%nested ) .and. rk_step == 1 ) THEN
+           IF( ( config_flags%nested .OR. &
+                 ( config_flags%specified .AND. config_flags%have_bcs_tracer ) ) &
+               .and. rk_step == 1 ) THEN
              IF(ic.eq.1)CALL wrf_debug ( 10 , ' have_bcs_tracer' )
              CALL relax_bdy_scalar ( tracer_tend(ims,kms,jms,ic),                                    &
                                      tracer(ims,kms,jms,ic),  grid%mut,                              &
@@ -2750,15 +2752,17 @@ BENCH_START(tracer_adv_tim)
                                      grid%j_start(ij), grid%j_end(ij),   &
                                      k_start, k_end                      )
 #else
-             CALL flow_dep_bdy  ( tracer(ims,kms,jms,ic),     &
-                                  grid%ru_m, grid%rv_m, config_flags,   &
-                                  grid%spec_zone,                  &
-                                  ids,ide, jds,jde, kds,kde,  & ! domain dims
-                                  ims,ime, jms,jme, kms,kme,  & ! memory dims
-                                  ips,ipe, jps,jpe, kps,kpe,  & ! patch  dims
-                                  grid%i_start(ij), grid%i_end(ij),  &
-                                  grid%j_start(ij), grid%j_end(ij),  &
-                                  k_start, k_end                    )
+             IF ( .NOT. config_flags%have_bcs_tracer ) THEN
+               CALL flow_dep_bdy  ( tracer(ims,kms,jms,ic),     &
+                                    grid%ru_m, grid%rv_m, config_flags,   &
+                                    grid%spec_zone,                  &
+                                    ids,ide, jds,jde, kds,kde,  & ! domain dims
+                                    ims,ime, jms,jme, kms,kme,  & ! memory dims
+                                    ips,ipe, jps,jpe, kps,kpe,  & ! patch  dims
+                                    grid%i_start(ij), grid%i_end(ij),  &
+                                    grid%j_start(ij), grid%j_end(ij),  &
+                                    k_start, k_end                    )
+             ENDIF
 #endif
            ENDIF
          ENDDO tracer_tile_loop_2

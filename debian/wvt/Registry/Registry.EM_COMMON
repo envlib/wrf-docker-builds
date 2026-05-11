@@ -2955,6 +2955,7 @@ rconfig   real    spec_exp                namelist,bdy_control          1     0.
 rconfig   integer real_data_init_type     namelist,bdy_control		1                 1    irh   "real_data_init_type"   "REAL DATA INITIALIZATION OPTIONS: 1=SI, 2=MM5, 3=GENERIC" "PRE-PROCESSOR TYPES"
 rconfig   logical have_bcs_moist          namelist,bdy_control  max_domains    .false. rh    "have_bcs_moist"           ""      ""
 rconfig   logical have_bcs_scalar         namelist,bdy_control  max_domains    .false. rh    "have_bcs_scalar"          ""      ""
+rconfig   logical have_bcs_tracer         namelist,bdy_control  max_domains    .false. rh    "have_bcs_tracer"          ""      ""
 rconfig   logical multi_bdy_files         namelist,bdy_control          1      .false. rh    "multi_bdy_files"          ""      ""
 
 rconfig   integer background_proc_id      namelist,grib2 	        1     255    rh    "background_proc_id"    "Background processing id for grib2"  ""
