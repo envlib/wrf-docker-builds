@@ -233,7 +233,8 @@ DIAGNOSTIC_MODULES_EM = \
 	module_diag_pld.o \
 	module_diag_zld.o \
 	module_diag_trad_fields.o \
-        module_diag_solar.o
+        module_diag_solar.o \
+	module_diag_wvt_columns.o
   
 PHYSMMM_MODULES = \
 	physics_mmm/sf_sfclayrev.o \

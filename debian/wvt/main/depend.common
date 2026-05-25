@@ -1596,12 +1596,19 @@ module_diagnostics_driver.o: \
 	module_diag_rasm.o \
 	module_diag_trad_fields.o \
 	module_diag_solar.o \
+	module_diag_wvt_columns.o \
 	../frame/module_comm_dm.o \
 	../frame/module_state_description.o \
 	../frame/module_domain.o \
 	../frame/module_configure.o \
 	../frame/module_driver_constants.o \
-	../share/module_model_constants.o 
+	../share/module_model_constants.o
+
+
+module_diag_wvt_columns.o: \
+	../frame/module_state_description.o \
+	../frame/module_domain.o \
+	../frame/module_configure.o
 
 
 module_diag_misc.o: \

@@ -78,6 +78,7 @@ CONTAINS
       USE module_diag_hailcast, ONLY : hailcast_diagnostic_driver
       USE module_diag_solar, ONLY : solar_diag
       USE module_trad_fields, ONLY : trad_fields
+      USE module_diag_wvt_columns, ONLY : compute_wvt_column_diagnostics
 
       IMPLICIT NONE
 
@@ -1214,6 +1215,30 @@ CONTAINS
               j_start=grid%j_start, j_end=min(grid%j_end, jde-1),           &
               kts=k_start, kte=min(k_end,kde-1), num_tiles=grid%num_tiles   )
       END IF SOLAR_FIELDS
+
+
+      ! ----------------------------------------------------------------------
+      ! WVT 2D column-integrated diagnostics: PWAT, PWAT_TR, SLP,
+      ! VIMF_U/V, VIMF_TR_U/V, IVT. Computed at history-write time only
+      ! (diag_flag = .true.), formulas matched to cfdb-ingest's offline
+      ! computation. See phys/module_diag_wvt_columns.F.
+      ! ----------------------------------------------------------------------
+      WVT_COLUMN_DIAGS: IF ( diag_flag ) THEN
+         CALL wrf_debug ( 100 , '--> CALL DIAGNOSTICS PACKAGE: WVT_COLUMN_DIAGNOSTICS' )
+
+         !$OMP PARALLEL DO   &
+         !$OMP PRIVATE ( ij )
+         DO ij = 1 , grid%num_tiles
+            CALL compute_wvt_column_diagnostics ( grid, config_flags,            &
+                                                  moist, tracer,                 &
+                                                  ids, ide, jds, jde, kds, kde,  &
+                                                  ims, ime, jms, jme, kms, kme,  &
+                                                  grid%i_start(ij), grid%i_end(ij), &
+                                                  grid%j_start(ij), grid%j_end(ij), &
+                                                  k_start, k_end                 )
+         END DO
+         !$OMP END PARALLEL DO
+      END IF WVT_COLUMN_DIAGS
 
 
    END SUBROUTINE diagnostics_driver
