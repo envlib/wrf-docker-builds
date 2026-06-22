@@ -3104,6 +3104,22 @@
                count_fatal_error = count_fatal_error + 1
             END IF
 
+! wvt: number of simultaneous tagged source regions must lie within the compiled
+!      member count (6 species x MAX_WVT_REGIONS=8 registered in Registry.EM).
+            IF ( model_config_rec % num_wvt_regions(i) .LT. 1 .OR. &
+                 model_config_rec % num_wvt_regions(i) .GT. 8 ) THEN
+               wrf_err_message = '--- ERROR: tracer_opt=4 (WVT) requires num_wvt_regions in 1..8 (MAX_WVT_REGIONS)'
+               CALL wrf_message ( wrf_err_message )
+               count_fatal_error = count_fatal_error + 1
+            END IF
+
+! wvt: num_wvt_regions>1 is only valid with WVT active. Without tracer_opt=4 the cumulative
+!      num_wvt_regions==N packages would activate regions 2.. without the tracer_opt-gated
+!      region 1, leaving a non-contiguous active tracer block.
+         ELSE IF ( model_config_rec % num_wvt_regions(i) .GT. 1 ) THEN
+            wrf_err_message = '--- ERROR: num_wvt_regions>1 requires tracer_opt=4 (WVT)'
+            CALL wrf_message ( wrf_err_message )
+            count_fatal_error = count_fatal_error + 1
          END IF
       ENDDO
 

@@ -30,3 +30,4 @@ state   real  tr_thum_v_phy_dt   ikj      misc        1         -      rh       
 rconfig   integer tracer3dsource        namelist,dynamics      max_domains    0        rh    "tracer3dsource"    "switch to activate 3D region (read in from file) as tracer moisture source " ""
 rconfig   integer tracer2dsource        namelist,dynamics      max_domains    0        rh    "tracer2dsource"    "switch to activate 2D region (read in from file) as tracer moisture source " ""
 rconfig   integer tracer3dsink          namelist,dynamics      max_domains    0        rh    "tracer3dsink"      "switch to activate 3D region (read in from file) as tracer moisture sink " ""
+rconfig   integer num_wvt_regions       namelist,dynamics      max_domains    1        rh    "num_wvt_regions"   "number of simultaneous WVT tagged moisture source regions (1..MAX_WVT_REGIONS=8)" ""
