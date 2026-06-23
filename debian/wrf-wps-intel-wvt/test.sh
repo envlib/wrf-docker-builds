@@ -2,7 +2,7 @@
 set -uo pipefail
 
 # Defaults
-IMAGE="mullenkamp/wrf-wps-intel-wvt-ubuntu:1.0"
+IMAGE="mullenkamp/wrf-wps-intel-wvt-ubuntu:2.0"
 GEOG_PATH="$HOME/WPS_GEOG"
 TEST_DATA="$HOME/data/wrf/test_data"
 CONTAINER="wrf-intel-wvt-test-$$"

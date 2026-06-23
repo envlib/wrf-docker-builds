@@ -2,6 +2,8 @@
 
 WRF 4.7.1 + WPS 4.6.0 with WVT moisture tracer modifications. Available in Intel oneAPI (ifx/icx) and gfortran builds.
 
+**v2.0** adds **multi-region tagging** — up to 8 disjoint source regions tracked simultaneously in a single run (see [Multi-Region Tagging](#multi-region-tagging-v20)). `num_wvt_regions = 1` reproduces the original single-region behaviour bit-for-bit.
+
 ## What is WVT?
 
 WVT (Water Vapor Tracers) is a moisture tagging tool for the WRF model. It tracks moisture from designated source regions through the full hydrological cycle -- evaporation, vertical mixing, advection, cloud formation, and precipitation. This allows you to answer questions like "what fraction of this rainfall originated from oceanic evaporation?" or "how much moisture in this storm came from the Tasman Sea?"
@@ -11,6 +13,45 @@ Six tracer species mirror the WSM6 moisture categories (vapor, cloud water, rain
 Based on: Insua-Costa, D. and Miguez-Macho, G. (2018), "A new moisture tagging capability in the Weather Research and Forecasting model", Earth Syst. Dynam., 9, 167-185.
 
 Original repository: https://github.com/damianinsua/WRF-WVTs
+
+## Multi-Region Tagging (v2.0)
+
+Version 2.0 tracks **N disjoint source regions in one run**. Set `num_wvt_regions = N` (1..8) and supply
+`N` disjoint masks; each region's moisture is followed independently through the full hydrological cycle,
+so a single simulation yields per-region precipitation attribution (replacing the older one-run-per-region
+workflow). Because the tracers are passive and linear, the result is exact — the sum over regions
+reproduces a single all-regions run to numerical precision.
+
+`num_wvt_regions = 1` is fully backward-compatible (original single-region behaviour, bit-for-bit).
+
+**Scope** (enforced by `check_a_mundo` — a non-conforming namelist aborts at startup). Multi-region
+(`num_wvt_regions > 1`) currently requires:
+
+| Requirement | Reason |
+|-------------|--------|
+| `tracer_opt = 4` | WVT must be active |
+| `mp_physics = 6` (WSM6) | as for all WVT |
+| `bl_pbl_physics = 0` (SMS-3DTKE) | multi-region YSU not yet wired |
+| `tracer2dsource = 1`; `tracer3dsource = 0`, `tracer3dsink = 0` | only the 2D surface source is multi-region |
+| `1 ≤ num_wvt_regions ≤ 8` | compiled member count (`MAX_WVT_REGIONS`) |
+
+Convective tagging is implemented for `cu_physics = 16` (New Tiedtke) and `cu_physics = 0` (no cumulus,
+convection-resolving). With other cumulus schemes (KF, MSKF) only region 1's convection is tagged.
+
+### Per-region output representation
+
+Two conventions appear, because the WRF registry can region-dimension 2D fields but not 3D fields:
+
+- **Region-dimensioned** — one variable with an extra `wvt_regions` axis. Applies to the 2D accumulators
+  and column diagnostics: `TRMASK`, `TRQFX`, `TR_RAINNC`, `TR_RAINC`, `TR_SNOWNC`, `TR_GRAUPELNC`,
+  `TR_PRATEC`, `I_TR_RAINNC`, `I_TR_RAINC`, `PWAT_TR`, `VIMF_TR_U`, `VIMF_TR_V`. In the output these gain
+  a leading region dimension, e.g. `TR_RAINNC(Time, wvt_regions, south_north, west_east)`; region `n` is
+  index `n-1`.
+- **Named members** — one variable per region, region 1 unsuffixed plus `_02`..`_NN` suffixes. Applies to
+  the 3D tracer species `qv_tr`/`qc_tr`/…/`qg_tr` (→ `qv_tr_02`, …) and the 3D moisture-flux diagnostics
+  `tr_thum_u_phy_dt`/`tr_thum_v_phy_dt` (→ `tr_thum_u_phy_dt_02`, …).
+
+Region `n`'s six tracer species occupy a contiguous block in WRF's tracer array at `P_QV_TR + (n-1)*6`.
 
 ## Supported Physics Schemes
 
@@ -90,6 +131,7 @@ All three mechanisms are independent and controlled by separate namelist flags:
 &dynamics
  tracer_adv_opt      = 4,
  tracer_opt          = 4,
+ num_wvt_regions     = 1,          ! 1..8 simultaneous source regions (v2.0); >1 requires bl_pbl_physics=0 + 2D source only
  tracer2dsource      = 1,
  tracer3dsource      = 0,
  tracer3dsink        = 0,
@@ -125,25 +167,53 @@ The pipeline creates `TRMASK` when `tracer2dsource=1` and `TRMASK3D` when `trace
 
 For manual creation, see `2Dsource.py` in the WRF-WVTs repository as a template.
 
+**Multi-region masks (v2.0).** When `num_wvt_regions = N > 1`, `TRMASK` is region-dimensioned —
+`TRMASK(Time, wvt_regions, south_north, west_east)` — and the file must supply `N` **disjoint** masks
+(region `n` at index `n-1`); the IO layer reads the region dimension transparently (no extra Fortran).
+`create_trmask.py` emits the `N` bands. The masks should not overlap — a cell tagged by two regions would
+be double-counted, breaking the `Σ regions = single-run` linearity property.
+
 ## Output Variables
 
-When `tracer_opt=4`, WRF produces additional output fields:
+When `tracer_opt=4`, WRF produces additional output fields. For `num_wvt_regions > 1` each appears
+per-region via one of the two conventions in [Per-region output representation](#per-region-output-representation):
+**named members** (`_02`..`_NN` suffix) for 3D fields, or a **region dimension** (`wvt_regions` axis) for
+2D accumulators and column diagnostics.
 
-| Variable | Dimensions | Description |
+**3D tracer species** — named members (region 1 unsuffixed, regions 2..N suffixed `_0n`):
+
+| Variable | Description |
+|----------|-------------|
+| `qv_tr` | Tracer water vapor mixing ratio |
+| `qc_tr` | Tracer cloud water mixing ratio |
+| `qr_tr` | Tracer rain water mixing ratio |
+| `qi_tr` | Tracer cloud ice mixing ratio |
+| `qs_tr` | Tracer snow mixing ratio |
+| `qg_tr` | Tracer graupel mixing ratio |
+
+**Accumulators and column diagnostics** — region-dimensioned (leading `wvt_regions` axis when `num_wvt_regions > 1`):
+
+| Variable | Base dims | Description |
 |----------|-----------|-------------|
-| `qv_tr` | 3D | Tracer water vapor mixing ratio |
-| `qc_tr` | 3D | Tracer cloud water mixing ratio |
-| `qr_tr` | 3D | Tracer rain water mixing ratio |
-| `qi_tr` | 3D | Tracer cloud ice mixing ratio |
-| `qs_tr` | 3D | Tracer snow mixing ratio |
-| `qg_tr` | 3D | Tracer graupel mixing ratio |
 | `TR_RAINNC` | 2D | Accumulated grid-scale tracer precipitation (mm) |
 | `TR_RAINC` | 2D | Accumulated cumulus tracer precipitation (mm) |
-| `TR_SNOWNC` | 2D | Accumulated tracer snow (mm) |
+| `TR_SNOWNC` | 2D | Accumulated tracer snow + ice (mm) |
 | `TR_GRAUPELNC` | 2D | Accumulated tracer graupel (mm) |
+| `TR_PRATEC` | 2D | Cumulus tracer precipitation rate (mm/s) |
+| `I_TR_RAINNC`, `I_TR_RAINC` | 2D | Bucket counters for the precip accumulators |
 | `TRQFX` | 2D | Upward moisture tracer flux at surface (kg/m²/s) |
+| `PWAT_TR` | 2D | Tracer precipitable water (column-integrated tagged vapor) |
+| `VIMF_TR_U`, `VIMF_TR_V` | 2D | Vertically integrated tracer moisture flux (x, y) |
 
-The ratio `TR_RAINNC / RAINNC` gives the fraction of grid-scale precipitation that originated from the tagged source region.
+**Moisture-flux diagnostics** — 3D, named members (region 1 unsuffixed + `_0n`):
+
+| Variable | Description |
+|----------|-------------|
+| `tr_thum_u_phy_dt`, `tr_thum_v_phy_dt` | Tagged total-humidity × wind × dt (x, y transport flux) |
+
+The ratio `TR_RAINNC / RAINNC` gives the fraction of grid-scale precipitation originating from a tagged
+region. When the precip bucket is enabled (`bucket_mm` in the namelist, typically 100), reconstruct the
+true total before taking the ratio: `TR_RAINNC + bucket_mm·I_TR_RAINNC` (and likewise for `TR_RAINC`).
 
 ## Build
 

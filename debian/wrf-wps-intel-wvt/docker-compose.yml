@@ -1,12 +1,12 @@
 services:
   wrf:
-    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:1.5
+    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:2.0
     build:
       context: ../
       dockerfile: wrf-wps-intel-wvt/Dockerfile
     stdin_open: true
     tty: true
-    shm_size: '1gb'
+    shm_size: '2gb'   # >=2gb required for multi-rank Intel MPI (mpirun -n N); 1gb SIGBUSes
     network_mode: host
     environment:
       - DISPLAY=${DISPLAY}

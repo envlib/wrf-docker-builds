@@ -185,6 +185,14 @@ ENV PATH="/root/.local/bin:/opt/venv/bin:/opt/intel/oneapi/redist/bin:$PATH"
 # Intel MPI fabric for container environments (shm for single-node, avoids OFI hardware errors)
 ENV I_MPI_FABRICS=shm
 
+# Image metadata. v2.0: multi-region water-vapour tracers (num_wvt_regions up to 8) — a single run
+# tags N disjoint ocean source regions simultaneously, yielding per-region precipitation attribution
+# (TR_RAINNC/TR_RAINC/PWAT_TR/VIMF_TR/TR_THUM_* sets, region 1 unsuffixed + _02..NN). Scoped to
+# bl_pbl_physics=0 + 2D source; WSM6 microphysics + cu_ntiedtke cumulus.
+LABEL org.opencontainers.image.title="WRF-WPS Intel WVT (multi-region)" \
+      org.opencontainers.image.version="2.0" \
+      org.opencontainers.image.description="WRF 4.7.1 + WPS 4.6.0, Intel oneAPI, with multi-region water-vapour tracers (num_wvt_regions up to 8)."
+
 WORKDIR /WPS
 
 CMD ["/bin/bash"]
