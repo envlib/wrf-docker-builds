@@ -459,9 +459,8 @@ CONTAINS
    REAL,     DIMENSION( ims:ime , jms:jme ) , INTENT(OUT) ::           &
              RAINNC, RAINC, RAINCV, RAINNCV,  &
              SNOWNC, SNOWNCV, GRAUPELNC, GRAUPELNCV
-! wvt: tracer
-   REAL,     DIMENSION( ims:ime , jms:jme ) , INTENT(OUT) :: TR_RAINC
-   REAL,     DIMENSION( ims: , : , jms: ) , INTENT(OUT) :: TR_RAINNC, TR_SNOWNC, TR_GRAUPELNC ! wvt: per-region (i,n,j)
+! wvt: tracer (per-region i,n,j)
+   REAL,     DIMENSION( ims: , : , jms: ) , INTENT(OUT) :: TR_RAINNC, TR_SNOWNC, TR_GRAUPELNC, TR_RAINC ! wvt
 
    REAL,     DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(IN) :: z_at_q            !  G. Thompson
    REAL,     DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(IN) :: inv_dens          !  G. Thompson
@@ -4039,7 +4038,7 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
 
    REAL ,   DIMENSION( ims:ime , jms:jme ), INTENT(OUT):: RAINC, RAINCV
 
-   REAL ,   DIMENSION( ims:ime , jms:jme ), INTENT(OUT):: TR_RAINC   ! wvt: tracer
+   REAL ,   DIMENSION( ims: , : , jms: ), INTENT(OUT):: TR_RAINC   ! wvt: per-region (i,n,j)
 
    REAL ,   DIMENSION( ims:ime , jms:jme ), INTENT(OUT):: CLDEFI
 #if ( EM_CORE == 1 )
@@ -4078,9 +4077,9 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
      DO i=its,itf
         RAINC(i,j)=0.
         RAINCV(i,j)=0.
-        TR_RAINC(i,j)=0.! wvt
      ENDDO
      ENDDO
+     TR_RAINC = 0.   ! wvt: zero all regions at init
    ENDIF
 
 !-- deep convection and hybrid deep-shallow convection schemes

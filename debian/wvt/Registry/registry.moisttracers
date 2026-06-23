@@ -17,11 +17,11 @@ state    real  TR_RAINNC          i{wvtreg}j  misc    1         -      rhdu     
 state    real  TR_SNOWNC          i{wvtreg}j  misc    1         -      rhdu     "TR_SNOWNC"               "ACCUMULATED TOTAL GRID SCALE SNOW AND ICE FROM MOISTURE TRACERS, per WVT region"          "mm"
 state    real  TR_GRAUPELNC       i{wvtreg}j  misc    1         -      rhdu     "TR_GRAUPELNC"            "ACCUMULATED TOTAL GRID SCALE GRAUPEL FROM MOISTURE TRACERS, per WVT region"               "mm"
 
-state    real  TR_RAINC           ij      misc        1         -      rhdu     "TR_RAINC"                "ACCUMULATED TOTAL CUMULUS PRECIPITATION FROM MOISTURE TRACERS"         "mm"
-state    real  TR_PRATEC          ij      misc        1         -      r        "TR_PRATEC"               "TRACER PRECIP RATE FROM CUMULUS SCHEME"                         "mm s-1"
+state    real  TR_RAINC           i{wvtreg}j  misc    1         -      rhdu     "TR_RAINC"                "ACCUMULATED TOTAL CUMULUS PRECIPITATION FROM MOISTURE TRACERS, per WVT region"         "mm"
+state    real  TR_PRATEC          i{wvtreg}j  misc    1         -      r        "TR_PRATEC"               "TRACER PRECIP RATE FROM CUMULUS SCHEME, per WVT region"                         "mm s-1"
 
 state    integer  I_TR_RAINNC    i{wvtreg}j  misc    1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_RAINNC"     "BUCKET FOR TR_RAINNC, per WVT region"     ""
-state    integer  I_TR_RAINC     ij      misc        1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_RAINC"      "BUCKET FOR TR_RAINC"      ""
+state    integer  I_TR_RAINC     i{wvtreg}j  misc    1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_RAINC"      "BUCKET FOR TR_RAINC, per WVT region"      ""
 
 state   real  tr_thum_u_phy_dt   ikj      misc        1         -      rh       "tr_thum_u_phy_dt"        "tracer total humidity * x-wind component * dt"      "kg kg-1 m"
 state   real  tr_thum_v_phy_dt   ikj      misc        1         -      rh       "tr_thum_v_phy_dt"        "tracer total humidity * y-wind component * dt"      "kg kg-1 m"

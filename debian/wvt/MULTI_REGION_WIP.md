@@ -93,6 +93,42 @@ acceptance targets).
   `uv run --project ~/git/wrf-repos/wrf-auto-runs python <check>.py` (has h5netcdf + scipy).
 - Test domain: 99×111 single domain, WSM6/Tiedtke/SMS-3DTKE, 3-h run, `met_em` for 2023-02-10.
 
+## Stage 1d (cumulus / Tiedtke) — MAPPED; awaiting design decision on tendency storage
+Scheme = `phys/physics_mmm/cu_ntiedtke.F90` (cu_ntiedtke_run; cu_physics=16). WRF-side driver =
+`phys/module_cu_ntiedtke.F` (cu_ntiedtke_driver). Tendency-based (unlike WSM6's in-place state):
+driver packs tr_qv/qc/qi_curr → 2D `_hv` (reversed k-order `kte-k+kts`), calls cu_ntiedtke_run, then
+`rtrq{v,c,i}cuten = (tr_*_hv − tr_*_curr)/(dt*stepcu)`; `tr_pratec` from the core; `tr_rainc`
+accumulated in advance_ppt. **cu_ntiedtke_run declares pu,pv,pt,pqv,pqc,pqi `intent(inout)` (adjusts
+base in place)** → per-region calls need base column save/restore (raincv reset by `=`, so base
+outputs deterministic — like WSM6 sedimentation).
+
+Feasible parts (mirror 1c): `TR_RAINC`/`TR_PRATEC`/`I_TR_RAINC` → `i{wvtreg}j`; per-region cumulus
+calls w/ base save-restore; `diag_misc` TR_RAINC bucket region-loop (lines ~350-366); first_rk_step_part1
+cumulus_driver call threads tr_block+count; `module_cumulus_driver.F` threads block.
+
+**BLOCKER (invalidates plan §D4):** the convective tracer tendencies `RTRQ{V,C,I}CUTEN` are 3D (`ikj`),
+applied to `tracer_tendf(.,P_*_TR)` via `add_a2a` in `module_physics_addtendc.F` (sites ~1317-1345,
+1435-1463, 1754-1768; zeroed ~2546) and PERSIST between cumulus steps (restart flag `r`). Region-
+dimensioning them needs a 4D field, but **WRF registry has NO 3D+namelist-category layout** (0 of 240
+`i{cat}j` fields are `ik{cat}j`; 4D uses the separate `ikjf` package mechanism). And persistence rules
+out region-looping the cumulus on the fly (single storage can't hold N regions for between-step reuse).
+Options for per-region convective tracer tendencies: **(B)** named members `RTRQVCUTEN_02..NN` ×3
+species ×MAX (consistent w/ Phase-0 tracer members; verbose; awkward to apply in a loop — needs
+generated/unrolled add_a2a); **(C)** new 4D `ikjf` package array for tendencies (clean looping, more
+machinery); **(D)** rejected — single reused storage breaks between-step reuse.
+**DECISION (user + Gemini): Option B, and SPLIT 1d:**
+- **1d-a (convective precip) — DONE, compiles clean, validated. UNCOMMITTED, awaiting Gemini.**
+  region-dim `TR_RAINC`/`TR_PRATEC`/`I_TR_RAINC`→`i{wvtreg}j` + per-region
+  cumulus calls in cu_ntiedtke_driver yielding per-region `tr_pratec`→`tr_rainc`;
+  thread tr_block+count+f_tr_qv through solve_em(first_rk_step_part1)→cumulus_driver→cu_ntiedtke_driver;
+  diag_misc TR_RAINC bucket region-loop; advance_ppt tr_rainc accumulation; init. Regions 2..N's
+  `rtrq*cuten` are COMPUTED but discarded (only region 1 stored) — so 1d-a tags convective precip but
+  not the convective column transport. Validate: `tr_rainc` linearity Σ(N=2)==single + conservation.
+- **1d-b (convective column transport)** = Option B named members `RTRQ{V,C,I}CUTEN_02..NN` (×3
+  species ×7) via a generator; pass down the chain; unroll/generate the `add_a2a` per region in
+  module_physics_addtendc.F (sites ~1317/1435/1754) + zero (~2546). Validate grid-scale `tr_rainnc`
+  linearity recovers.
+
 ## Cadence
 Implement a stage → compile-build → runtime-check → **PAUSE** → user runs Gemini code-review on the
 diff → incorporate feedback → next stage. The **user commits to git** themselves. Each pause is a

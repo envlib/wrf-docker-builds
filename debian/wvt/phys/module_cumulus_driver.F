@@ -79,6 +79,7 @@ CONTAINS
                  ! wvt: optional ET tracers
                      ,tr_qv_curr, tr_qc_curr, tr_qr_curr              &
                      ,tr_qi_curr, tr_qs_curr, tr_qg_curr              &
+                     ,tr_block, num_wvt_regions                       & ! wvt: multi-region block + count (cu_ntiedtke)
                  ! Optional arguments for GD scheme
                      ,apr_gr,apr_w,apr_mc,apr_st,apr_as,apr_capma     &
                      ,apr_capme,apr_capmi,edt_out,clos_choice         &
@@ -500,9 +501,11 @@ CONTAINS
 #endif
 
 
+   INTEGER, INTENT(IN) :: num_wvt_regions                            ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme, jms:jme, * ), OPTIONAL, INTENT(IN) :: tr_block  ! wvt: contiguous tracer block (cu_ntiedtke)
+   REAL, DIMENSION( ims:ime, num_wvt_regions, jms:jme ), INTENT(INOUT) :: TR_RAINC    ! wvt: per-region (i,n,j)
    REAL, DIMENSION( ims:ime , jms:jme ),                         &
           INTENT(INOUT) ::                                RAINC  &
-                                                    ,  TR_RAINC  &  ! wvt
                                                     ,    RAINCV  &
                                                     ,       NCA  & 
                                                     ,      HTOP  & 
@@ -518,7 +521,7 @@ CONTAINS
 
    REAL, DIMENSION( ims:ime , jms:jme ),INTENT(INOUT),OPTIONAL :: &
         PRATEC,MAVAIL,PBLH,PSFC,TSK,TPERT2D,UST,HFX,QFX
-   REAL, DIMENSION( ims:ime , jms:jme ),INTENT(INOUT),OPTIONAL :: TR_PRATEC    !wvt
+   REAL, DIMENSION( ims:ime, num_wvt_regions, jms:jme ),INTENT(INOUT),OPTIONAL :: TR_PRATEC    !wvt: per-region (i,n,j)
    REAL, DIMENSION( ims:ime , jms:jme ),INTENT(INOUT)          :: &
                                                       HPBL_HOLD
 !ckay
@@ -526,7 +529,7 @@ CONTAINS
          OPTIONAL, INTENT(INOUT) ::                         ZOL
 
    REAL, DIMENSION( ims:ime , jms:jme ) :: tmppratec
-   REAL, DIMENSION( ims:ime , jms:jme ) :: tr_tmppratec                 ! wvt
+   REAL, DIMENSION( ims:ime, num_wvt_regions, jms:jme ) :: tr_tmppratec                 ! wvt: per-region (i,n,j)
 
    INTEGER, DIMENSION( ims:ime , jms:jme ),                      &
                     INTENT(IN) ::                          KPBL
@@ -812,9 +815,9 @@ CONTAINS
 ! wvt: tracer
 
    if ( PRESENT ( tr_pratec ) ) then  !tracer
-      tr_tmppratec(:,:) = tr_pratec(:,:)
+      tr_tmppratec = tr_pratec
    else
-      tr_tmppratec(:,:) = 0.
+      tr_tmppratec = 0.
    end if
 
 ! wvt
@@ -1089,7 +1092,7 @@ CONTAINS
                ,F_QV=f_qv,F_QC=f_qc,F_QR=f_qr                   &
                ,F_QI=f_qi,F_QS=f_qs                             &
               ! wvt: optional WVT tracer arguments
-               ,TR_PRATEC=tr_tmppratec                          &
+               ,TR_PRATEC=tr_tmppratec(:,1,:)                   & ! wvt: other cumulus schemes single-region (region 1)
                ,TR_QV=tr_qv_curr                                &
                ,RTRQVCUTEN=rtrqvcuten ,RTRQCCUTEN=rtrqccuten    &
                ,RTRQRCUTEN=rtrqrcuten ,RTRQICUTEN=rtrqicuten    &
@@ -1146,7 +1149,7 @@ CONTAINS
                ,AERCU_FCT=aercu_fct,AERCU_OPT=aercu_opt        &
                ,EFCS=EFCS,EFIS=EFIS,EFSS=EFSS                   &
                ,RUCUTEN=RUCUTEN,RVCUTEN=RVCUTEN,XLAND=XLAND        & !JTR
-               ,TR_QV=tr_qv_curr,TR_PRATEC=tr_tmppratec          & ! wvt
+               ,TR_QV=tr_qv_curr,TR_PRATEC=tr_tmppratec(:,1,:)   & ! wvt: single-region (region 1)
                ,RTRQVCUTEN=rtrqvcuten,RTRQCCUTEN=rtrqccuten      & ! wvt
                ,RTRQRCUTEN=rtrqrcuten,RTRQICUTEN=rtrqicuten      & ! wvt
                ,RTRQSCUTEN=rtrqscuten                            & ! wvt
@@ -1502,9 +1505,7 @@ CONTAINS
                ,GRAV=g,XLF=xlf,XLS=xls,XLV=xlv                  &
                ,RD=r_d,RV=r_v,CP=cp                             &
                ,errmsg=errmsg,errflg=errflg                     &
-               ,tr_qv_curr=tr_qv_curr                           & ! wvt
-               ,tr_qc_curr=tr_qc_curr                           & ! wvt
-               ,tr_qi_curr=tr_qi_curr                           & ! wvt
+               ,tr_block=tr_block,num_wvt_regions=num_wvt_regions & ! wvt
                ,tr_pratec=tr_tmppratec                           & ! wvt
                ,tr_rainc=tr_rainc                                & ! wvt
                ,rtrqvcuten=rtrqvcuten                            & ! wvt
@@ -1735,7 +1736,7 @@ CONTAINS
    endif
 
    if (PRESENT(TR_PRATEC)) then   ! wvt
-      tr_pratec(:,:) = tr_tmppratec(:,:)
+      tr_pratec = tr_tmppratec
    endif
 
    ! Copy cudtacttime back if necessary

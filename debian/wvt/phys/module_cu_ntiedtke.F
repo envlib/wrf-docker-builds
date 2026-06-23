@@ -30,7 +30,7 @@
                 ,ims,ime,jms,jme,kms,kme                 &
                 ,its,ite,jts,jte,kts,kte                 &
                 ,errmsg,errflg                           &
-                ,tr_qv_curr,tr_qc_curr,tr_qi_curr          & ! wvt
+                ,tr_block,num_wvt_regions                  & ! wvt
                 ,tr_pratec,tr_rainc                        & ! wvt
                 ,rtrqvcuten,rtrqccuten,rtrqicuten          & ! wvt
                 ,f_tr_qv)                                    ! wvt
@@ -136,21 +136,22 @@
  integer,intent(out):: errflg
 
 !--- optional tracer arguments:                                                           ! wvt
- real(kind=kind_phys),intent(in),dimension(ims:ime,kms:kme,jms:jme),optional:: &          ! wvt
-    tr_qv_curr,  &                                                                        ! wvt - INTENT(IN): state read only, tendencies returned
-    tr_qc_curr,  &                                                                        ! wvt - tracer cloud water (read only)
-    tr_qi_curr                                                                             ! wvt - tracer cloud ice (read only)
+ integer,intent(in):: num_wvt_regions                                                      ! wvt: number of active WVT regions
+!  contiguous tracer block: base = tracer(ims,kms,jms,P_QV_TR); region n species s (0..5) at  ! wvt
+!  4th index (n-1)*6+s+1 (qv=+1, qc=+2, qi=+4 used by cumulus); registry-contiguous.         ! wvt
+ real(kind=kind_phys),intent(in),dimension(ims:ime,kms:kme,jms:jme,*),optional:: tr_block   ! wvt
  real(kind=kind_phys),intent(inout),dimension(ims:ime,kms:kme,jms:jme),optional:: &       ! wvt
-    rtrqvcuten,  &                                                                        ! wvt - tracer vapor tendency
+    rtrqvcuten,  &                                                                        ! wvt - tracer vapor tendency (region 1 only in 1d-a; 1d-b adds 2..N)
     rtrqccuten,  &                                                                        ! wvt - tracer cloud water tendency
     rtrqicuten                                                                             ! wvt - tracer cloud ice tendency
- real(kind=kind_phys),intent(inout),dimension(ims:ime,jms:jme),optional:: &                ! wvt
+ real(kind=kind_phys),intent(inout),dimension(ims:ime,num_wvt_regions,jms:jme),optional:: & ! wvt: per-region
     tr_pratec,   &                                                                        ! wvt
     tr_rainc                                                                               ! wvt
  logical,intent(in),optional:: f_tr_qv                                                     ! wvt
 
 !--- local variables and arrays:
  integer:: i,im,j,k,kx,kx1
+ integer:: n_wvt, nloop_wvt, ib_wvt                                                        ! wvt: region index / loop count / block base offset
  integer,dimension(its:ite)::  slimsk
 
  real(kind=kind_phys):: delt
@@ -231,19 +232,26 @@
        enddo
     enddo
 
-!--- wvt: pack 3D tracer arrays to 2D tile arrays (column-reversed for CCPP core)
-    if (l_do_tracers) then                                                                 ! wvt
-       do k = kts,kte                                                                      ! wvt
-          do i = its,ite                                                                   ! wvt
-             tr_qv_hv(i,kte-k+kts) = tr_qv_curr(i,k,j)                                   ! wvt
-             tr_qc_hv(i,kte-k+kts) = tr_qc_curr(i,k,j)                                   ! wvt
-             tr_qi_hv(i,kte-k+kts) = tr_qi_curr(i,k,j)                                   ! wvt
-          enddo                                                                            ! wvt
-       enddo                                                                               ! wvt
-       do i = its,ite                                                                      ! wvt
-          tr_pratec_hv(i) = 0.0                                                            ! wvt - zero before call, not accumulated
-       enddo                                                                               ! wvt
-    endif                                                                                  ! wvt
+!--- wvt: per-region cumulus loop. cu_ntiedtke_run only modifies the working copies (qvf..),  ! wvt
+!--- wvt: which pre_run recreates from the UNCHANGED base _hv each pass (qv/qc/qi are intent(in) ! wvt
+!--- wvt: in pre/post_run) -> no base save/restore needed. Base outputs (post_run) are identical ! wvt
+!--- wvt: every region -> computed once on n_wvt==1. (1d-a: region-1 tracer tendency only.)     ! wvt
+    nloop_wvt = 1                                                                           ! wvt
+    if (l_do_tracers) nloop_wvt = num_wvt_regions                                           ! wvt
+    do n_wvt = 1, nloop_wvt                                                                 ! wvt
+    ib_wvt = (n_wvt-1)*6                                                                    ! wvt: 4th-index base of region n_wvt
+    if (l_do_tracers) then                                                                  ! wvt - pack region n_wvt tracer (column-reversed)
+       do k = kts,kte                                                                       ! wvt
+          do i = its,ite                                                                    ! wvt
+             tr_qv_hv(i,kte-k+kts) = tr_block(i,k,j,ib_wvt+1)                             ! wvt - qv
+             tr_qc_hv(i,kte-k+kts) = tr_block(i,k,j,ib_wvt+2)                             ! wvt - qc
+             tr_qi_hv(i,kte-k+kts) = tr_block(i,k,j,ib_wvt+4)                             ! wvt - qi
+          enddo                                                                             ! wvt
+       enddo                                                                                ! wvt
+       do i = its,ite                                                                       ! wvt
+          tr_pratec_hv(i) = 0.0                                                             ! wvt - zero before call, not accumulated
+       enddo                                                                                ! wvt
+    endif                                                                                   ! wvt
 
     call cu_ntiedtke_pre_run( &
                      its    = its       , ite     = ite     , kts     = kts     , kte       = kte       , &
@@ -271,6 +279,7 @@
                      do_tracers = l_do_tracers                                               & ! wvt
                         )
 
+    if (n_wvt == 1) then   ! wvt: base tendencies are region-independent -> compute once
     call cu_ntiedtke_post_run( &
                      its      = its         , ite      = ite         , kts      = kts         , kte      = kte         , &
                      stepcu   = stepcu      , dt       = dt          , exner    = pi_hv       , qv       = qv_hv       , &
@@ -316,25 +325,27 @@
        endif
     endif
 
-!--- wvt: unpack tracer tile arrays back to 3D (reverse column order)
-!--- wvt: compute tendencies only -- do NOT modify state arrays in-place
-!--- wvt: state is advanced by the RK solver via tendency accumulation
-    if (l_do_tracers) then                                                                 ! wvt
-       do k = kts,kte                                                                      ! wvt
-          do i = its,ite                                                                   ! wvt
-             rtrqvcuten(i,k,j) = (tr_qv_hv(i,kte-k+kts) - tr_qv_curr(i,k,j)) &           ! wvt
-                                 / (dt*stepcu)                                              ! wvt
-             rtrqccuten(i,k,j) = (tr_qc_hv(i,kte-k+kts) - tr_qc_curr(i,k,j)) &           ! wvt
-                                 / (dt*stepcu)                                              ! wvt
-             rtrqicuten(i,k,j) = (tr_qi_hv(i,kte-k+kts) - tr_qi_curr(i,k,j)) &           ! wvt
-                                 / (dt*stepcu)                                              ! wvt
+!--- wvt: region-1 convective tracer tendency (inside the n_wvt==1 block; 1d-b adds 2..N).      ! wvt
+!--- wvt: compute tendencies only -- state is advanced by the RK solver via tracer_tendf.       ! wvt
+       if (l_do_tracers) then                                                              ! wvt
+          do k = kts,kte                                                                   ! wvt
+             do i = its,ite                                                                ! wvt
+                rtrqvcuten(i,k,j) = (tr_qv_hv(i,kte-k+kts) - tr_block(i,k,j,1))/(dt*stepcu) ! wvt
+                rtrqccuten(i,k,j) = (tr_qc_hv(i,kte-k+kts) - tr_block(i,k,j,2))/(dt*stepcu) ! wvt
+                rtrqicuten(i,k,j) = (tr_qi_hv(i,kte-k+kts) - tr_block(i,k,j,4))/(dt*stepcu) ! wvt
+             enddo                                                                         ! wvt
           enddo                                                                            ! wvt
-       enddo                                                                               ! wvt
+       endif                                                                               ! wvt
+    endif   ! wvt: n_wvt == 1 (base outputs + region-1 tendency)
+
+!--- wvt: per-region convective precip rate (TR_RAINC accumulated in advance_ppt, not here)
+    if (l_do_tracers) then                                                                 ! wvt
        do i = its,ite                                                                      ! wvt
-          tr_pratec(i,j) = tr_pratec_hv(i)                                                 ! wvt
-!         TR_RAINC accumulated in advance_ppt (module_physics_addtendc.F), not here         ! wvt
+          tr_pratec(i,n_wvt,j) = tr_pratec_hv(i)                                           ! wvt
        enddo                                                                               ! wvt
     endif                                                                                  ! wvt
+
+    enddo   ! wvt: n_wvt region loop
 
  enddo
 

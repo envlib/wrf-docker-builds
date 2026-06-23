@@ -2408,13 +2408,12 @@ SUBROUTINE advance_ppt(RTHCUTEN,RQVCUTEN,RQCCUTEN,RQRCUTEN,           &
                                                      RTRQICUTEN, &
                                                      RTRQSCUTEN
 
+   REAL, DIMENSION( ims:, :, jms: ), INTENT(INOUT) :: TR_RAINC, TR_PRATEC   ! wvt: per-region (i,n,j)
    REAL, DIMENSION( ims:ime , jms:jme ),                         &
           INTENT(INOUT) ::                                RAINC, &
-                                                       TR_RAINC, &    !wvt
                                                          RAINSH, &
                                                          RAINCV, &
                                                          PRATEC, &
-                                                      TR_PRATEC, &    !wvt
                                                         PRATESH, &
                                                             NCA, &
                                                            HTOP, &
@@ -2428,6 +2427,7 @@ SUBROUTINE advance_ppt(RTHCUTEN,RQVCUTEN,RQCCUTEN,RQRCUTEN,           &
 
    INTEGER :: i,j,k,i_start,i_end,j_start,j_end,k_start,k_end
    INTEGER :: NCUTOP, NCUBOT
+   INTEGER :: N_WVT   ! wvt: region index
 
 !-----------------------------------------------------------------
 
@@ -2457,7 +2457,9 @@ SUBROUTINE advance_ppt(RTHCUTEN,RQVCUTEN,RQCCUTEN,RQRCUTEN,           &
    DO J = j_start,j_end
    DO i = i_start,i_end
       RAINC(I,J)  = RAINC(I,J) + PRATEC(I,J)*DT
-      TR_RAINC(I,J)  = TR_RAINC(I,J) + TR_PRATEC(I,J)*DT   !wvt
+      DO N_WVT = 1, SIZE(TR_RAINC,2)   ! wvt: per-region convective precip accumulation
+         TR_RAINC(I,N_WVT,J) = TR_RAINC(I,N_WVT,J) + TR_PRATEC(I,N_WVT,J)*DT
+      ENDDO
       RAINSH(I,J) = RAINSH(I,J) + PRATESH(I,J)*DT
       CUPPT(I,J)  = CUPPT(I,J) + (PRATEC(I,J)+PRATESH(I,J))*DT/1000.
    ENDDO

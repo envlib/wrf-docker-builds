@@ -202,9 +202,9 @@ CONTAINS
                       PREC_ACC_C, PREC_ACC_NC, SNOW_ACC_NC
 
    ! WVT tracer bucketed accumulators (optional, engaged when BUCKET_MM > 0)
-   REAL, DIMENSION( ims:ime, jms:jme ), OPTIONAL, INTENT(INOUT) :: TR_RAINC
+   REAL, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: TR_RAINC          ! wvt: per-region (i,n,j)
    REAL, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: TR_RAINNC          ! wvt: per-region (i,n,j)
-   INTEGER, DIMENSION( ims:ime, jms:jme ), OPTIONAL, INTENT(INOUT) :: I_TR_RAINC
+   INTEGER, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: I_TR_RAINC      ! wvt: per-region (i,n,j)
    INTEGER, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: I_TR_RAINNC      ! wvt: per-region (i,n,j)
 
    REAL, OPTIONAL, INTENT(IN)::  PREC_ACC_DT, CURR_SECS2
@@ -353,18 +353,22 @@ CONTAINS
 
       IF (PRESENT(TR_RAINC) .AND. PRESENT(I_TR_RAINC)) THEN
         IF (xtime .eq. 0.0) THEN
+          DO n_tr=1,SIZE(tr_rainc,2)
           DO j=j_start(ij),j_end(ij)
           DO i=i_start(ij),i_end(ij)
-            i_tr_rainc(i,j) = 0
+            i_tr_rainc(i,n_tr,j) = 0
+          ENDDO
           ENDDO
           ENDDO
         ENDIF
+        DO n_tr=1,SIZE(tr_rainc,2)
         DO j=j_start(ij),j_end(ij)
         DO i=i_start(ij),i_end(ij)
-          IF (tr_rainc(i,j) .gt. bucket_mm) THEN
-            tr_rainc(i,j)   = tr_rainc(i,j) - bucket_mm
-            i_tr_rainc(i,j) = i_tr_rainc(i,j) + 1
+          IF (tr_rainc(i,n_tr,j) .gt. bucket_mm) THEN
+            tr_rainc(i,n_tr,j)   = tr_rainc(i,n_tr,j) - bucket_mm
+            i_tr_rainc(i,n_tr,j) = i_tr_rainc(i,n_tr,j) + 1
           ENDIF
+        ENDDO
         ENDDO
         ENDDO
       ENDIF

@@ -1569,6 +1569,8 @@ BENCH_START(cu_driver_tim)
      &             ,TR_QI_CURR=tracer(ims,kms,jms,P_QI_TR), F_TR_QI=F_QI_TR           &
      &             ,TR_QS_CURR=tracer(ims,kms,jms,P_QS_TR), F_TR_QS=F_QS_TR           &
      &             ,TR_QG_CURR=tracer(ims,kms,jms,P_QG_TR), F_TR_QG=F_QG_TR           &
+     &             ,tr_block=tracer(ims,kms,jms,P_QV_TR)                              & ! wvt: contiguous block (cu_ntiedtke multi-region)
+     &             ,num_wvt_regions=config_flags%num_wvt_regions                      & ! wvt
 ! Variables for Tiedtke and NSAS schemes
      &             ,ZNU=grid%znu                                          &
      &             ,MP_PHYSICS=config_flags%mp_physics                    &
