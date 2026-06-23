@@ -50,6 +50,22 @@ state    integer  I_TR_RAINC     i{wvtreg}j  misc    1         -      rhd=(inter
 
 state   real  tr_thum_u_phy_dt   ikj      misc        1         -      rh       "tr_thum_u_phy_dt"        "tracer total humidity * x-wind component * dt"      "kg kg-1 m"
 state   real  tr_thum_v_phy_dt   ikj      misc        1         -      rh       "tr_thum_v_phy_dt"        "tracer total humidity * y-wind component * dt"      "kg kg-1 m"
+! wvt: per-region total-humidity moisture fluxes for regions 2..MAX (region 1 = unsuffixed above).
+! Identical declaration to region 1 (ikj misc 1 - rh). Keep in sync with gen_wvt_thum.py / MAX_WVT_REGIONS=8.
+state   real  tr_thum_u_phy_dt_02  ikj      misc        1         -      rh       "tr_thum_u_phy_dt_02"   "tracer total humidity * x-wind component * dt, region 02"   "kg kg-1 m"
+state   real  tr_thum_v_phy_dt_02  ikj      misc        1         -      rh       "tr_thum_v_phy_dt_02"   "tracer total humidity * y-wind component * dt, region 02"   "kg kg-1 m"
+state   real  tr_thum_u_phy_dt_03  ikj      misc        1         -      rh       "tr_thum_u_phy_dt_03"   "tracer total humidity * x-wind component * dt, region 03"   "kg kg-1 m"
+state   real  tr_thum_v_phy_dt_03  ikj      misc        1         -      rh       "tr_thum_v_phy_dt_03"   "tracer total humidity * y-wind component * dt, region 03"   "kg kg-1 m"
+state   real  tr_thum_u_phy_dt_04  ikj      misc        1         -      rh       "tr_thum_u_phy_dt_04"   "tracer total humidity * x-wind component * dt, region 04"   "kg kg-1 m"
+state   real  tr_thum_v_phy_dt_04  ikj      misc        1         -      rh       "tr_thum_v_phy_dt_04"   "tracer total humidity * y-wind component * dt, region 04"   "kg kg-1 m"
+state   real  tr_thum_u_phy_dt_05  ikj      misc        1         -      rh       "tr_thum_u_phy_dt_05"   "tracer total humidity * x-wind component * dt, region 05"   "kg kg-1 m"
+state   real  tr_thum_v_phy_dt_05  ikj      misc        1         -      rh       "tr_thum_v_phy_dt_05"   "tracer total humidity * y-wind component * dt, region 05"   "kg kg-1 m"
+state   real  tr_thum_u_phy_dt_06  ikj      misc        1         -      rh       "tr_thum_u_phy_dt_06"   "tracer total humidity * x-wind component * dt, region 06"   "kg kg-1 m"
+state   real  tr_thum_v_phy_dt_06  ikj      misc        1         -      rh       "tr_thum_v_phy_dt_06"   "tracer total humidity * y-wind component * dt, region 06"   "kg kg-1 m"
+state   real  tr_thum_u_phy_dt_07  ikj      misc        1         -      rh       "tr_thum_u_phy_dt_07"   "tracer total humidity * x-wind component * dt, region 07"   "kg kg-1 m"
+state   real  tr_thum_v_phy_dt_07  ikj      misc        1         -      rh       "tr_thum_v_phy_dt_07"   "tracer total humidity * y-wind component * dt, region 07"   "kg kg-1 m"
+state   real  tr_thum_u_phy_dt_08  ikj      misc        1         -      rh       "tr_thum_u_phy_dt_08"   "tracer total humidity * x-wind component * dt, region 08"   "kg kg-1 m"
+state   real  tr_thum_v_phy_dt_08  ikj      misc        1         -      rh       "tr_thum_v_phy_dt_08"   "tracer total humidity * y-wind component * dt, region 08"   "kg kg-1 m"
 
 
 rconfig   integer tracer3dsource        namelist,dynamics      max_domains    0        rh    "tracer3dsource"    "switch to activate 3D region (read in from file) as tracer moisture source " ""

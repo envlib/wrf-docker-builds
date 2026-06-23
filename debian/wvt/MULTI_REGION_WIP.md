@@ -40,11 +40,27 @@ acceptance targets).
   **conservation** Σ TR_RAINNC ≤ RAINNC exactly (max excess 0.0); Σ qv_tr ≤ QVAPOR. Notes: (a) gate
   must use `f_tr_qv` (tracer_opt=4), not just block-present, or non-WVT WSM6 runs crash; (b) Docker
   needs `--shm-size=2g` for Intel-MPI multi-rank (else SIGBUS, env not code).
-- **Stage 1d (cumulus / cu_ntiedtke) — DONE (1d-a committed 793f0ef; 1d-b validated, uncommitted,
-  awaiting Gemini).** See the "Stage 1d" section below for the full 1d-a/1d-b record.
-- **NEXT after 1d-b sign-off**: `tr_thum` fluxes (column moisture transport diagnostics), then YSU
-  (`bl_pbl=1`) + 3D source/sink paths (currently guarded off), then `create_trmask.py` (wrf-auto-runs)
-  N-mask emission + cfdb-ingest downstream (read the N `TR_RAINNC`/`TR_RAINC`/`PWAT_TR` sets).
+- **Stage 1d (cumulus / cu_ntiedtke) — DONE (1d-a committed 793f0ef; 1d-b validated+Gemini-approved,
+  uncommitted).** See the "Stage 1d" section below for the full 1d-a/1d-b record.
+- **Stage tr_thum (per-region moisture-flux diagnostics) — DONE, compiles clean, validated,
+  Gemini-approved. UNCOMMITTED (ready to commit).** (Bonus: gating region 1 on `p_qv_tr >=
+  PARAM_FIRST_SCALAR` instead of the old `n_tracer >= PARAM_FIRST_SCALAR` also fixes a latent WRF bug
+  where non-moisture tracers would be summed into tr_thum when `tracer_opt != 4`.) `calc_moist_fluxes` (module_big_step_utilities_em.F) gained an
+  `ispe_start` arg (loop `ispe=ispe_start..n_moist`) so a single region's contiguous 6-species
+  subrange can be summed. Registry: `tr_thum_{u,v}_phy_dt_02..08` (14 fields, identical `ikj misc 1
+  - rh` to region 1). All per-region calls live in `phy_prep` next to the base call: region 1 = the
+  existing call restricted to `[p_qv_tr, p_qv_tr+5]` (for N=1 == whole tracer array → bit-identical),
+  regions 2..N gated `config_flags%num_wvt_regions>=n` summing `[p_qv_tr+(n-1)*6 .. +5]`. The 14
+  named fields are threaded through `phy_prep` (one routine, one call site) from `first_rk_step_part1`.
+  Files: registry.moisttracers, module_big_step_utilities_em.F, module_first_rk_step_part1.F;
+  generator `Registry/gen_wvt_thum.py`; check `test/check_thum.py`. Validated (N=2 vs N=1):
+  region-2 flux non-zero (max 127); linearity Σ(N=2)==N=1 totals to ~4e-6, unbiased symmetric FP
+  (bias ratio <2.3%, 50% of cells bit-identical) — `tr_thum` accumulates `qv_tr×wind×dt` so it
+  amplifies 1d-b's single-precision qv_tr noise but stays unbiased. N=1 bit-identical by construction.
+- **NEXT (YSU SKIPPED — user happy with bl_pbl=0 production path)**: downstream tooling —
+  `create_trmask.py` (wrf-auto-runs) N-mask emission + cfdb-ingest reading the N
+  `TR_RAINNC`/`TR_RAINC`/`PWAT_TR`/`TR_THUM_*` sets — so a real N=2 (north+west) production run can be
+  launched and hit the acceptance test (north −3.0% / west −10.5%).
 
 ## Design invariants (MUST hold in every stage)
 1. **Contiguous tracer indices.** Region n's species live at `P_QV_TR + (n-1)*6 + s`, s=0..5 for

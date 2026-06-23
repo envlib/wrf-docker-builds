@@ -4743,6 +4743,13 @@ END SUBROUTINE pole_point_bc
                          fzm, fzp, znw, p_top,                        &  ! params
                          thum_u_phy_dt, thum_v_phy_dt,                &  ! gmm & are
                          tr_thum_u_phy_dt, tr_thum_v_phy_dt,          &  ! wvt
+                         tr_thum_u_phy_dt_02, tr_thum_v_phy_dt_02, & ! wvt 1d/thum region 02
+                         tr_thum_u_phy_dt_03, tr_thum_v_phy_dt_03, & ! wvt 1d/thum region 03
+                         tr_thum_u_phy_dt_04, tr_thum_v_phy_dt_04, & ! wvt 1d/thum region 04
+                         tr_thum_u_phy_dt_05, tr_thum_v_phy_dt_05, & ! wvt 1d/thum region 05
+                         tr_thum_u_phy_dt_06, tr_thum_v_phy_dt_06, & ! wvt 1d/thum region 06
+                         tr_thum_u_phy_dt_07, tr_thum_v_phy_dt_07, & ! wvt 1d/thum region 07
+                         tr_thum_u_phy_dt_08, tr_thum_v_phy_dt_08, & ! wvt 1d/thum region 08
                          ids, ide, jds, jde, kds, kde,                &
                          ims, ime, jms, jme, kms, kme,                &
                          its, ite, jts, jte, kts, kte                )
@@ -4770,6 +4777,13 @@ END SUBROUTINE pole_point_bc
    REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: thum_u_phy_dt, thum_v_phy_dt ! gmm & are
 
    REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt, tr_thum_v_phy_dt ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_02, tr_thum_v_phy_dt_02 ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_03, tr_thum_v_phy_dt_03 ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_04, tr_thum_v_phy_dt_04 ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_05, tr_thum_v_phy_dt_05 ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_06, tr_thum_v_phy_dt_06 ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_07, tr_thum_v_phy_dt_07 ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_08, tr_thum_v_phy_dt_08 ! wvt
 
 
    REAL , DIMENSION( ims:ime, jms:jme ), INTENT(IN   )   ::     mut, muu, muv
@@ -4880,18 +4894,75 @@ END SUBROUTINE pole_point_bc
 
 ! gmm & are: call calc_moist_fluxes to compute moisture fluxes
 
-   CALL calc_moist_fluxes(   dt, itimestep, moist, n_moist,    &
+   CALL calc_moist_fluxes(   dt, itimestep, moist, n_moist, param_first_scalar, &
                              thum_u_phy_dt, thum_v_phy_dt,     &
                              t_phy, p_phy, u_phy, v_phy,       &
                              ids, ide, jds, jde, kds, kde,     &
                              ims, ime, jms, jme, kms, kme,     &
                              its, ite, jts, jte, kts, kte  )
 
-! wvt
-
- IF (n_tracer .ge. PARAM_FIRST_SCALAR) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, n_tracer,    &
+! wvt: per-region tracer total-humidity moisture fluxes (region 1 = unsuffixed; 2..N = _0n).
+! Each region sums only its 6 contiguous species [p_qv_tr+(n-1)*6 .. +5]. For N=1 region 1
+! spans the whole tracer array -> bit-identical to the original all-species call.
+ IF (p_qv_tr .ge. PARAM_FIRST_SCALAR) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+5, p_qv_tr,     &
                              tr_thum_u_phy_dt, tr_thum_v_phy_dt,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 2) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+11, p_qv_tr+6,     &
+                             tr_thum_u_phy_dt_02, tr_thum_v_phy_dt_02,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 3) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+17, p_qv_tr+12,     &
+                             tr_thum_u_phy_dt_03, tr_thum_v_phy_dt_03,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 4) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+23, p_qv_tr+18,     &
+                             tr_thum_u_phy_dt_04, tr_thum_v_phy_dt_04,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 5) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+29, p_qv_tr+24,     &
+                             tr_thum_u_phy_dt_05, tr_thum_v_phy_dt_05,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 6) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+35, p_qv_tr+30,     &
+                             tr_thum_u_phy_dt_06, tr_thum_v_phy_dt_06,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 7) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+41, p_qv_tr+36,     &
+                             tr_thum_u_phy_dt_07, tr_thum_v_phy_dt_07,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 8) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+47, p_qv_tr+42,     &
+                             tr_thum_u_phy_dt_08, tr_thum_v_phy_dt_08,     &
                              t_phy, p_phy, u_phy, v_phy,       &
                              ids, ide, jds, jde, kds, kde,     &
                              ims, ime, jms, jme, kms, kme,     &
@@ -6258,10 +6329,10 @@ END SUBROUTINE set_tend
 
 ! gmm & are: subroutine calc_moist_fluxes
 
-SUBROUTINE calc_moist_fluxes(   dt, itimestep, moist, n_moist,    &
-                                thum_u_phy_dt, thum_v_phy_dt,     &
-                                t_phy, p_phy, u_phy, v_phy,       &
-                                ids, ide, jds, jde, kds, kde,     &
+SUBROUTINE calc_moist_fluxes(   dt, itimestep, moist, n_moist, ispe_start, & ! wvt: ispe_start lets a single
+                                thum_u_phy_dt, thum_v_phy_dt,     &           ! wvt  region's contiguous species
+                                t_phy, p_phy, u_phy, v_phy,       &           ! wvt  subrange [ispe_start..n_moist]
+                                ids, ide, jds, jde, kds, kde,     &           ! wvt  be summed (n_moist = range end)
                                 ims, ime, jms, jme, kms, kme,     &
                                 its, ite, jts, jte, kts, kte  )
 
@@ -6274,6 +6345,7 @@ SUBROUTINE calc_moist_fluxes(   dt, itimestep, moist, n_moist,    &
                                        its, ite, jts, jte, kts, kte
 
    INTEGER ,          INTENT(IN   ) :: n_moist, itimestep
+   INTEGER ,          INTENT(IN   ) :: ispe_start  ! wvt: first species index of the range to sum
 
    REAL, DIMENSION( ims:ime , kms:kme , jms:jme , n_moist ), INTENT(IN   ) :: moist
 
@@ -6319,8 +6391,7 @@ SUBROUTINE calc_moist_fluxes(   dt, itimestep, moist, n_moist,    &
         DO k=kts,ktf
         DO i=its,itf
             thum = 0.
-!DEC$ loop count(3)
-            DO ispe=PARAM_FIRST_SCALAR,n_moist
+            DO ispe=ispe_start,n_moist   ! wvt: sum the [ispe_start..n_moist] species range
                thum = thum + moist(i,k,j,ispe)
             ENDDO
             thum_u_phy_dt(i,k,j)=thum_u_phy_dt(i,k,j)+thum*u_phy(i,k,j)*dt
