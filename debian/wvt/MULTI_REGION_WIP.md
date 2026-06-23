@@ -40,9 +40,11 @@ acceptance targets).
   **conservation** Σ TR_RAINNC ≤ RAINNC exactly (max excess 0.0); Σ qv_tr ≤ QVAPOR. Notes: (a) gate
   must use `f_tr_qv` (tracer_opt=4), not just block-present, or non-WVT WSM6 runs crash; (b) Docker
   needs `--shm-size=2g` for Intel-MPI multi-rank (else SIGBUS, env not code).
-- **NEXT after 1c sign-off**: cumulus (1d, `cu_ntiedtke` + region-dim `TR_RAINC`/`I_TR_RAINC`/`TR_PRATEC`),
-  `tr_thum` fluxes, then YSU (`bl_pbl=1`) + 3D paths (currently
-  guarded off), then `create_trmask.py` (wrf-auto-runs) N-mask emission + cfdb-ingest downstream.
+- **Stage 1d (cumulus / cu_ntiedtke) — DONE (1d-a committed 793f0ef; 1d-b validated, uncommitted,
+  awaiting Gemini).** See the "Stage 1d" section below for the full 1d-a/1d-b record.
+- **NEXT after 1d-b sign-off**: `tr_thum` fluxes (column moisture transport diagnostics), then YSU
+  (`bl_pbl=1`) + 3D source/sink paths (currently guarded off), then `create_trmask.py` (wrf-auto-runs)
+  N-mask emission + cfdb-ingest downstream (read the N `TR_RAINNC`/`TR_RAINC`/`PWAT_TR` sets).
 
 ## Design invariants (MUST hold in every stage)
 1. **Contiguous tracer indices.** Region n's species live at `P_QV_TR + (n-1)*6 + s`, s=0..5 for
@@ -117,17 +119,38 @@ species ×MAX (consistent w/ Phase-0 tracer members; verbose; awkward to apply i
 generated/unrolled add_a2a); **(C)** new 4D `ikjf` package array for tendencies (clean looping, more
 machinery); **(D)** rejected — single reused storage breaks between-step reuse.
 **DECISION (user + Gemini): Option B, and SPLIT 1d:**
-- **1d-a (convective precip) — DONE, compiles clean, validated. UNCOMMITTED, awaiting Gemini.**
+- **1d-a (convective precip) — DONE, compiles, validated, Gemini-approved, COMMITTED (793f0ef).**
   region-dim `TR_RAINC`/`TR_PRATEC`/`I_TR_RAINC`→`i{wvtreg}j` + per-region
   cumulus calls in cu_ntiedtke_driver yielding per-region `tr_pratec`→`tr_rainc`;
   thread tr_block+count+f_tr_qv through solve_em(first_rk_step_part1)→cumulus_driver→cu_ntiedtke_driver;
   diag_misc TR_RAINC bucket region-loop; advance_ppt tr_rainc accumulation; init. Regions 2..N's
-  `rtrq*cuten` are COMPUTED but discarded (only region 1 stored) — so 1d-a tags convective precip but
-  not the convective column transport. Validate: `tr_rainc` linearity Σ(N=2)==single + conservation.
-- **1d-b (convective column transport)** = Option B named members `RTRQ{V,C,I}CUTEN_02..NN` (×3
-  species ×7) via a generator; pass down the chain; unroll/generate the `add_a2a` per region in
-  module_physics_addtendc.F (sites ~1317/1435/1754) + zero (~2546). Validate grid-scale `tr_rainnc`
-  linearity recovers.
+  `rtrq*cuten` were COMPUTED but discarded (only region 1 stored) — 1d-a tagged convective precip but
+  not the convective column transport (now recovered by 1d-b).
+- **1d-b (convective column transport) — DONE, compiles clean, validated, Gemini-approved.
+  UNCOMMITTED (ready to commit).**
+  Option B named members `RTRQ{V,C,I}CUTEN_02..08` (3 species × 7 regions = 21 fields) via
+  `Registry/gen_wvt_cuten.py`. Key simplification vs the original plan: the named fields' couple/
+  apply/decouple are done **in-place where `grid` is in scope** (NOT threaded through
+  calculate_phy_tend/phy_prep_part2/phy_cu_ten), so only the SET path needs new dummies:
+  - **Registry** (`registry.moisttracers`): `RTRQ{V,C,I}CUTEN_02..08` declared identically to region 1
+    (`ikj misc 1 - r`) → inherit identical alloc / default-init / restart / IO. ntiedtkeinit doesn't
+    zero region-1 RTRQVCUTEN (relies on default state init), so 2..N need NO init code.
+  - **SET**: `cu_ntiedtke_driver` gets 21 optional dummies + an `n_wvt>=2` select-case store (region 1
+    untouched); `cumulus_driver` (has `TYPE(domain) grid`) passes `grid%rtrq*cuten_0n` to the
+    cu_ntiedtke call — no cumulus_driver signature change.
+  - **COUPLE**: `first_rk_step_part2` after `calculate_phy_tend` — `×(c1h·mut+c2h)`, patch loop.
+  - **APPLY**: `first_rk_step_part2` after `update_phy_ten` — `add_a2a` (made importable) into
+    `tracer_tend(P_*_TR+(n-1)·6)`, gated on cu_physics∈{NTIEDTKE,TIEDTKE}. (Only cu_ntiedtke is
+    multi-region; kfeta/mskf/other schemes stay region-1, matching 1d-a.)
+  - **DECOUPLE**: `solve_em` after the `phy_prep_part2` tile loop — `÷(c1h·muts+c2h)`, patch loop.
+  Files: registry.moisttracers, module_cu_ntiedtke.F, module_cumulus_driver.F,
+  module_first_rk_step_part2.F (+ `#else INTEGER i,j,k` — i,j,k were only declared under
+  `#if WRF_DFI_RADAR==1`), solve_em.F. Validation (N=2 west+east vs N=1 full ocean, 3h, RAINC=9.1mm
+  so cumulus active): **qv_tr linearity bit-exact in convective columns** (mean 5.7e-13, max 1.2e-9;
+  conv/nonconv error ratio 0.00 — a transport bug would make convective columns the WORST);
+  `qc_tr_02`/`qi_tr_02` populated by convective detrainment (region-2 transport live); signed qv_tr
+  diff unbiased (mean 3e-10, 50% of cells bit-identical). No regression: TR_RAINC linearity 1.3e-6,
+  TR_RAINNC 1.8e-12, conservation exact. N=1 bit-identical by construction (all `>=2` guards false).
 
 ## Cadence
 Implement a stage → compile-build → runtime-check → **PAUSE** → user runs Gemini code-review on the

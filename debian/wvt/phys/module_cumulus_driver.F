@@ -1511,6 +1511,13 @@ CONTAINS
                ,rtrqvcuten=rtrqvcuten                            & ! wvt
                ,rtrqccuten=rtrqccuten                            & ! wvt
                ,rtrqicuten=rtrqicuten                            & ! wvt
+               ,rtrqvcuten_02=grid%rtrqvcuten_02,rtrqccuten_02=grid%rtrqccuten_02,rtrqicuten_02=grid%rtrqicuten_02 & ! wvt 1d-b region 02
+               ,rtrqvcuten_03=grid%rtrqvcuten_03,rtrqccuten_03=grid%rtrqccuten_03,rtrqicuten_03=grid%rtrqicuten_03 & ! wvt 1d-b region 03
+               ,rtrqvcuten_04=grid%rtrqvcuten_04,rtrqccuten_04=grid%rtrqccuten_04,rtrqicuten_04=grid%rtrqicuten_04 & ! wvt 1d-b region 04
+               ,rtrqvcuten_05=grid%rtrqvcuten_05,rtrqccuten_05=grid%rtrqccuten_05,rtrqicuten_05=grid%rtrqicuten_05 & ! wvt 1d-b region 05
+               ,rtrqvcuten_06=grid%rtrqvcuten_06,rtrqccuten_06=grid%rtrqccuten_06,rtrqicuten_06=grid%rtrqicuten_06 & ! wvt 1d-b region 06
+               ,rtrqvcuten_07=grid%rtrqvcuten_07,rtrqccuten_07=grid%rtrqccuten_07,rtrqicuten_07=grid%rtrqicuten_07 & ! wvt 1d-b region 07
+               ,rtrqvcuten_08=grid%rtrqvcuten_08,rtrqccuten_08=grid%rtrqccuten_08,rtrqicuten_08=grid%rtrqicuten_08 & ! wvt 1d-b region 08
                ,f_tr_qv=flag_tr_qv                               & ! wvt
                                                              )
 

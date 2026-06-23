@@ -57,7 +57,7 @@ CONTAINS
     USE module_em, ONLY : calculate_phy_tend
     USE module_fddaobs_driver, ONLY : fddaobs_driver
     USE module_bc, ONLY : set_physical_bc3d, set_physical_bc2d
-    USE module_physics_addtendc, ONLY : update_phy_ten
+    USE module_physics_addtendc, ONLY : update_phy_ten, add_a2a   ! wvt 1d-b: add_a2a for regions 2..N convective apply
 
     USE module_sfs_driver !JDM
     USE module_stoch, ONLY : update_stoch_ten, perturb_physics_tend, RAND_PERT_UPDATE, contiguize_2d
@@ -143,6 +143,8 @@ CONTAINS
 
 #if ( WRF_DFI_RADAR == 1 )
     INTEGER  i_start,i_end,j_start,j_end,i,j,k
+#else
+    INTEGER  i,j,k   ! wvt 1d-b: loop vars for the regions-2..N couple block (the WRF_DFI_RADAR==1 branch declares these otherwise)
 #endif
 
     REAL, DIMENSION(ims:ime,jms:jme) :: SPFORCS3d_loc, SPFORCC3d_loc, SP_AMP3d_loc
@@ -424,6 +426,89 @@ BENCH_START(cal_phy_tend)
       ENDDO
       !$OMP END PARALLEL DO
 BENCH_END(cal_phy_tend)
+
+! wvt 1d-b: couple convective tracer tendencies for regions 2..N (mirrors module_em calculate_phy_tend
+! region 1, which couples grid%rtrqvcuten unconditionally over mass points; cells 2..N are zero unless
+! cu_ntiedtke set them, so coupling is a no-op for other schemes). Patch loop == union of region-1 tiles.
+      IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) THEN
+         IF (config_flags%num_wvt_regions >= 2) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_02(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_02(i,k,j)
+               grid%rtrqccuten_02(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_02(i,k,j)
+               grid%rtrqicuten_02(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_02(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 3) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_03(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_03(i,k,j)
+               grid%rtrqccuten_03(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_03(i,k,j)
+               grid%rtrqicuten_03(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_03(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 4) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_04(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_04(i,k,j)
+               grid%rtrqccuten_04(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_04(i,k,j)
+               grid%rtrqicuten_04(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_04(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 5) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_05(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_05(i,k,j)
+               grid%rtrqccuten_05(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_05(i,k,j)
+               grid%rtrqicuten_05(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_05(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 6) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_06(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_06(i,k,j)
+               grid%rtrqccuten_06(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_06(i,k,j)
+               grid%rtrqicuten_06(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_06(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 7) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_07(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_07(i,k,j)
+               grid%rtrqccuten_07(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_07(i,k,j)
+               grid%rtrqicuten_07(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_07(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 8) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_08(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_08(i,k,j)
+               grid%rtrqccuten_08(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_08(i,k,j)
+               grid%rtrqicuten_08(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_08(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
+      ENDIF
 
 ! tke diffusion
 
@@ -836,6 +921,68 @@ BENCH_START(update_phy_ten_tim)
        END DO
        !$OMP END PARALLEL DO
 BENCH_END(update_phy_ten_tim)
+
+! wvt 1d-b: apply convective tracer tendencies for regions 2..N into tracer_tend (mirrors phy_cu_ten
+! NTIEDTKE add_a2a for region 1, applied to tracer_tend(P_*_TR+(n-1)*6)). add_a2a reproduces region 1's
+! specified/nested edge handling; patch loop == union of region-1 tiles. Only cu_ntiedtke is multi-region.
+      IF (config_flags%cu_physics == NTIEDTKESCHEME .OR. config_flags%cu_physics == TIEDTKESCHEME) THEN
+         IF (config_flags%num_wvt_regions >= 2) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+6),grid%rtrqvcuten_02, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+6),grid%rtrqccuten_02, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+6),grid%rtrqicuten_02, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 3) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+12),grid%rtrqvcuten_03, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+12),grid%rtrqccuten_03, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+12),grid%rtrqicuten_03, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 4) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+18),grid%rtrqvcuten_04, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+18),grid%rtrqccuten_04, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+18),grid%rtrqicuten_04, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 5) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+24),grid%rtrqvcuten_05, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+24),grid%rtrqccuten_05, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+24),grid%rtrqicuten_05, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 6) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+30),grid%rtrqvcuten_06, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+30),grid%rtrqccuten_06, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+30),grid%rtrqicuten_06, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 7) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+36),grid%rtrqvcuten_07, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+36),grid%rtrqccuten_07, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+36),grid%rtrqicuten_07, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 8) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+42),grid%rtrqvcuten_08, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+42),grid%rtrqccuten_08, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+42),grid%rtrqicuten_08, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+      ENDIF
 
       IF (grid%skebs_on==1) then
           !$OMP PARALLEL DO   &

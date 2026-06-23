@@ -3616,6 +3616,90 @@ BENCH_END(advance_ppt_tim)
    ENDDO
   !$OMP END PARALLEL DO
 
+! wvt 1d-b: decouple convective tracer tendencies for regions 2..N (mirrors phy_prep_part2 region 1,
+! which divides grid%rtrqvcuten by (c1h*muts+c2h) over mass points). Restores the uncoupled mixing-ratio
+! tendency so it persists between cumulus steps. Patch loop == union of region-1 tiles; muts/c1h/c2h as in
+! the phy_prep_part2 call above.
+   IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) THEN
+      IF (config_flags%num_wvt_regions >= 2) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_02(i,k,j) = grid%rtrqvcuten_02(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_02(i,k,j) = grid%rtrqccuten_02(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_02(i,k,j) = grid%rtrqicuten_02(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
+      IF (config_flags%num_wvt_regions >= 3) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_03(i,k,j) = grid%rtrqvcuten_03(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_03(i,k,j) = grid%rtrqccuten_03(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_03(i,k,j) = grid%rtrqicuten_03(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
+      IF (config_flags%num_wvt_regions >= 4) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_04(i,k,j) = grid%rtrqvcuten_04(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_04(i,k,j) = grid%rtrqccuten_04(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_04(i,k,j) = grid%rtrqicuten_04(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
+      IF (config_flags%num_wvt_regions >= 5) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_05(i,k,j) = grid%rtrqvcuten_05(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_05(i,k,j) = grid%rtrqccuten_05(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_05(i,k,j) = grid%rtrqicuten_05(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
+      IF (config_flags%num_wvt_regions >= 6) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_06(i,k,j) = grid%rtrqvcuten_06(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_06(i,k,j) = grid%rtrqccuten_06(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_06(i,k,j) = grid%rtrqicuten_06(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
+      IF (config_flags%num_wvt_regions >= 7) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_07(i,k,j) = grid%rtrqvcuten_07(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_07(i,k,j) = grid%rtrqccuten_07(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_07(i,k,j) = grid%rtrqicuten_07(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
+      IF (config_flags%num_wvt_regions >= 8) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_08(i,k,j) = grid%rtrqvcuten_08(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_08(i,k,j) = grid%rtrqccuten_08(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_08(i,k,j) = grid%rtrqicuten_08(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
+   ENDIF
+
 !<DESCRIPTION>
 !<pre>
 ! (5) time-split physics.

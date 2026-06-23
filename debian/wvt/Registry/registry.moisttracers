@@ -8,6 +8,31 @@ state    real  RTRQCCUTEN        ikj      misc        1         -      r        
 state    real  RTRQSCUTEN        ikj      misc        1         -      r        "RTRQSCUTEN"              "COUPLED TRACER Q_S TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
 state    real  RTRQICUTEN        ikj      misc        1         -      r        "RTRQICUTEN"              "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
 
+! wvt 1d-b: per-region convective tracer tendencies for regions 2..MAX (region 1 = unsuffixed above).
+! Declared identically to region 1 (ikj misc 1 - r) so they inherit identical alloc/default-init/restart/IO.
+! cu_ntiedtke transports qv,qc,qi only. Keep in sync with gen_wvt_cuten.py / MAX_WVT_REGIONS=8.
+state    real  RTRQVCUTEN_02     ikj      misc        1         -      r        "RTRQVCUTEN_02"     "COUPLED TRACER Q_V TENDENCY DUE TO CUMULUS SCHEME, region 02"   "Pa kg kg-1 s-1"
+state    real  RTRQCCUTEN_02     ikj      misc        1         -      r        "RTRQCCUTEN_02"     "COUPLED TRACER Q_C TENDENCY DUE TO CUMULUS SCHEME, region 02"   "Pa kg kg-1 s-1"
+state    real  RTRQICUTEN_02     ikj      misc        1         -      r        "RTRQICUTEN_02"     "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME, region 02"   "Pa kg kg-1 s-1"
+state    real  RTRQVCUTEN_03     ikj      misc        1         -      r        "RTRQVCUTEN_03"     "COUPLED TRACER Q_V TENDENCY DUE TO CUMULUS SCHEME, region 03"   "Pa kg kg-1 s-1"
+state    real  RTRQCCUTEN_03     ikj      misc        1         -      r        "RTRQCCUTEN_03"     "COUPLED TRACER Q_C TENDENCY DUE TO CUMULUS SCHEME, region 03"   "Pa kg kg-1 s-1"
+state    real  RTRQICUTEN_03     ikj      misc        1         -      r        "RTRQICUTEN_03"     "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME, region 03"   "Pa kg kg-1 s-1"
+state    real  RTRQVCUTEN_04     ikj      misc        1         -      r        "RTRQVCUTEN_04"     "COUPLED TRACER Q_V TENDENCY DUE TO CUMULUS SCHEME, region 04"   "Pa kg kg-1 s-1"
+state    real  RTRQCCUTEN_04     ikj      misc        1         -      r        "RTRQCCUTEN_04"     "COUPLED TRACER Q_C TENDENCY DUE TO CUMULUS SCHEME, region 04"   "Pa kg kg-1 s-1"
+state    real  RTRQICUTEN_04     ikj      misc        1         -      r        "RTRQICUTEN_04"     "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME, region 04"   "Pa kg kg-1 s-1"
+state    real  RTRQVCUTEN_05     ikj      misc        1         -      r        "RTRQVCUTEN_05"     "COUPLED TRACER Q_V TENDENCY DUE TO CUMULUS SCHEME, region 05"   "Pa kg kg-1 s-1"
+state    real  RTRQCCUTEN_05     ikj      misc        1         -      r        "RTRQCCUTEN_05"     "COUPLED TRACER Q_C TENDENCY DUE TO CUMULUS SCHEME, region 05"   "Pa kg kg-1 s-1"
+state    real  RTRQICUTEN_05     ikj      misc        1         -      r        "RTRQICUTEN_05"     "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME, region 05"   "Pa kg kg-1 s-1"
+state    real  RTRQVCUTEN_06     ikj      misc        1         -      r        "RTRQVCUTEN_06"     "COUPLED TRACER Q_V TENDENCY DUE TO CUMULUS SCHEME, region 06"   "Pa kg kg-1 s-1"
+state    real  RTRQCCUTEN_06     ikj      misc        1         -      r        "RTRQCCUTEN_06"     "COUPLED TRACER Q_C TENDENCY DUE TO CUMULUS SCHEME, region 06"   "Pa kg kg-1 s-1"
+state    real  RTRQICUTEN_06     ikj      misc        1         -      r        "RTRQICUTEN_06"     "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME, region 06"   "Pa kg kg-1 s-1"
+state    real  RTRQVCUTEN_07     ikj      misc        1         -      r        "RTRQVCUTEN_07"     "COUPLED TRACER Q_V TENDENCY DUE TO CUMULUS SCHEME, region 07"   "Pa kg kg-1 s-1"
+state    real  RTRQCCUTEN_07     ikj      misc        1         -      r        "RTRQCCUTEN_07"     "COUPLED TRACER Q_C TENDENCY DUE TO CUMULUS SCHEME, region 07"   "Pa kg kg-1 s-1"
+state    real  RTRQICUTEN_07     ikj      misc        1         -      r        "RTRQICUTEN_07"     "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME, region 07"   "Pa kg kg-1 s-1"
+state    real  RTRQVCUTEN_08     ikj      misc        1         -      r        "RTRQVCUTEN_08"     "COUPLED TRACER Q_V TENDENCY DUE TO CUMULUS SCHEME, region 08"   "Pa kg kg-1 s-1"
+state    real  RTRQCCUTEN_08     ikj      misc        1         -      r        "RTRQCCUTEN_08"     "COUPLED TRACER Q_C TENDENCY DUE TO CUMULUS SCHEME, region 08"   "Pa kg kg-1 s-1"
+state    real  RTRQICUTEN_08     ikj      misc        1         -      r        "RTRQICUTEN_08"     "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME, region 08"   "Pa kg kg-1 s-1"
+
 state    real  TRQFX              i{wvtreg}j  misc    1         -      rh       "TRQFX"                   "UPWARD MOISTURE TRACER FLUX AT THE SURFACE, per WVT region"  "kg m-2 s-1"
 state    real  TRMASK             i{wvtreg}j  misc    1         -      i8r      "TRMASK"                  "2D SOURCE MASK FOR MOISTURE TRACERS, per WVT region"          ""
 state    real  TRMASK3D          ikj      misc        1         -      i8r      "TRMASK3D"                "3D SOURCE MASK FOR MOISTURE TRACERS "          ""
