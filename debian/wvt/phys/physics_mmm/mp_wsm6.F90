@@ -221,7 +221,8 @@
                         graupelncv,rainprod2d,evapprod2d,     &
                         its,ite,kts,kte,errmsg,errflg,        &
                         tr_q,tr_qc,tr_qi,tr_qr,tr_qs,tr_qg,  & ! wvt
-                        tr_rain,tr_snow,tr_graupel,do_tracers  & ! wvt
+                        tr_rain,tr_snow,tr_graupel,do_tracers, & ! wvt
+                        num_wvt_regions                       & ! wvt
                        )
 !=================================================================================================================!
 !  This code is a 6-class GRAUPEL phase microphyiscs scheme (WSM6) of the
@@ -320,19 +321,20 @@
  character(len=*),intent(out):: errmsg
  integer,intent(out):: errflg
 
-!--- optional tracer arguments: ! wvt
- real(kind=kind_phys),intent(inout),dimension(its:,:),optional::  & ! wvt
+!--- optional tracer arguments (trailing dim = WVT region 1..num_wvt_regions): ! wvt
+ real(kind=kind_phys),intent(inout),dimension(its:,:,:),optional:: & ! wvt
                                                             tr_q, & ! wvt
                                                            tr_qc, & ! wvt
                                                            tr_qi, & ! wvt
                                                            tr_qr, & ! wvt
                                                            tr_qs, & ! wvt
                                                            tr_qg    ! wvt
- real(kind=kind_phys),intent(inout),dimension(its:),optional::    & ! wvt
+ real(kind=kind_phys),intent(inout),dimension(its:,:),optional::  & ! wvt
                                                         tr_rain,  & ! wvt
                                                         tr_snow,  & ! wvt
                                                      tr_graupel     ! wvt
  logical,intent(in),optional:: do_tracers                           ! wvt
+ integer,intent(in):: num_wvt_regions                               ! wvt
 
 !local variables and arrays:
  real(kind=kind_phys),dimension(its:ite,kts:kte,3)::              &
@@ -433,7 +435,9 @@
 
 ! --- local tracer variables: ! wvt
  logical:: l_tracers                                               ! wvt
- real(kind=kind_phys),dimension(its:ite,kts:kte)::                & ! wvt
+ integer:: nreg                                                    ! wvt: WVT region count (n declared above)
+ real(kind=kind_phys):: tr_sum, tr_frac                            ! wvt: cross-region cap sum / share
+ real(kind=kind_phys),dimension(its:ite,kts:kte,num_wvt_regions):: & ! wvt: per-region rate temps
                                                        tr_pigen,  & ! wvt
                                                        tr_pidep,  & ! wvt
                                                        tr_pcond,  & ! wvt
@@ -462,12 +466,14 @@
                                                        tr_pseml,  & ! wvt
                                                        tr_pgeml,  & ! wvt
                                                        tr_work2     ! wvt
- real(kind=kind_phys):: tr_pfrzdtc, tr_pfrzdtr                      ! wvt
- real(kind=kind_phys),dimension(its:ite,kts:kte,3):: trfall          ! wvt
- real(kind=kind_phys),dimension(its:ite,kts:kte):: trfallc           ! wvt
+ real(kind=kind_phys),dimension(num_wvt_regions):: tr_pfrzdtc, tr_pfrzdtr ! wvt: per-region
+ real(kind=kind_phys),dimension(its:ite,kts:kte,3,num_wvt_regions):: trfall ! wvt: per-region fall flux
+ real(kind=kind_phys),dimension(its:ite,kts:kte,num_wvt_regions):: trfallc  ! wvt: per-region ice fall flux
  real(kind=kind_phys):: fallsum_tr, fallsum_tr_qsi, fallsum_tr_qg   ! wvt
- real(kind=kind_phys),dimension(its:ite,kts:kte)::                 & ! wvt
+ real(kind=kind_phys),dimension(its:ite,kts:kte)::                 & ! wvt: per-region (transient) sed density
         tr_denqrs1, tr_denqrs2, tr_denqrs3, tr_denqci               ! wvt
+ real(kind=kind_phys),dimension(its:ite,kts:kte)::                 & ! wvt: pre-sed base save (restored per region)
+        denqrs1_sav, denqrs2_sav, denqrs3_sav, denqci_sav           ! wvt
  real(kind=kind_phys),dimension(its:ite)::                         & ! wvt
         tr_delqrs1, tr_delqrs2, tr_delqrs3, tr_delqi                ! wvt
 
@@ -495,6 +501,7 @@
  if (present(do_tracers)) then                                     ! wvt
    if (do_tracers) l_tracers = .true.                              ! wvt
  endif                                                             ! wvt
+ nreg = num_wvt_regions                                            ! wvt
 !
  idim = ite-its+1
  kdim = kte-kts+1
@@ -512,43 +519,70 @@
    enddo
  enddo
 !
-! --- clip tracers to zero and cap to base moisture ! wvt
+! --- clip tracers to zero and cap to base moisture (per region) ! wvt
  if (l_tracers) then                                               ! wvt
+   do n = 1, nreg                                                  ! wvt
    do k = kts, kte                                                 ! wvt
      do i = its, ite                                               ! wvt
-       tr_q(i,k) = max(tr_q(i,k),0.0)                             ! wvt
-       tr_qc(i,k) = max(tr_qc(i,k),0.0)                           ! wvt
-       tr_qi(i,k) = max(tr_qi(i,k),0.0)                           ! wvt
-       tr_qr(i,k) = max(tr_qr(i,k),0.0)                           ! wvt
-       tr_qs(i,k) = max(tr_qs(i,k),0.0)                           ! wvt
-       tr_qg(i,k) = max(tr_qg(i,k),0.0)                           ! wvt
+       tr_q(i,k,n) = max(tr_q(i,k,n),0.0)                         ! wvt
+       tr_qc(i,k,n) = max(tr_qc(i,k,n),0.0)                       ! wvt
+       tr_qi(i,k,n) = max(tr_qi(i,k,n),0.0)                       ! wvt
+       tr_qr(i,k,n) = max(tr_qr(i,k,n),0.0)                       ! wvt
+       tr_qs(i,k,n) = max(tr_qs(i,k,n),0.0)                       ! wvt
+       tr_qg(i,k,n) = max(tr_qg(i,k,n),0.0)                       ! wvt
      enddo                                                         ! wvt
    enddo                                                           ! wvt
-!  --- make sure tracers do not exceed base moisture               ! wvt
+   enddo                                                           ! wvt
+!  --- make sure tracers do not exceed base moisture: the excess of the cross-region ! wvt
+!      SUM is returned to the vapor tracers, scaled by each region's share. Bit-exact ! wvt
+!      at nreg=1 (share = tr/tr = 1). See cross-region clipping note. ! wvt
    do k = kts, kte                                                 ! wvt
      do i = its, ite                                               ! wvt
-       if (tr_qc(i,k).gt.qc(i,k)) then                            ! wvt
-         tr_q(i,k) = tr_q(i,k) + (tr_qc(i,k)-qc(i,k))            ! wvt
-         tr_qc(i,k) = qc(i,k)                                     ! wvt
+       tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qc(i,k,n) ; enddo  ! wvt
+       if (tr_sum.gt.qc(i,k)) then                                 ! wvt
+         do n = 1, nreg                                            ! wvt
+           tr_frac = tr_qc(i,k,n)/tr_sum                           ! wvt
+           tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qc(i,k))*tr_frac    ! wvt
+           tr_qc(i,k,n) = qc(i,k)*tr_frac                          ! wvt
+         enddo                                                     ! wvt
        endif                                                       ! wvt
-       if (tr_qi(i,k).gt.qi(i,k)) then                            ! wvt
-         tr_q(i,k) = tr_q(i,k) + (tr_qi(i,k)-qi(i,k))            ! wvt
-         tr_qi(i,k) = qi(i,k)                                     ! wvt
+       tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qi(i,k,n) ; enddo  ! wvt
+       if (tr_sum.gt.qi(i,k)) then                                 ! wvt
+         do n = 1, nreg                                            ! wvt
+           tr_frac = tr_qi(i,k,n)/tr_sum                           ! wvt
+           tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qi(i,k))*tr_frac    ! wvt
+           tr_qi(i,k,n) = qi(i,k)*tr_frac                          ! wvt
+         enddo                                                     ! wvt
        endif                                                       ! wvt
-       if (tr_qr(i,k).gt.qr(i,k)) then                            ! wvt
-         tr_q(i,k) = tr_q(i,k) + (tr_qr(i,k)-qr(i,k))            ! wvt
-         tr_qr(i,k) = qr(i,k)                                     ! wvt
+       tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qr(i,k,n) ; enddo  ! wvt
+       if (tr_sum.gt.qr(i,k)) then                                 ! wvt
+         do n = 1, nreg                                            ! wvt
+           tr_frac = tr_qr(i,k,n)/tr_sum                           ! wvt
+           tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qr(i,k))*tr_frac    ! wvt
+           tr_qr(i,k,n) = qr(i,k)*tr_frac                          ! wvt
+         enddo                                                     ! wvt
        endif                                                       ! wvt
-       if (tr_qs(i,k).gt.qs(i,k)) then                            ! wvt
-         tr_q(i,k) = tr_q(i,k) + (tr_qs(i,k)-qs(i,k))            ! wvt
-         tr_qs(i,k) = qs(i,k)                                     ! wvt
+       tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qs(i,k,n) ; enddo  ! wvt
+       if (tr_sum.gt.qs(i,k)) then                                 ! wvt
+         do n = 1, nreg                                            ! wvt
+           tr_frac = tr_qs(i,k,n)/tr_sum                           ! wvt
+           tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qs(i,k))*tr_frac    ! wvt
+           tr_qs(i,k,n) = qs(i,k)*tr_frac                          ! wvt
+         enddo                                                     ! wvt
        endif                                                       ! wvt
-       if (tr_qg(i,k).gt.qg(i,k)) then                            ! wvt
-         tr_q(i,k) = tr_q(i,k) + (tr_qg(i,k)-qg(i,k))            ! wvt
-         tr_qg(i,k) = qg(i,k)                                     ! wvt
+       tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qg(i,k,n) ; enddo  ! wvt
+       if (tr_sum.gt.qg(i,k)) then                                 ! wvt
+         do n = 1, nreg                                            ! wvt
+           tr_frac = tr_qg(i,k,n)/tr_sum                           ! wvt
+           tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qg(i,k))*tr_frac    ! wvt
+           tr_qg(i,k,n) = qg(i,k)*tr_frac                          ! wvt
+         enddo                                                     ! wvt
        endif                                                       ! wvt
-       if (tr_q(i,k).gt.q(i,k)) then                              ! wvt
-         tr_q(i,k) = q(i,k)                                       ! wvt
+       tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_q(i,k,n) ; enddo   ! wvt
+       if (tr_sum.gt.q(i,k)) then                                  ! wvt
+         do n = 1, nreg                                            ! wvt
+           tr_q(i,k,n) = q(i,k)*(tr_q(i,k,n)/tr_sum)               ! wvt
+         enddo                                                     ! wvt
        endif                                                       ! wvt
      enddo                                                         ! wvt
    enddo                                                           ! wvt
@@ -701,41 +735,43 @@
 !
 ! --- initialize tracer production rates ! wvt
    if (l_tracers) then                                             ! wvt
+     do n = 1, nreg                                                ! wvt
      do k = kts, kte                                               ! wvt
        do i = its, ite                                             ! wvt
-         tr_prevp(i,k) = 0.                                       ! wvt
-         tr_psdep(i,k) = 0.                                       ! wvt
-         tr_pgdep(i,k) = 0.                                       ! wvt
-         tr_praut(i,k) = 0.                                       ! wvt
-         tr_psaut(i,k) = 0.                                       ! wvt
-         tr_pgaut(i,k) = 0.                                       ! wvt
-         tr_pracw(i,k) = 0.                                       ! wvt
-         tr_praci(i,k) = 0.                                       ! wvt
-         tr_piacr(i,k) = 0.                                       ! wvt
-         tr_psaci(i,k) = 0.                                       ! wvt
-         tr_psacw(i,k) = 0.                                       ! wvt
-         tr_pracs(i,k) = 0.                                       ! wvt
-         tr_psacr(i,k) = 0.                                       ! wvt
-         tr_pgacw(i,k) = 0.                                       ! wvt
-         tr_paacw(i,k) = 0.                                       ! wvt
-         tr_pgaci(i,k) = 0.                                       ! wvt
-         tr_pgacr(i,k) = 0.                                       ! wvt
-         tr_pgacs(i,k) = 0.                                       ! wvt
-         tr_pigen(i,k) = 0.                                       ! wvt
-         tr_pidep(i,k) = 0.                                       ! wvt
-         tr_pcond(i,k) = 0.                                       ! wvt
-         tr_psmlt(i,k) = 0.                                       ! wvt
-         tr_pgmlt(i,k) = 0.                                       ! wvt
-         tr_pseml(i,k) = 0.                                       ! wvt
-         tr_pgeml(i,k) = 0.                                       ! wvt
-         tr_psevp(i,k) = 0.                                       ! wvt
-         tr_pgevp(i,k) = 0.                                       ! wvt
-         tr_work2(i,k) = 0.                                       ! wvt
-         trfall(i,k,1) = 0.                                       ! wvt
-         trfall(i,k,2) = 0.                                       ! wvt
-         trfall(i,k,3) = 0.                                       ! wvt
-         trfallc(i,k) = 0.                                        ! wvt
+         tr_prevp(i,k,n) = 0.                                     ! wvt
+         tr_psdep(i,k,n) = 0.                                     ! wvt
+         tr_pgdep(i,k,n) = 0.                                     ! wvt
+         tr_praut(i,k,n) = 0.                                     ! wvt
+         tr_psaut(i,k,n) = 0.                                     ! wvt
+         tr_pgaut(i,k,n) = 0.                                     ! wvt
+         tr_pracw(i,k,n) = 0.                                     ! wvt
+         tr_praci(i,k,n) = 0.                                     ! wvt
+         tr_piacr(i,k,n) = 0.                                     ! wvt
+         tr_psaci(i,k,n) = 0.                                     ! wvt
+         tr_psacw(i,k,n) = 0.                                     ! wvt
+         tr_pracs(i,k,n) = 0.                                     ! wvt
+         tr_psacr(i,k,n) = 0.                                     ! wvt
+         tr_pgacw(i,k,n) = 0.                                     ! wvt
+         tr_paacw(i,k,n) = 0.                                     ! wvt
+         tr_pgaci(i,k,n) = 0.                                     ! wvt
+         tr_pgacr(i,k,n) = 0.                                     ! wvt
+         tr_pgacs(i,k,n) = 0.                                     ! wvt
+         tr_pigen(i,k,n) = 0.                                     ! wvt
+         tr_pidep(i,k,n) = 0.                                     ! wvt
+         tr_pcond(i,k,n) = 0.                                     ! wvt
+         tr_psmlt(i,k,n) = 0.                                     ! wvt
+         tr_pgmlt(i,k,n) = 0.                                     ! wvt
+         tr_pseml(i,k,n) = 0.                                     ! wvt
+         tr_pgeml(i,k,n) = 0.                                     ! wvt
+         tr_psevp(i,k,n) = 0.                                     ! wvt
+         tr_pgevp(i,k,n) = 0.                                     ! wvt
+         tr_work2(i,k,n) = 0.                                     ! wvt
+         trfall(i,k,1,n) = 0.                                     ! wvt
+         trfall(i,k,2,n) = 0.                                     ! wvt
+         trfall(i,k,3,n) = 0.                                     ! wvt
+         trfallc(i,k,n) = 0.                                      ! wvt
        enddo                                                       ! wvt
+     enddo                                                         ! wvt
      enddo                                                         ! wvt
    endif                                                           ! wvt
 !-------------------------------------------------------------
@@ -780,22 +816,48 @@
      enddo
    enddo
 !
-! --- tracer sedimentation for rain/snow/graupel ! wvt
+! --- tracer sedimentation for rain/snow/graupel: base sedimented once per region call ! wvt
    if (l_tracers) then                                             ! wvt
-     do k = kte, kts, -1                                           ! wvt
-       do i = its, ite                                             ! wvt
-         tr_denqrs1(i,k) = den(i,k)*tr_qr(i,k)                   ! wvt
-         tr_denqrs2(i,k) = den(i,k)*tr_qs(i,k)                   ! wvt
-         tr_denqrs3(i,k) = den(i,k)*tr_qg(i,k)                   ! wvt
+!    save pre-sedimentation base densities (restored before each region's coupled call) ! wvt
+     do k = kts, kte ; do i = its, ite                             ! wvt
+       denqrs1_sav(i,k)=denqrs1(i,k) ; denqrs2_sav(i,k)=denqrs2(i,k) ; denqrs3_sav(i,k)=denqrs3(i,k) ! wvt
+     enddo ; enddo                                                 ! wvt
+     do n = 1, nreg                                                ! wvt
+       do k = kte, kts, -1                                         ! wvt
+         do i = its, ite                                           ! wvt
+           tr_denqrs1(i,k) = den(i,k)*tr_qr(i,k,n)               ! wvt
+           tr_denqrs2(i,k) = den(i,k)*tr_qs(i,k,n)               ! wvt
+           tr_denqrs3(i,k) = den(i,k)*tr_qg(i,k,n)               ! wvt
+         enddo                                                     ! wvt
        enddo                                                       ! wvt
-     enddo                                                         ! wvt
-     call nislfv_rain_plm_tr(idim,kdim,den_tmp,denfac,t,delz_tmp,workr,  & ! wvt
-                             denqrs1,delqrs1,tr_denqrs1,tr_delqrs1,       & ! wvt
-                             dtcld,1,1)                                     ! wvt
-     call nislfv_rain_plm6_tr(idim,kdim,den_tmp,denfac,t,delz_tmp,worka, & ! wvt
-                              denqrs2,denqrs3,delqrs2,delqrs3,            & ! wvt
-                              tr_denqrs2,tr_denqrs3,tr_delqrs2,tr_delqrs3,& ! wvt
-                              dtcld,1,1)                                    ! wvt
+!      restore base so every region rides the same once-computed base fall field ! wvt
+       do k = kts, kte ; do i = its, ite                          ! wvt
+         denqrs1(i,k)=denqrs1_sav(i,k) ; denqrs2(i,k)=denqrs2_sav(i,k) ; denqrs3(i,k)=denqrs3_sav(i,k) ! wvt
+       enddo ; enddo                                              ! wvt
+       call nislfv_rain_plm_tr(idim,kdim,den_tmp,denfac,t,delz_tmp,workr,  & ! wvt
+                               denqrs1,delqrs1,tr_denqrs1,tr_delqrs1,       & ! wvt
+                               dtcld,1,1)                                     ! wvt
+       call nislfv_rain_plm6_tr(idim,kdim,den_tmp,denfac,t,delz_tmp,worka, & ! wvt
+                                denqrs2,denqrs3,delqrs2,delqrs3,            & ! wvt
+                                tr_denqrs2,tr_denqrs3,tr_delqrs2,tr_delqrs3,& ! wvt
+                                dtcld,1,1)                                    ! wvt
+!      unpack region n; caps are cross-region (applied after the base unpack below) ! wvt
+       do k = kts, kte                                             ! wvt
+         do i = its, ite                                           ! wvt
+           tr_qr(i,k,n) = max(tr_denqrs1(i,k)/den(i,k),0.)        ! wvt
+           tr_qs(i,k,n) = max(tr_denqrs2(i,k)/den(i,k),0.)        ! wvt
+           tr_qg(i,k,n) = max(tr_denqrs3(i,k)/den(i,k),0.)        ! wvt
+           trfall(i,k,1,n) = tr_denqrs1(i,k)*workr(i,k)/delz(i,k) ! wvt
+           trfall(i,k,2,n) = tr_denqrs2(i,k)*worka(i,k)/delz(i,k) ! wvt
+           trfall(i,k,3,n) = tr_denqrs3(i,k)*worka(i,k)/delz(i,k) ! wvt
+         enddo                                                     ! wvt
+       enddo                                                       ! wvt
+       do i = its, ite                                             ! wvt: tracer fall at lowest level
+         trfall(i,1,1,n) = tr_delqrs1(i)/delz(i,1)/dtcld          ! wvt
+         trfall(i,1,2,n) = tr_delqrs2(i)/delz(i,1)/dtcld          ! wvt
+         trfall(i,1,3,n) = tr_delqrs3(i)/delz(i,1)/dtcld          ! wvt
+       enddo                                                       ! wvt
+     enddo  ! n: region loop                                      ! wvt
    else                                                            ! wvt
      call nislfv_rain_plm(idim,kdim,den_tmp,denfac,t,delz_tmp,workr,denqrs1,  &
                           delqrs1,dtcld,1,1)
@@ -813,32 +875,39 @@
      enddo
    enddo
 !
-! --- update tracer precipitation fields after sedimentation ! wvt
+! --- cap tracers to base moisture after sedimentation (excess of cross-region SUM ! wvt
+!     returned to vapor, scaled by region share; bit-exact at nreg=1) ! wvt
    if (l_tracers) then                                             ! wvt
      do k = kts, kte                                               ! wvt
        do i = its, ite                                             ! wvt
-         tr_qr(i,k) = max(tr_denqrs1(i,k)/den(i,k),0.)           ! wvt
-         tr_qs(i,k) = max(tr_denqrs2(i,k)/den(i,k),0.)           ! wvt
-         tr_qg(i,k) = max(tr_denqrs3(i,k)/den(i,k),0.)           ! wvt
-!        --- cap tracers after sedimentation                       ! wvt
-         if (tr_qr(i,k).gt.qr(i,k)) then                         ! wvt
-           tr_q(i,k) = tr_q(i,k) + (tr_qr(i,k)-qr(i,k))         ! wvt
-           tr_qr(i,k) = qr(i,k)                                   ! wvt
+         tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qr(i,k,n) ; enddo   ! wvt
+         if (tr_sum.gt.qr(i,k)) then                               ! wvt
+           do n=1,nreg                                             ! wvt
+             tr_frac=tr_qr(i,k,n)/tr_sum                           ! wvt
+             tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qr(i,k))*tr_frac      ! wvt
+             tr_qr(i,k,n)=qr(i,k)*tr_frac                          ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
-         if (tr_qs(i,k).gt.qs(i,k)) then                          ! wvt
-           tr_q(i,k) = tr_q(i,k) + (tr_qs(i,k)-qs(i,k))          ! wvt
-           tr_qs(i,k) = qs(i,k)                                   ! wvt
+         tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qs(i,k,n) ; enddo   ! wvt
+         if (tr_sum.gt.qs(i,k)) then                               ! wvt
+           do n=1,nreg                                             ! wvt
+             tr_frac=tr_qs(i,k,n)/tr_sum                           ! wvt
+             tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qs(i,k))*tr_frac      ! wvt
+             tr_qs(i,k,n)=qs(i,k)*tr_frac                          ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
-         if (tr_qg(i,k).gt.qg(i,k)) then                         ! wvt
-           tr_q(i,k) = tr_q(i,k) + (tr_qg(i,k)-qg(i,k))         ! wvt
-           tr_qg(i,k) = qg(i,k)                                   ! wvt
+         tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qg(i,k,n) ; enddo   ! wvt
+         if (tr_sum.gt.qg(i,k)) then                               ! wvt
+           do n=1,nreg                                             ! wvt
+             tr_frac=tr_qg(i,k,n)/tr_sum                           ! wvt
+             tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qg(i,k))*tr_frac      ! wvt
+             tr_qg(i,k,n)=qg(i,k)*tr_frac                          ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
-         if (tr_q(i,k).gt.q(i,k)) then                            ! wvt
-           tr_q(i,k) = q(i,k)                                     ! wvt
+         tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_q(i,k,n) ; enddo    ! wvt
+         if (tr_sum.gt.q(i,k)) then                                ! wvt
+           do n=1,nreg ; tr_q(i,k,n)=q(i,k)*(tr_q(i,k,n)/tr_sum) ; enddo  ! wvt
          endif                                                     ! wvt
-         trfall(i,k,1) = tr_denqrs1(i,k)*workr(i,k)/delz(i,k)    ! wvt
-         trfall(i,k,2) = tr_denqrs2(i,k)*worka(i,k)/delz(i,k)    ! wvt
-         trfall(i,k,3) = tr_denqrs3(i,k)*worka(i,k)/delz(i,k)    ! wvt
        enddo                                                       ! wvt
      enddo                                                         ! wvt
    endif                                                           ! wvt
@@ -848,15 +917,6 @@
      fall(i,1,2) = delqrs2(i)/delz(i,1)/dtcld
      fall(i,1,3) = delqrs3(i)/delz(i,1)/dtcld
    enddo
-!
-! --- tracer fall at lowest level ! wvt
-   if (l_tracers) then                                             ! wvt
-     do i = its, ite                                               ! wvt
-       trfall(i,1,1) = tr_delqrs1(i)/delz(i,1)/dtcld              ! wvt
-       trfall(i,1,2) = tr_delqrs2(i)/delz(i,1)/dtcld              ! wvt
-       trfall(i,1,3) = tr_delqrs3(i)/delz(i,1)/dtcld              ! wvt
-     enddo                                                         ! wvt
-   endif                                                           ! wvt
 !
    do k = kts, kte
      do i = its, ite
@@ -888,15 +948,17 @@
                       -qs(i,k)/mstep(i)),0.)
 !          --- tracer melting of snow ! wvt
            if (l_tracers) then                                     ! wvt
-             tr_psmlt(i,k) = psmlt(i,k)/qs(i,k)*tr_qs(i,k)       ! wvt
+             do n=1,nreg ; tr_psmlt(i,k,n) = psmlt(i,k)/qs(i,k)*tr_qs(i,k,n) ; enddo ! wvt
            endif                                                   ! wvt
            qs(i,k) = qs(i,k) + psmlt(i,k)
            qr(i,k) = qr(i,k) - psmlt(i,k)
            t(i,k) = t(i,k) + xlf/cpm(i,k)*psmlt(i,k)
 !          --- update tracers ! wvt
            if (l_tracers) then                                     ! wvt
-             tr_qs(i,k) = tr_qs(i,k) + tr_psmlt(i,k)             ! wvt
-             tr_qr(i,k) = tr_qr(i,k) - tr_psmlt(i,k)            ! wvt
+             do n=1,nreg                                           ! wvt
+               tr_qs(i,k,n) = tr_qs(i,k,n) + tr_psmlt(i,k,n)     ! wvt
+               tr_qr(i,k,n) = tr_qr(i,k,n) - tr_psmlt(i,k,n)     ! wvt
+             enddo                                                 ! wvt
            endif                                                   ! wvt
          endif
 !---------------------------------------------------------------
@@ -912,15 +974,17 @@
                      -qg(i,k)/mstep(i)),0.)
 !          --- tracer melting of graupel ! wvt
            if (l_tracers) then                                     ! wvt
-             tr_pgmlt(i,k) = pgmlt(i,k)/qg(i,k)*tr_qg(i,k)      ! wvt
+             do n=1,nreg ; tr_pgmlt(i,k,n) = pgmlt(i,k)/qg(i,k)*tr_qg(i,k,n) ; enddo ! wvt
            endif                                                   ! wvt
            qg(i,k) = qg(i,k) + pgmlt(i,k)
            qr(i,k) = qr(i,k) - pgmlt(i,k)
            t(i,k) = t(i,k) + xlf/cpm(i,k)*pgmlt(i,k)
 !          --- update tracers ! wvt
            if (l_tracers) then                                     ! wvt
-             tr_qg(i,k) = tr_qg(i,k) + tr_pgmlt(i,k)            ! wvt
-             tr_qr(i,k) = tr_qr(i,k) - tr_pgmlt(i,k)            ! wvt
+             do n=1,nreg                                           ! wvt
+               tr_qg(i,k,n) = tr_qg(i,k,n) + tr_pgmlt(i,k,n)     ! wvt
+               tr_qr(i,k,n) = tr_qr(i,k,n) - tr_pgmlt(i,k,n)     ! wvt
+             enddo                                                 ! wvt
            endif                                                   ! wvt
          endif
        endif
@@ -949,15 +1013,27 @@
      enddo
    enddo
 !
-! --- tracer ice crystal sedimentation ! wvt
+! --- tracer ice crystal sedimentation: base sedimented once per region call ! wvt
    if (l_tracers) then                                             ! wvt
-     do k = kte, kts, -1                                           ! wvt
-       do i = its, ite                                             ! wvt
-         tr_denqci(i,k) = den(i,k)*tr_qi(i,k)                    ! wvt
+     do k=kts,kte ; do i=its,ite ; denqci_sav(i,k)=denqci(i,k) ; enddo ; enddo  ! wvt
+     do n = 1, nreg                                                ! wvt
+       do k = kte, kts, -1                                         ! wvt
+         do i = its, ite                                           ! wvt
+           tr_denqci(i,k) = den(i,k)*tr_qi(i,k,n)                ! wvt
+         enddo                                                     ! wvt
        enddo                                                       ! wvt
-     enddo                                                         ! wvt
-     call nislfv_rain_plm_tr(idim,kdim,den_tmp,denfac,t,delz_tmp,work1c,  & ! wvt
-                             denqci,delqi,tr_denqci,tr_delqi,dtcld,1,0)      ! wvt
+       do k=kts,kte ; do i=its,ite ; denqci(i,k)=denqci_sav(i,k) ; enddo ; enddo  ! wvt
+       call nislfv_rain_plm_tr(idim,kdim,den_tmp,denfac,t,delz_tmp,work1c,  & ! wvt
+                               denqci,delqi,tr_denqci,tr_delqi,dtcld,1,0)      ! wvt
+       do k = kts, kte                                             ! wvt
+         do i = its, ite                                           ! wvt
+           tr_qi(i,k,n) = max(tr_denqci(i,k)/den(i,k),0.)         ! wvt
+         enddo                                                     ! wvt
+       enddo                                                       ! wvt
+       do i = its, ite                                             ! wvt: tracer ice fallout at lowest level
+         trfallc(i,1,n) = tr_delqi(i)/delz(i,1)/dtcld             ! wvt
+       enddo                                                       ! wvt
+     enddo  ! n: region loop                                      ! wvt
    else                                                            ! wvt
      call nislfv_rain_plm(idim,kdim,den_tmp,denfac,t,delz_tmp,work1c,denqci,  &
                           delqi,dtcld,1,0)
@@ -968,17 +1044,21 @@
      enddo
    enddo
 !
-! --- update tracer ice after sedimentation ! wvt
+! --- cap tracer ice to base moisture after sedimentation (cross-region sum) ! wvt
    if (l_tracers) then                                             ! wvt
      do k = kts, kte                                               ! wvt
        do i = its, ite                                             ! wvt
-         tr_qi(i,k) = max(tr_denqci(i,k)/den(i,k),0.)            ! wvt
-         if (tr_qi(i,k).gt.qi(i,k)) then                          ! wvt
-           tr_q(i,k) = tr_q(i,k) + (tr_qi(i,k)-qi(i,k))          ! wvt
-           tr_qi(i,k) = qi(i,k)                                   ! wvt
+         tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qi(i,k,n) ; enddo   ! wvt
+         if (tr_sum.gt.qi(i,k)) then                               ! wvt
+           do n=1,nreg                                             ! wvt
+             tr_frac=tr_qi(i,k,n)/tr_sum                           ! wvt
+             tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qi(i,k))*tr_frac      ! wvt
+             tr_qi(i,k,n)=qi(i,k)*tr_frac                          ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
-         if (tr_q(i,k).gt.q(i,k)) then                            ! wvt
-           tr_q(i,k) = q(i,k)                                     ! wvt
+         tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_q(i,k,n) ; enddo    ! wvt
+         if (tr_sum.gt.q(i,k)) then                                ! wvt
+           do n=1,nreg ; tr_q(i,k,n)=q(i,k)*(tr_q(i,k,n)/tr_sum) ; enddo  ! wvt
          endif                                                     ! wvt
        enddo                                                       ! wvt
      enddo                                                         ! wvt
@@ -988,13 +1068,6 @@
      fallc(i,1) = delqi(i)/delz(i,1)/dtcld
    enddo
 !
-! --- tracer ice fallout at lowest level ! wvt
-   if (l_tracers) then                                             ! wvt
-     do i = its, ite                                               ! wvt
-       trfallc(i,1) = tr_delqi(i)/delz(i,1)/dtcld                 ! wvt
-     enddo                                                         ! wvt
-   endif                                                           ! wvt
-!
 !----------------------------------------------------------------
 !      rain (unit is mm/sec;kgm-2s-1: /1000*delt ===> m)==> mm for wrf
 !
@@ -1002,20 +1075,16 @@
      fallsum = fall(i,kts,1)+fall(i,kts,2)+fall(i,kts,3)+fallc(i,kts)
      fallsum_qsi = fall(i,kts,2)+fallc(i,kts)
      fallsum_qg = fall(i,kts,3)
-!    --- tracer precipitation sums ! wvt
-     if (l_tracers) then                                           ! wvt
-       fallsum_tr = trfall(i,kts,1)+trfall(i,kts,2)+trfall(i,kts,3) & ! wvt
-                  + trfallc(i,kts)                                 ! wvt
-       fallsum_tr_qsi = trfall(i,kts,2)+trfallc(i,kts)            ! wvt
-       fallsum_tr_qg = trfall(i,kts,3)                             ! wvt
-     endif                                                         ! wvt
+!    --- tracer precipitation sums are computed per region inline below ! wvt
      if(fallsum.gt.0.) then
        rainncv(i) = fallsum*delz(i,kts)/denr*dtcld*1000. + rainncv(i)
        rain(i) = fallsum*delz(i,kts)/denr*dtcld*1000. + rain(i)
 !      --- tracer rain ! wvt
        if (l_tracers) then                                         ! wvt
-         tr_rain(i) = fallsum_tr*delz(i,kts)/denr*dtcld*1000.     & ! wvt
-                    + tr_rain(i)                                   ! wvt
+         do n=1,nreg                                               ! wvt
+           fallsum_tr = trfall(i,kts,1,n)+trfall(i,kts,2,n)+trfall(i,kts,3,n)+trfallc(i,kts,n) ! wvt
+           tr_rain(i,n) = fallsum_tr*delz(i,kts)/denr*dtcld*1000. + tr_rain(i,n) ! wvt
+         enddo                                                     ! wvt
        endif                                                       ! wvt
      endif
      if(fallsum_qsi.gt.0.) then
@@ -1027,8 +1096,10 @@
          snow(i) = fallsum_qsi*delz(i,kts)/denr*dtcld*1000. + snow(i)
 !        --- tracer snow ! wvt
          if (l_tracers .and. present(tr_snow)) then                ! wvt
-           tr_snow(i) = fallsum_tr_qsi*delz(i,kts)/denr*dtcld*1000.  & ! wvt
-                      + tr_snow(i)                                 ! wvt
+           do n=1,nreg                                             ! wvt
+             fallsum_tr_qsi = trfall(i,kts,2,n)+trfallc(i,kts,n)   ! wvt
+             tr_snow(i,n) = fallsum_tr_qsi*delz(i,kts)/denr*dtcld*1000. + tr_snow(i,n) ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
        endif
      endif
@@ -1042,8 +1113,10 @@
        endif
 !      --- tracer graupel ! wvt
        if (l_tracers .and. present(tr_graupel)) then               ! wvt
-         tr_graupel(i) = fallsum_tr_qg*delz(i,kts)/denr*dtcld*1000.  & ! wvt
-                       + tr_graupel(i)                             ! wvt
+         do n=1,nreg                                               ! wvt
+           fallsum_tr_qg = trfall(i,kts,3,n)                       ! wvt
+           tr_graupel(i,n) = fallsum_tr_qg*delz(i,kts)/denr*dtcld*1000. + tr_graupel(i,n) ! wvt
+         enddo                                                     ! wvt
        endif                                                       ! wvt
      endif
      if(present (snowncv)) then
@@ -1067,8 +1140,10 @@
          t(i,k) = t(i,k) - xlf/cpm(i,k)*qi(i,k)
 !        --- tracer: I->C ! wvt
          if (l_tracers) then                                       ! wvt
-           tr_qc(i,k) = tr_qc(i,k) + tr_qi(i,k)                  ! wvt
-           tr_qi(i,k) = 0.                                        ! wvt
+           do n=1,nreg                                             ! wvt
+             tr_qc(i,k,n) = tr_qc(i,k,n) + tr_qi(i,k,n)          ! wvt
+             tr_qi(i,k,n) = 0.                                    ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
          qi(i,k) = 0.
        endif
@@ -1081,8 +1156,10 @@
          t(i,k) = t(i,k) + xlf/cpm(i,k)*qc(i,k)
 !        --- tracer: C->I ! wvt
          if (l_tracers) then                                       ! wvt
-           tr_qi(i,k) = tr_qi(i,k) + tr_qc(i,k)                  ! wvt
-           tr_qc(i,k) = 0.                                        ! wvt
+           do n=1,nreg                                             ! wvt
+             tr_qi(i,k,n) = tr_qi(i,k,n) + tr_qc(i,k,n)          ! wvt
+             tr_qc(i,k,n) = 0.                                    ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
          qc(i,k) = 0.
        endif
@@ -1098,15 +1175,17 @@
                  * den(i,k)/denr/xncr*qc(i,k)*qc(i,k)*dtcld,qc(i,k))
 !        --- tracer het freezing ! wvt
          if (l_tracers) then                                       ! wvt
-           tr_pfrzdtc = pfrzdtc/qc(i,k)*tr_qc(i,k)               ! wvt
+           do n=1,nreg ; tr_pfrzdtc(n) = pfrzdtc/qc(i,k)*tr_qc(i,k,n) ; enddo ! wvt
          endif                                                     ! wvt
          qi(i,k) = qi(i,k) + pfrzdtc
          t(i,k) = t(i,k) + xlf/cpm(i,k)*pfrzdtc
          qc(i,k) = qc(i,k)-pfrzdtc
 !        --- update tracers ! wvt
          if (l_tracers) then                                       ! wvt
-           tr_qi(i,k) = tr_qi(i,k) + tr_pfrzdtc                   ! wvt
-           tr_qc(i,k) = tr_qc(i,k) - tr_pfrzdtc                  ! wvt
+           do n=1,nreg                                             ! wvt
+             tr_qi(i,k,n) = tr_qi(i,k,n) + tr_pfrzdtc(n)         ! wvt
+             tr_qc(i,k,n) = tr_qc(i,k,n) - tr_pfrzdtc(n)        ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
        endif
 !---------------------------------------------------------------
@@ -1125,15 +1204,17 @@
                    qr(i,k))
 !        --- tracer rain freezing ! wvt
          if (l_tracers) then                                       ! wvt
-           tr_pfrzdtr = pfrzdtr/qr(i,k)*tr_qr(i,k)               ! wvt
+           do n=1,nreg ; tr_pfrzdtr(n) = pfrzdtr/qr(i,k)*tr_qr(i,k,n) ; enddo ! wvt
          endif                                                     ! wvt
          qg(i,k) = qg(i,k) + pfrzdtr
          t(i,k) = t(i,k) + xlf/cpm(i,k)*pfrzdtr
          qr(i,k) = qr(i,k)-pfrzdtr
 !        --- update tracers ! wvt
          if (l_tracers) then                                       ! wvt
-           tr_qg(i,k) = tr_qg(i,k) + tr_pfrzdtr                  ! wvt
-           tr_qr(i,k) = tr_qr(i,k) - tr_pfrzdtr                  ! wvt
+           do n=1,nreg                                             ! wvt
+             tr_qg(i,k,n) = tr_qg(i,k,n) + tr_pfrzdtr(n)         ! wvt
+             tr_qr(i,k,n) = tr_qr(i,k,n) - tr_pfrzdtr(n)        ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
        endif
      enddo
@@ -1605,47 +1686,49 @@
 !
 ! --- compute tracer production rates (cold, T<=T0) ! wvt
          if (l_tracers) then                                       ! wvt
-           if (qc(i,k).gt.0.) tr_praut(i,k) = praut(i,k)/qc(i,k)*tr_qc(i,k)  ! wvt
-           if (qc(i,k).gt.0.) tr_pracw(i,k) = pracw(i,k)/qc(i,k)*tr_qc(i,k)  ! wvt
+           do n = 1, nreg                                          ! wvt
+           if (qc(i,k).gt.0.) tr_praut(i,k,n) = praut(i,k)/qc(i,k)*tr_qc(i,k,n)  ! wvt
+           if (qc(i,k).gt.0.) tr_pracw(i,k,n) = pracw(i,k)/qc(i,k)*tr_qc(i,k,n)  ! wvt
            if(prevp(i,k).lt.0.)then                                ! wvt
-             if (qr(i,k).gt.0.) tr_prevp(i,k) = prevp(i,k)/qr(i,k)*tr_qr(i,k)  ! wvt
+             if (qr(i,k).gt.0.) tr_prevp(i,k,n) = prevp(i,k)/qr(i,k)*tr_qr(i,k,n)  ! wvt
            else                                                    ! wvt
-             if (q(i,k).gt.0.) tr_prevp(i,k) = prevp(i,k)/q(i,k)*tr_q(i,k)  ! wvt
+             if (q(i,k).gt.0.) tr_prevp(i,k,n) = prevp(i,k)/q(i,k)*tr_q(i,k,n)  ! wvt
            endif                                                   ! wvt
-           if (qi(i,k).gt.0.) tr_praci(i,k) = praci(i,k)/qi(i,k)*tr_qi(i,k)  ! wvt
-           if (qr(i,k).gt.0.) tr_piacr(i,k) = piacr(i,k)/qr(i,k)*tr_qr(i,k)  ! wvt
-           if (qi(i,k).gt.0.) tr_psaci(i,k) = psaci(i,k)/qi(i,k)*tr_qi(i,k)  ! wvt
-           if (qi(i,k).gt.0.) tr_pgaci(i,k) = pgaci(i,k)/qi(i,k)*tr_qi(i,k)  ! wvt
-           if (qc(i,k).gt.0.) tr_paacw(i,k) = paacw(i,k)/qc(i,k)*tr_qc(i,k)  ! wvt
-           if (qs(i,k).gt.0.) tr_pracs(i,k) = pracs(i,k)/qs(i,k)*tr_qs(i,k)  ! wvt
-           if (qr(i,k).gt.0.) tr_psacr(i,k) = psacr(i,k)/qr(i,k)*tr_qr(i,k)  ! wvt
-           if (qr(i,k).gt.0.) tr_pgacr(i,k) = pgacr(i,k)/qr(i,k)*tr_qr(i,k)  ! wvt
-           if (qs(i,k).gt.0.) tr_pseml(i,k) = pseml(i,k)/qs(i,k)*tr_qs(i,k)  ! wvt
-           if (qg(i,k).gt.0.) tr_pgeml(i,k) = pgeml(i,k)/qg(i,k)*tr_qg(i,k)  ! wvt
+           if (qi(i,k).gt.0.) tr_praci(i,k,n) = praci(i,k)/qi(i,k)*tr_qi(i,k,n)  ! wvt
+           if (qr(i,k).gt.0.) tr_piacr(i,k,n) = piacr(i,k)/qr(i,k)*tr_qr(i,k,n)  ! wvt
+           if (qi(i,k).gt.0.) tr_psaci(i,k,n) = psaci(i,k)/qi(i,k)*tr_qi(i,k,n)  ! wvt
+           if (qi(i,k).gt.0.) tr_pgaci(i,k,n) = pgaci(i,k)/qi(i,k)*tr_qi(i,k,n)  ! wvt
+           if (qc(i,k).gt.0.) tr_paacw(i,k,n) = paacw(i,k)/qc(i,k)*tr_qc(i,k,n)  ! wvt
+           if (qs(i,k).gt.0.) tr_pracs(i,k,n) = pracs(i,k)/qs(i,k)*tr_qs(i,k,n)  ! wvt
+           if (qr(i,k).gt.0.) tr_psacr(i,k,n) = psacr(i,k)/qr(i,k)*tr_qr(i,k,n)  ! wvt
+           if (qr(i,k).gt.0.) tr_pgacr(i,k,n) = pgacr(i,k)/qr(i,k)*tr_qr(i,k,n)  ! wvt
+           if (qs(i,k).gt.0.) tr_pseml(i,k,n) = pseml(i,k)/qs(i,k)*tr_qs(i,k,n)  ! wvt
+           if (qg(i,k).gt.0.) tr_pgeml(i,k,n) = pgeml(i,k)/qg(i,k)*tr_qg(i,k,n)  ! wvt
            if(pidep(i,k).lt.0.)then                                ! wvt
-             if (qi(i,k).gt.0.) tr_pidep(i,k) = pidep(i,k)/qi(i,k)*tr_qi(i,k)  ! wvt
+             if (qi(i,k).gt.0.) tr_pidep(i,k,n) = pidep(i,k)/qi(i,k)*tr_qi(i,k,n)  ! wvt
            else                                                    ! wvt
-             if (q(i,k).gt.0.) tr_pidep(i,k) = pidep(i,k)/q(i,k)*tr_q(i,k)  ! wvt
+             if (q(i,k).gt.0.) tr_pidep(i,k,n) = pidep(i,k)/q(i,k)*tr_q(i,k,n)  ! wvt
            endif                                                   ! wvt
            if(psdep(i,k).lt.0.)then                                ! wvt
-             if (qs(i,k).gt.0.) tr_psdep(i,k) = psdep(i,k)/qs(i,k)*tr_qs(i,k)  ! wvt
+             if (qs(i,k).gt.0.) tr_psdep(i,k,n) = psdep(i,k)/qs(i,k)*tr_qs(i,k,n)  ! wvt
            else                                                    ! wvt
-             if (q(i,k).gt.0.) tr_psdep(i,k) = psdep(i,k)/q(i,k)*tr_q(i,k)  ! wvt
+             if (q(i,k).gt.0.) tr_psdep(i,k,n) = psdep(i,k)/q(i,k)*tr_q(i,k,n)  ! wvt
            endif                                                   ! wvt
            if(pgdep(i,k).lt.0.)then                                ! wvt
-             if (qg(i,k).gt.0.) tr_pgdep(i,k) = pgdep(i,k)/qg(i,k)*tr_qg(i,k)  ! wvt
+             if (qg(i,k).gt.0.) tr_pgdep(i,k,n) = pgdep(i,k)/qg(i,k)*tr_qg(i,k,n)  ! wvt
            else                                                    ! wvt
-             if (q(i,k).gt.0.) tr_pgdep(i,k) = pgdep(i,k)/q(i,k)*tr_q(i,k)  ! wvt
+             if (q(i,k).gt.0.) tr_pgdep(i,k,n) = pgdep(i,k)/q(i,k)*tr_q(i,k,n)  ! wvt
            endif                                                   ! wvt
-           if (q(i,k).gt.0.) tr_pigen(i,k) = pigen(i,k)/q(i,k)*tr_q(i,k)  ! wvt
-           if (qi(i,k).gt.0.) tr_psaut(i,k) = psaut(i,k)/qi(i,k)*tr_qi(i,k)  ! wvt
-           if (qs(i,k).gt.0.) tr_pgaut(i,k) = pgaut(i,k)/qs(i,k)*tr_qs(i,k)  ! wvt
-           if (qs(i,k).gt.0.) tr_psevp(i,k) = psevp(i,k)/qs(i,k)*tr_qs(i,k)  ! wvt
-           if (qg(i,k).gt.0.) tr_pgevp(i,k) = pgevp(i,k)/qg(i,k)*tr_qg(i,k)  ! wvt
-           if (qs(i,k).gt.0.) tr_pgacs(i,k) = pgacs(i,k)/qs(i,k)*tr_qs(i,k)  ! wvt
+           if (q(i,k).gt.0.) tr_pigen(i,k,n) = pigen(i,k)/q(i,k)*tr_q(i,k,n)  ! wvt
+           if (qi(i,k).gt.0.) tr_psaut(i,k,n) = psaut(i,k)/qi(i,k)*tr_qi(i,k,n)  ! wvt
+           if (qs(i,k).gt.0.) tr_pgaut(i,k,n) = pgaut(i,k)/qs(i,k)*tr_qs(i,k,n)  ! wvt
+           if (qs(i,k).gt.0.) tr_psevp(i,k,n) = psevp(i,k)/qs(i,k)*tr_qs(i,k,n)  ! wvt
+           if (qg(i,k).gt.0.) tr_pgevp(i,k,n) = pgevp(i,k)/qg(i,k)*tr_qg(i,k,n)  ! wvt
+           if (qs(i,k).gt.0.) tr_pgacs(i,k,n) = pgacs(i,k)/qs(i,k)*tr_qs(i,k,n)  ! wvt
 !                                                                  ! wvt
-           tr_work2(i,k) = -(tr_prevp(i,k)+tr_psdep(i,k)+tr_pgdep(i,k)  & ! wvt
-                           +tr_pigen(i,k)+tr_pidep(i,k))           ! wvt
+           tr_work2(i,k,n) = -(tr_prevp(i,k,n)+tr_psdep(i,k,n)+tr_pgdep(i,k,n)  & ! wvt
+                           +tr_pigen(i,k,n)+tr_pidep(i,k,n))       ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
 !
 ! update
@@ -1676,29 +1759,31 @@
 !
 ! --- update tracers (cold, T<=T0) ! wvt
          if (l_tracers) then                                       ! wvt
-           tr_q(i,k) = tr_q(i,k)+tr_work2(i,k)*dtcld             ! wvt
-           tr_qc(i,k) = max(tr_qc(i,k)-(tr_praut(i,k)+tr_pracw(i,k)  & ! wvt
-                       +tr_paacw(i,k)+tr_paacw(i,k))*dtcld,0.)    ! wvt
-           tr_qr(i,k) = max(tr_qr(i,k)+(tr_praut(i,k)+tr_pracw(i,k)  & ! wvt
-                       +tr_prevp(i,k)-tr_piacr(i,k)-tr_pgacr(i,k) & ! wvt
-                       -tr_psacr(i,k))*dtcld,0.)                  ! wvt
-           tr_qi(i,k) = max(tr_qi(i,k)-(tr_psaut(i,k)+tr_praci(i,k)  & ! wvt
-                       +tr_psaci(i,k)+tr_pgaci(i,k)-tr_pigen(i,k) & ! wvt
-                       -tr_pidep(i,k))*dtcld,0.)                  ! wvt
-           tr_qs(i,k) = max(tr_qs(i,k)+(tr_psdep(i,k)+tr_psaut(i,k)  & ! wvt
-                       +tr_paacw(i,k)-tr_pgaut(i,k)               & ! wvt
-                       +tr_piacr(i,k)*delta3                      & ! wvt
-                       +tr_praci(i,k)*delta3+tr_psaci(i,k)        & ! wvt
-                       -tr_pgacs(i,k)                             & ! wvt
-                       -tr_pracs(i,k)*(1.-delta2)                 & ! wvt
-                       +tr_psacr(i,k)*delta2)*dtcld,0.)           ! wvt
-           tr_qg(i,k) = max(tr_qg(i,k)+(tr_pgdep(i,k)+tr_pgaut(i,k)  & ! wvt
-                       +tr_piacr(i,k)*(1.-delta3)                 & ! wvt
-                       +tr_praci(i,k)*(1.-delta3)                 & ! wvt
-                       +tr_psacr(i,k)*(1.-delta2)                 & ! wvt
-                       +tr_pracs(i,k)*(1.-delta2)                 & ! wvt
-                       +tr_pgaci(i,k)+tr_paacw(i,k)              & ! wvt
-                       +tr_pgacr(i,k)+tr_pgacs(i,k))*dtcld,0.)   ! wvt
+           do n = 1, nreg                                          ! wvt
+           tr_q(i,k,n) = tr_q(i,k,n)+tr_work2(i,k,n)*dtcld       ! wvt
+           tr_qc(i,k,n) = max(tr_qc(i,k,n)-(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
+                       +tr_paacw(i,k,n)+tr_paacw(i,k,n))*dtcld,0.)  ! wvt
+           tr_qr(i,k,n) = max(tr_qr(i,k,n)+(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
+                       +tr_prevp(i,k,n)-tr_piacr(i,k,n)-tr_pgacr(i,k,n) & ! wvt
+                       -tr_psacr(i,k,n))*dtcld,0.)                ! wvt
+           tr_qi(i,k,n) = max(tr_qi(i,k,n)-(tr_psaut(i,k,n)+tr_praci(i,k,n)  & ! wvt
+                       +tr_psaci(i,k,n)+tr_pgaci(i,k,n)-tr_pigen(i,k,n) & ! wvt
+                       -tr_pidep(i,k,n))*dtcld,0.)                ! wvt
+           tr_qs(i,k,n) = max(tr_qs(i,k,n)+(tr_psdep(i,k,n)+tr_psaut(i,k,n)  & ! wvt
+                       +tr_paacw(i,k,n)-tr_pgaut(i,k,n)           & ! wvt
+                       +tr_piacr(i,k,n)*delta3                    & ! wvt
+                       +tr_praci(i,k,n)*delta3+tr_psaci(i,k,n)    & ! wvt
+                       -tr_pgacs(i,k,n)                           & ! wvt
+                       -tr_pracs(i,k,n)*(1.-delta2)               & ! wvt
+                       +tr_psacr(i,k,n)*delta2)*dtcld,0.)         ! wvt
+           tr_qg(i,k,n) = max(tr_qg(i,k,n)+(tr_pgdep(i,k,n)+tr_pgaut(i,k,n)  & ! wvt
+                       +tr_piacr(i,k,n)*(1.-delta3)               & ! wvt
+                       +tr_praci(i,k,n)*(1.-delta3)               & ! wvt
+                       +tr_psacr(i,k,n)*(1.-delta2)               & ! wvt
+                       +tr_pracs(i,k,n)*(1.-delta2)               & ! wvt
+                       +tr_pgaci(i,k,n)+tr_paacw(i,k,n)          & ! wvt
+                       +tr_pgacr(i,k,n)+tr_pgacs(i,k,n))*dtcld,0.)  ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
        else
 !
@@ -1754,21 +1839,23 @@
 !
 ! --- compute tracer production rates (warm, T>T0) ! wvt
          if (l_tracers) then                                       ! wvt
-           if (qc(i,k).gt.0.) tr_praut(i,k) = praut(i,k)/qc(i,k)*tr_qc(i,k)  ! wvt
-           if (qc(i,k).gt.0.) tr_pracw(i,k) = pracw(i,k)/qc(i,k)*tr_qc(i,k)  ! wvt
+           do n = 1, nreg                                          ! wvt
+           if (qc(i,k).gt.0.) tr_praut(i,k,n) = praut(i,k)/qc(i,k)*tr_qc(i,k,n)  ! wvt
+           if (qc(i,k).gt.0.) tr_pracw(i,k,n) = pracw(i,k)/qc(i,k)*tr_qc(i,k,n)  ! wvt
            if(prevp(i,k).lt.0.)then                                ! wvt
-             if (qr(i,k).gt.0.) tr_prevp(i,k) = prevp(i,k)/qr(i,k)*tr_qr(i,k)  ! wvt
+             if (qr(i,k).gt.0.) tr_prevp(i,k,n) = prevp(i,k)/qr(i,k)*tr_qr(i,k,n)  ! wvt
            else                                                    ! wvt
-             if (q(i,k).gt.0.) tr_prevp(i,k) = prevp(i,k)/q(i,k)*tr_q(i,k)  ! wvt
+             if (q(i,k).gt.0.) tr_prevp(i,k,n) = prevp(i,k)/q(i,k)*tr_q(i,k,n)  ! wvt
            endif                                                   ! wvt
-           if (qc(i,k).gt.0.) tr_paacw(i,k) = paacw(i,k)/qc(i,k)*tr_qc(i,k)  ! wvt
-           if (qs(i,k).gt.0.) tr_pseml(i,k) = pseml(i,k)/qs(i,k)*tr_qs(i,k)  ! wvt
-           if (qg(i,k).gt.0.) tr_pgeml(i,k) = pgeml(i,k)/qg(i,k)*tr_qg(i,k)  ! wvt
-           if (qs(i,k).gt.0.) tr_psevp(i,k) = psevp(i,k)/qs(i,k)*tr_qs(i,k)  ! wvt
-           if (qg(i,k).gt.0.) tr_pgevp(i,k) = pgevp(i,k)/qg(i,k)*tr_qg(i,k)  ! wvt
-           if (qs(i,k).gt.0.) tr_pgacs(i,k) = pgacs(i,k)/qs(i,k)*tr_qs(i,k)  ! wvt
+           if (qc(i,k).gt.0.) tr_paacw(i,k,n) = paacw(i,k)/qc(i,k)*tr_qc(i,k,n)  ! wvt
+           if (qs(i,k).gt.0.) tr_pseml(i,k,n) = pseml(i,k)/qs(i,k)*tr_qs(i,k,n)  ! wvt
+           if (qg(i,k).gt.0.) tr_pgeml(i,k,n) = pgeml(i,k)/qg(i,k)*tr_qg(i,k,n)  ! wvt
+           if (qs(i,k).gt.0.) tr_psevp(i,k,n) = psevp(i,k)/qs(i,k)*tr_qs(i,k,n)  ! wvt
+           if (qg(i,k).gt.0.) tr_pgevp(i,k,n) = pgevp(i,k)/qg(i,k)*tr_qg(i,k,n)  ! wvt
+           if (qs(i,k).gt.0.) tr_pgacs(i,k,n) = pgacs(i,k)/qs(i,k)*tr_qs(i,k,n)  ! wvt
 !                                                                  ! wvt
-           tr_work2(i,k) = -(tr_prevp(i,k)+tr_psevp(i,k)+tr_pgevp(i,k))  ! wvt
+           tr_work2(i,k,n) = -(tr_prevp(i,k,n)+tr_psevp(i,k,n)+tr_pgevp(i,k,n))  ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
 !
 ! update
@@ -1789,16 +1876,18 @@
 !
 ! --- update tracers (warm, T>T0) ! wvt
          if (l_tracers) then                                       ! wvt
-           tr_q(i,k) = tr_q(i,k)+tr_work2(i,k)*dtcld             ! wvt
-           tr_qc(i,k) = max(tr_qc(i,k)-(tr_praut(i,k)+tr_pracw(i,k)  & ! wvt
-                       +tr_paacw(i,k)+tr_paacw(i,k))*dtcld,0.)    ! wvt
-           tr_qr(i,k) = max(tr_qr(i,k)+(tr_praut(i,k)+tr_pracw(i,k)  & ! wvt
-                       +tr_prevp(i,k)+tr_paacw(i,k)+tr_paacw(i,k) & ! wvt
-                       -tr_pseml(i,k)-tr_pgeml(i,k))*dtcld,0.)    ! wvt
-           tr_qs(i,k) = max(tr_qs(i,k)+(tr_psevp(i,k)-tr_pgacs(i,k)  & ! wvt
-                       +tr_pseml(i,k))*dtcld,0.)                  ! wvt
-           tr_qg(i,k) = max(tr_qg(i,k)+(tr_pgacs(i,k)+tr_pgevp(i,k)  & ! wvt
-                       +tr_pgeml(i,k))*dtcld,0.)                  ! wvt
+           do n = 1, nreg                                          ! wvt
+           tr_q(i,k,n) = tr_q(i,k,n)+tr_work2(i,k,n)*dtcld       ! wvt
+           tr_qc(i,k,n) = max(tr_qc(i,k,n)-(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
+                       +tr_paacw(i,k,n)+tr_paacw(i,k,n))*dtcld,0.)  ! wvt
+           tr_qr(i,k,n) = max(tr_qr(i,k,n)+(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
+                       +tr_prevp(i,k,n)+tr_paacw(i,k,n)+tr_paacw(i,k,n) & ! wvt
+                       -tr_pseml(i,k,n)-tr_pgeml(i,k,n))*dtcld,0.)  ! wvt
+           tr_qs(i,k,n) = max(tr_qs(i,k,n)+(tr_psevp(i,k,n)-tr_pgacs(i,k,n)  & ! wvt
+                       +tr_pseml(i,k,n))*dtcld,0.)                ! wvt
+           tr_qg(i,k,n) = max(tr_qg(i,k,n)+(tr_pgacs(i,k,n)+tr_pgevp(i,k,n)  & ! wvt
+                       +tr_pgeml(i,k,n))*dtcld,0.)                ! wvt
+           enddo                                                   ! wvt
          endif                                                     ! wvt
        endif
      enddo
@@ -1850,19 +1939,23 @@
          pcond(i,k) = max(work1(i,k,1),-qc(i,k))/dtcld
 !      --- tracer condensation/evaporation ! wvt
        if (l_tracers) then                                         ! wvt
+         do n = 1, nreg                                            ! wvt
          if(pcond(i,k).lt.0.)then                                  ! wvt
-           if (qc(i,k).gt.0.) tr_pcond(i,k) = pcond(i,k)/qc(i,k)*tr_qc(i,k)  ! wvt
+           if (qc(i,k).gt.0.) tr_pcond(i,k,n) = pcond(i,k)/qc(i,k)*tr_qc(i,k,n)  ! wvt
          else                                                      ! wvt
-           if (q(i,k).gt.0.) tr_pcond(i,k) = pcond(i,k)/q(i,k)*tr_q(i,k)  ! wvt
+           if (q(i,k).gt.0.) tr_pcond(i,k,n) = pcond(i,k)/q(i,k)*tr_q(i,k,n)  ! wvt
          endif                                                     ! wvt
+         enddo                                                     ! wvt
        endif                                                       ! wvt
          q(i,k) = q(i,k)-pcond(i,k)*dtcld
          qc(i,k) = max(qc(i,k)+pcond(i,k)*dtcld,0.)
          t(i,k) = t(i,k)+pcond(i,k)*xl(i,k)/cpm(i,k)*dtcld
 !      --- update tracers for condensation ! wvt
        if (l_tracers) then                                         ! wvt
-         tr_q(i,k) = tr_q(i,k)-tr_pcond(i,k)*dtcld               ! wvt
-         tr_qc(i,k) = max(tr_qc(i,k)+tr_pcond(i,k)*dtcld,0.)     ! wvt
+         do n = 1, nreg                                            ! wvt
+           tr_q(i,k,n) = tr_q(i,k,n)-tr_pcond(i,k,n)*dtcld       ! wvt
+           tr_qc(i,k,n) = max(tr_qc(i,k,n)+tr_pcond(i,k,n)*dtcld,0.)  ! wvt
+         enddo                                                     ! wvt
        endif                                                       ! wvt
      enddo
    enddo

@@ -47,7 +47,7 @@ SUBROUTINE microphysics_driver(                                          &
 #endif
 !======================                                   
                       ,qv_curr,qc_curr,qr_curr,qi_curr,qs_curr,qg_curr   &
-                      ,tr_qv_curr,tr_qc_curr,tr_qr_curr,tr_qi_curr,tr_qs_curr,tr_qg_curr  & ! wvt
+                      ,tr_block,num_wvt_regions                          & ! wvt
                       ,qic_curr,qip_curr,qid_curr &
                       ,qnic_curr,qnip_curr,qnid_curr &
                       ,qndrop_curr,qni_curr,qh_curr,qnh_curr             &
@@ -637,7 +637,6 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   u,v,w, z, t8w                                       &
                  ,cldfra, cldfra_old, exch_h                      &
                  ,qv_curr,qc_curr,qr_curr,qi_curr,qs_curr,qg_curr &
-                 ,tr_qv_curr,tr_qc_curr,tr_qr_curr,tr_qi_curr,tr_qs_curr,tr_qg_curr & ! wvt
                  ,qt_curr,qndrop_curr,qni_curr,qh_curr,qnh_curr   &
                  ,qns_curr,qnr_curr,qng_curr,qnn_curr,qnc_curr    &
                  ,qic_curr,qip_curr,qid_curr &
@@ -657,6 +656,14 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,kext_ft_qs,kext_ft_qg                           &
                  ,qnwfa_curr,qnifa_curr,qnbca_curr                & ! Added by G. Thompson
                  ,qvolg_curr,qvolh_curr, qrimef_curr
+
+!  WVT multi-region tracers: contiguous block (base=tracer(.,P_QV_TR); region n species s at  ! wvt
+!  4th index (n-1)*6+s+1) + scalar region count. Per-region precip declared below.            ! wvt
+   INTEGER, INTENT(IN) :: num_wvt_regions                                                       ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme, jms:jme, * ),                &                            ! wvt
+         OPTIONAL, INTENT(INOUT) :: tr_block                                                    ! wvt
+   REAL, DIMENSION( ims:ime, num_wvt_regions, jms:jme ),           &                            ! wvt
+         OPTIONAL, INTENT(INOUT) :: tr_rainnc, tr_snownc, tr_graupelnc                          ! wvt
 
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                  &
          OPTIONAL,                                                &
@@ -686,13 +693,10 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
          OPTIONAL   ::                                            &
                                                            RAINNC &
                                                          ,RAINNCV &
-                                                       ,TR_RAINNC & ! wvt
                                                           ,SNOWNC &
                                                          ,SNOWNCV &
-                                                       ,TR_SNOWNC & ! wvt
                                                        ,GRAUPELNC &
                                                       ,GRAUPELNCV &
-                                                    ,TR_GRAUPELNC & ! wvt
                                                           ,HAILNC &
                                                          ,HAILNCV &
 														 ,CLOUDNC &
@@ -2456,14 +2460,10 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,re_snow=re_snow                                   &  ! for radiation -
                  ,errmsg=errmsg, errflg=errflg                      &
 ! wvt: optional WVT tracer arguments
-                 ,tr_qv_curr=tr_qv_curr,tr_qc_curr=tr_qc_curr      & ! wvt
-                 ,tr_qr_curr=tr_qr_curr,tr_qi_curr=tr_qi_curr      & ! wvt
-                 ,tr_qs_curr=tr_qs_curr,tr_qg_curr=tr_qg_curr      & ! wvt
+                 ,tr_block=tr_block,num_wvt_regions=num_wvt_regions & ! wvt
+                 ,f_tr_qv=flag_tr_qv                                & ! wvt: gates WVT (tracer_opt=4)
                  ,tr_rainnc=tr_rainnc,tr_snownc=tr_snownc           & ! wvt
                  ,tr_graupelnc=tr_graupelnc                         & ! wvt
-                 ,f_tr_qv=flag_tr_qv,f_tr_qc=flag_tr_qc            & ! wvt
-                 ,f_tr_qr=flag_tr_qr,f_tr_qi=flag_tr_qi            & ! wvt
-                 ,f_tr_qs=flag_tr_qs,f_tr_qg=flag_tr_qg            & ! wvt
                  ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &
                  ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
                  ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &

@@ -27,8 +27,21 @@ acceptance targets).
   reverse-map `im→region`); guards in `module_check_a_mundo.F`. Runtime check passed: region-2
   `PWAT_TR` non-zero (mean 0.20), and region1+region2 = 0.486 == the E1 single-full-ocean value
   (vapour linearity holds).
-- **Stage 1c (WSM6 microphysics + cross-region clipping) — NEXT. The go/no-go gate.** See below.
-- Later: cumulus (1d, `cu_ntiedtke`), `tr_thum` fluxes, then YSU (`bl_pbl=1`) + 3D paths (currently
+- **Stage 1c (WSM6 microphysics + cross-region clipping) — DONE, compiles clean, validated,
+  Gemini-approved. The go/no-go gate: PASSED. UNCOMMITTED (ready to commit).** Registry precip accumulators
+  (`TR_RAINNC`/`TR_SNOWNC`/`TR_GRAUPELNC`/`I_TR_RAINNC`) → `i{wvtreg}j`; `mp_wsm6.F90` wsm62d
+  region-dimensioned (6 species + 3 precip + rate temps, per-region `do n` loops, cross-region
+  frac-form caps at every base-cap site, per-region sedimentation via base-save/restore, per-region
+  precip accumulation); `module_mp_wsm6.F` driver block interface (`tr_block` + `num_wvt_regions` +
+  `f_tr_qv` gate, region-dim `_hv` slabs); `microphysics_driver`/`solve_em` thread the block + count;
+  consumers fixed (`mp_init`/`phy_init` zeroing assumed-shape, `diag_misc` bucket region-loop).
+  Validation (N=2 west+east vs N=1 full-ocean, WSM6/Tiedtke, 3 h, `-n 4`): region-2 TR_RAINNC
+  non-zero (sourced); **linearity** Σregions(N=2)=0.0455634 == N=1 full 0.0455646 (rel 3e-5);
+  **conservation** Σ TR_RAINNC ≤ RAINNC exactly (max excess 0.0); Σ qv_tr ≤ QVAPOR. Notes: (a) gate
+  must use `f_tr_qv` (tracer_opt=4), not just block-present, or non-WVT WSM6 runs crash; (b) Docker
+  needs `--shm-size=2g` for Intel-MPI multi-rank (else SIGBUS, env not code).
+- **NEXT after 1c sign-off**: cumulus (1d, `cu_ntiedtke` + region-dim `TR_RAINC`/`I_TR_RAINC`/`TR_PRATEC`),
+  `tr_thum` fluxes, then YSU (`bl_pbl=1`) + 3D paths (currently
   guarded off), then `create_trmask.py` (wrf-auto-runs) N-mask emission + cfdb-ingest downstream.
 
 ## Design invariants (MUST hold in every stage)

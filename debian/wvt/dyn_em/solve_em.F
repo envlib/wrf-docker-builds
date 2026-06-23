@@ -3842,12 +3842,8 @@ BENCH_START(micro_driver_tim)
       &        , QIP_CURR=moist(ims,kms,jms,P_QIP), F_QIP=F_QIP               &
       &        , QID_CURR=moist(ims,kms,jms,P_QID), F_QID=F_QID               &
       &        , QNDROP_CURR=scalar(ims,kms,jms,P_QNDROP), F_QNDROP=F_QNDROP &
-      &        , TR_QV_CURR=tracer(ims,kms,jms,P_QV_TR), F_TR_QV=F_QV_TR         &  ! wvt: moisture tracers
-      &        , TR_QC_CURR=tracer(ims,kms,jms,P_QC_TR), F_TR_QC=F_QC_TR     &
-      &        , TR_QR_CURR=tracer(ims,kms,jms,P_QR_TR), F_TR_QR=F_QR_TR     &
-      &        , TR_QI_CURR=tracer(ims,kms,jms,P_QI_TR), F_TR_QI=F_QI_TR     &
-      &        , TR_QS_CURR=tracer(ims,kms,jms,P_QS_TR), F_TR_QS=F_QS_TR     &
-      &        , TR_QG_CURR=tracer(ims,kms,jms,P_QG_TR), F_TR_QG=F_QG_TR     &
+      &        , tr_block=tracer(ims,kms,jms,P_QV_TR), F_TR_QV=F_QV_TR    &  ! wvt: contiguous moisture-tracer block (base=P_QV_TR)
+      &        , num_wvt_regions=config_flags%num_wvt_regions             &  ! wvt
       &        , TR_RAINNC=grid%tr_rainnc, TR_SNOWNC=grid%tr_snownc       &
       &        , TR_GRAUPELNC=grid%tr_graupelnc                           &
 #if (WRF_CHEM == 1)

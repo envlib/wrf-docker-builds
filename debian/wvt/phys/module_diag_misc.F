@@ -202,14 +202,14 @@ CONTAINS
                       PREC_ACC_C, PREC_ACC_NC, SNOW_ACC_NC
 
    ! WVT tracer bucketed accumulators (optional, engaged when BUCKET_MM > 0)
-   REAL, DIMENSION( ims:ime, jms:jme ), OPTIONAL, INTENT(INOUT) ::&
-                      TR_RAINC, TR_RAINNC
-   INTEGER, DIMENSION( ims:ime, jms:jme ), OPTIONAL, INTENT(INOUT) ::&
-                      I_TR_RAINC, I_TR_RAINNC
+   REAL, DIMENSION( ims:ime, jms:jme ), OPTIONAL, INTENT(INOUT) :: TR_RAINC
+   REAL, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: TR_RAINNC          ! wvt: per-region (i,n,j)
+   INTEGER, DIMENSION( ims:ime, jms:jme ), OPTIONAL, INTENT(INOUT) :: I_TR_RAINC
+   INTEGER, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: I_TR_RAINNC      ! wvt: per-region (i,n,j)
 
    REAL, OPTIONAL, INTENT(IN)::  PREC_ACC_DT, CURR_SECS2
 
-   INTEGER :: i,j,k,its,ite,jts,jte,ij
+   INTEGER :: i,j,k,its,ite,jts,jte,ij,n_tr   ! wvt: n_tr = WVT region index
    INTEGER :: idp,jdp,irc,jrc,irnc,jrnc,isnh,jsnh
 
    REAL              :: no_points
@@ -331,18 +331,22 @@ CONTAINS
       ! WVT tracer precip bucket wrap — mirrors the RAINC/RAINNC block above.
       IF (PRESENT(TR_RAINNC) .AND. PRESENT(I_TR_RAINNC)) THEN
         IF (xtime .eq. 0.0) THEN
+          DO n_tr=1,SIZE(tr_rainnc,2)
           DO j=j_start(ij),j_end(ij)
           DO i=i_start(ij),i_end(ij)
-            i_tr_rainnc(i,j) = 0
+            i_tr_rainnc(i,n_tr,j) = 0
+          ENDDO
           ENDDO
           ENDDO
         ENDIF
+        DO n_tr=1,SIZE(tr_rainnc,2)
         DO j=j_start(ij),j_end(ij)
         DO i=i_start(ij),i_end(ij)
-          IF (tr_rainnc(i,j) .gt. bucket_mm) THEN
-            tr_rainnc(i,j)   = tr_rainnc(i,j) - bucket_mm
-            i_tr_rainnc(i,j) = i_tr_rainnc(i,j) + 1
+          IF (tr_rainnc(i,n_tr,j) .gt. bucket_mm) THEN
+            tr_rainnc(i,n_tr,j)   = tr_rainnc(i,n_tr,j) - bucket_mm
+            i_tr_rainnc(i,n_tr,j) = i_tr_rainnc(i,n_tr,j) + 1
           ENDIF
+        ENDDO
         ENDDO
         ENDDO
       ENDIF
