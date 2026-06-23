@@ -268,6 +268,7 @@ state    real   tau_y               |     dyn_em      1      -      i3rh     "TA
 state    real   tau_y_tend          |     dyn_em      1      -      i3rh     "TAU_Y_TEND" "tendency Y-direction advective timescale" ""
 
 dimspec  fslay  2     namelist=num_force_soil_layers    z     force_soil_layers
+dimspec  wvtreg 2     namelist=num_wvt_regions          z     wvt_regions
 state    real   t_soil_forcing_val  {fslay}     dyn_em      1      -      i3rh     "T_SOIL_FORCING_VAL" "Soil temp value for SCM forcing" "K"
 state    real   t_soil_forcing_tend {fslay}     dyn_em      1      -      i3rh     "T_SOIL_FORCING_TEND" "tendency soil temp for SCM forcing" "K s-1"
 state    real   q_soil_forcing_val  {fslay}     dyn_em      1      -      i3rh     "Q_SOIL_FORCING_VAL" "Soil moisture value for SCM forcing" "1"

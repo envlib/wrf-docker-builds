@@ -7,10 +7,10 @@
 # the runtime values are bit-comparable to the existing offline computation.
 
 state    real  PWAT             ij      misc        1         -      rh       "PWAT"           "PRECIPITABLE WATER (COLUMN INTEG QVAPOR)"                    "kg m-2"
-state    real  PWAT_TR          ij      misc        1         -      rh       "PWAT_TR"        "TRACER PRECIPITABLE WATER (COLUMN INTEG qv_tr)"              "kg m-2"
+state    real  PWAT_TR          i{wvtreg}j  misc    1         -      rh       "PWAT_TR"        "TRACER PRECIPITABLE WATER (COLUMN INTEG qv_tr), per WVT region"  "kg m-2"
 state    real  SLP              ij      misc        1         -      rh       "SLP"            "SEA LEVEL PRESSURE (HYPSOMETRIC FROM T2, PSFC, HGT)"         "Pa"
 state    real  VIMF_U           ij      misc        1         -      rh       "VIMF_U"         "VERTICALLY INTEGRATED MOISTURE FLUX EAST (EARTH-RELATIVE)"   "kg m-1 s-1"
 state    real  VIMF_V           ij      misc        1         -      rh       "VIMF_V"         "VERTICALLY INTEGRATED MOISTURE FLUX NORTH (EARTH-RELATIVE)"  "kg m-1 s-1"
-state    real  VIMF_TR_U        ij      misc        1         -      rh       "VIMF_TR_U"      "TRACER VERT-INTEG MOISTURE FLUX EAST (EARTH-RELATIVE)"       "kg m-1 s-1"
-state    real  VIMF_TR_V        ij      misc        1         -      rh       "VIMF_TR_V"      "TRACER VERT-INTEG MOISTURE FLUX NORTH (EARTH-RELATIVE)"      "kg m-1 s-1"
+state    real  VIMF_TR_U        i{wvtreg}j  misc    1         -      rh       "VIMF_TR_U"      "TRACER VERT-INTEG MOISTURE FLUX EAST (EARTH-RELATIVE), per WVT region"   "kg m-1 s-1"
+state    real  VIMF_TR_V        i{wvtreg}j  misc    1         -      rh       "VIMF_TR_V"      "TRACER VERT-INTEG MOISTURE FLUX NORTH (EARTH-RELATIVE), per WVT region"  "kg m-1 s-1"
 state    real  IVT              ij      misc        1         -      rh       "IVT"            "INTEGRATED WATER VAPOR TRANSPORT MAGNITUDE"                  "kg m-1 s-1"

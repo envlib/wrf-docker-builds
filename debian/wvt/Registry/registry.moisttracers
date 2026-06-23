@@ -8,8 +8,8 @@ state    real  RTRQCCUTEN        ikj      misc        1         -      r        
 state    real  RTRQSCUTEN        ikj      misc        1         -      r        "RTRQSCUTEN"              "COUPLED TRACER Q_S TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
 state    real  RTRQICUTEN        ikj      misc        1         -      r        "RTRQICUTEN"              "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
 
-state    real  TRQFX              ij      misc        1         -      rh       "TRQFX"                   "UPWARD MOISTURE TRACER FLUX AT THE SURFACE"          "kg m-2 s-1"
-state    real  TRMASK             ij      misc        1         -      i8r      "TRMASK"                  "2D SOURCE MASK FOR MOISTURE TRACERS "          ""
+state    real  TRQFX              i{wvtreg}j  misc    1         -      rh       "TRQFX"                   "UPWARD MOISTURE TRACER FLUX AT THE SURFACE, per WVT region"  "kg m-2 s-1"
+state    real  TRMASK             i{wvtreg}j  misc    1         -      i8r      "TRMASK"                  "2D SOURCE MASK FOR MOISTURE TRACERS, per WVT region"          ""
 state    real  TRMASK3D          ikj      misc        1         -      i8r      "TRMASK3D"                "3D SOURCE MASK FOR MOISTURE TRACERS "          ""
 state    real  TRMASK3D2         ikj      misc        1         -      i8r      "TRMASK3D2"               "3D SINK MASK FOR MOISTURE TRACERS   "          ""
 
@@ -30,4 +30,4 @@ state   real  tr_thum_v_phy_dt   ikj      misc        1         -      rh       
 rconfig   integer tracer3dsource        namelist,dynamics      max_domains    0        rh    "tracer3dsource"    "switch to activate 3D region (read in from file) as tracer moisture source " ""
 rconfig   integer tracer2dsource        namelist,dynamics      max_domains    0        rh    "tracer2dsource"    "switch to activate 2D region (read in from file) as tracer moisture source " ""
 rconfig   integer tracer3dsink          namelist,dynamics      max_domains    0        rh    "tracer3dsink"      "switch to activate 3D region (read in from file) as tracer moisture sink " ""
-rconfig   integer num_wvt_regions       namelist,dynamics      max_domains    1        rh    "num_wvt_regions"   "number of simultaneous WVT tagged moisture source regions (1..MAX_WVT_REGIONS=8)" ""
+rconfig   integer num_wvt_regions       namelist,dynamics      1              1        rh    "num_wvt_regions"   "number of simultaneous WVT tagged moisture source regions (1..MAX_WVT_REGIONS=8); scalar (sizes the wvtreg dimension)" ""

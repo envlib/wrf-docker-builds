@@ -134,6 +134,7 @@ CONTAINS
 
 
     INTEGER                             :: ij
+    INTEGER                             :: iwvtreg, iqvtr   ! wvt: region loop + region-n qv_tr index
     INTEGER  num_roof_layers
     INTEGER  num_wall_layers
     INTEGER  num_road_layers
@@ -1076,7 +1077,6 @@ BENCH_START(surf_driver_tim)
      &        ,ZOL=grid%ZOL                                                                             &
      &        ,SDA_HFX=grid%SDA_HFX, SDA_QFX=grid%SDA_QFX,HFX_BOTH=grid%HFX_BOTH                        &  !fasdas
      &        ,QFX_BOTH=grid%QFX_BOTH,QNORM=grid%QNORM,fasdas=config_flags%fasdas                       &  !fasdas
-     &        ,trqfx=grid%trqfx,trmask=grid%trmask,tr_qv_curr=tracer(ims,kms,jms,P_QV_TR),F_TR_QV=F_QV_TR     & ! wvt
      &        ,XLAIDYN=grid%XLAIDYN                                                                     &
      &        ,spp_lsm=config_flags%spp_lsm,pattern_spp_lsm=grid%pattern_spp_lsm     & !SPP
      &        ,field_sf=grid%field_sf                                                & !SPP
@@ -1101,6 +1101,34 @@ BENCH_START(surf_driver_tim)
 #endif
 
 BENCH_END(surf_driver_tim)
+
+! wvt: derive the per-region surface tracer (ET) flux grid%trqfx from the surface moisture flux
+!   grid%qfx, masked by each region's source mask grid%trmask. Evaporation (qfx>=0) over the region
+!   is fully tagged; condensation (qfx<0) removes tagged vapour in proportion to that region's
+!   surface tracer fraction qv_tr/qv. Region n's qv_tr is the contiguous index P_QV_TR+(n-1)*6.
+!   Moved here from module_surface_driver.F so the full tracer array + region-dimensioned masks are
+!   in scope. (At num_wvt_regions=1 this reproduces the original single-region computation exactly.)
+      IF ( config_flags%tracer_opt == 4 ) THEN
+         DO ij = 1, grid%num_tiles
+            DO iwvtreg = 1, config_flags%num_wvt_regions
+               iqvtr = P_QV_TR + (iwvtreg-1)*6
+               DO j = grid%j_start(ij), MIN(grid%j_end(ij), jde-1)
+               DO i = grid%i_start(ij), MIN(grid%i_end(ij), ide-1)
+                  IF ( grid%qfx(i,j) >= 0. ) THEN
+                     IF ( grid%trmask(i,iwvtreg,j) > 0. ) THEN
+                        grid%trqfx(i,iwvtreg,j) = grid%qfx(i,j)
+                     ELSE
+                        grid%trqfx(i,iwvtreg,j) = 0.
+                     END IF
+                  ELSE
+                     grid%trqfx(i,iwvtreg,j) = grid%qfx(i,j) * &
+                        MIN(MAX(tracer(i,k_start,j,iqvtr)/moist(i,k_start,j,P_QV),0.),1.)
+                  END IF
+               END DO
+               END DO
+            END DO
+         END DO
+      END IF
 
 !*********
 ! pbl

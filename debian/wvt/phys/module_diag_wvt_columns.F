@@ -47,6 +47,7 @@ MODULE module_diag_wvt_columns
    REAL, PARAMETER :: G_PWAT    = 9.80665
    REAL, PARAMETER :: RD_SLP    = 287.05
    REAL, PARAMETER :: GAMMA_SLP = 0.0065
+   INTEGER, PARAMETER :: MAXREG = 8   ! wvt: MAX_WVT_REGIONS (matches Registry.EM generator)
 
 CONTAINS
 
@@ -76,12 +77,20 @@ CONTAINS
       ! Local variables
       INTEGER :: i, j, k
       INTEGER :: i_end, j_end, k_end
+      INTEGER :: n, nreg, iqv
       REAL    :: u_unstag, v_unstag, u_earth, v_earth
       REAL    :: dp_k, t_mean
-      REAL    :: pwat_sum, pwat_tr_sum
+      REAL    :: pwat_sum
       REAL    :: vimf_u_sum, vimf_v_sum
-      REAL    :: vimf_tr_u_sum, vimf_tr_v_sum
+      REAL    :: pwat_tr_sum(MAXREG)
+      REAL    :: vimf_tr_u_sum(MAXREG), vimf_tr_v_sum(MAXREG)
       LOGICAL :: have_tracer
+
+      ! wvt: per-region tracer columns. Region n's qv_tr lives at tracer-array index
+      ! P_qv_tr + (n-1)*6 -- the 6 species (qv,qc,qr,qi,qs,qg) of each region are declared
+      ! contiguously in Registry.EM and activated as a contiguous block by the
+      ! num_wvt_regions-conditional packages, so regions 1..nreg occupy P_qv_tr .. P_qv_tr+6*nreg-1.
+      nreg = config_flags%num_wvt_regions
 
       ! Tracer 4D-array dummy-slot guard. When tracer_opt == 0 the array has a
       ! dummy 4th dimension of size 1, so P_qv_tr (if undefined / set to 1)
@@ -109,12 +118,12 @@ CONTAINS
                             EXP( G_SLP * grid%ht(i,j) / (RD_SLP * t_mean) )
 
             ! ---- Column integrals ----
-            pwat_sum      = 0.0
-            pwat_tr_sum   = 0.0
-            vimf_u_sum    = 0.0
-            vimf_v_sum    = 0.0
-            vimf_tr_u_sum = 0.0
-            vimf_tr_v_sum = 0.0
+            pwat_sum         = 0.0
+            vimf_u_sum       = 0.0
+            vimf_v_sum       = 0.0
+            pwat_tr_sum(:)   = 0.0
+            vimf_tr_u_sum(:) = 0.0
+            vimf_tr_v_sum(:) = 0.0
 
             DO k = kts, k_end
 
@@ -146,11 +155,14 @@ CONTAINS
                vimf_u_sum = vimf_u_sum + moist(i,k,j,P_QV) * u_earth * dp_k
                vimf_v_sum = vimf_v_sum + moist(i,k,j,P_QV) * v_earth * dp_k
 
-               ! Tracer sums (only if tracer is active and defined)
+               ! Tracer sums, per WVT region (only if tracer is active and defined)
                IF ( have_tracer ) THEN
-                  pwat_tr_sum   = pwat_tr_sum   + tracer(i,k,j,P_qv_tr) * dp_k
-                  vimf_tr_u_sum = vimf_tr_u_sum + tracer(i,k,j,P_qv_tr) * u_earth * dp_k
-                  vimf_tr_v_sum = vimf_tr_v_sum + tracer(i,k,j,P_qv_tr) * v_earth * dp_k
+                  DO n = 1, nreg
+                     iqv = P_qv_tr + (n-1)*6   ! region n qv_tr index (contiguous block)
+                     pwat_tr_sum(n)   = pwat_tr_sum(n)   + tracer(i,k,j,iqv) * dp_k
+                     vimf_tr_u_sum(n) = vimf_tr_u_sum(n) + tracer(i,k,j,iqv) * u_earth * dp_k
+                     vimf_tr_v_sum(n) = vimf_tr_v_sum(n) + tracer(i,k,j,iqv) * v_earth * dp_k
+                  END DO
                END IF
 
             END DO
@@ -161,13 +173,15 @@ CONTAINS
             grid%vimf_v(i,j) = vimf_v_sum / G_PWAT
 
             IF ( have_tracer ) THEN
-               grid%pwat_tr(i,j)   = pwat_tr_sum   / G_PWAT
-               grid%vimf_tr_u(i,j) = vimf_tr_u_sum / G_PWAT
-               grid%vimf_tr_v(i,j) = vimf_tr_v_sum / G_PWAT
+               DO n = 1, nreg
+                  grid%pwat_tr(i,n,j)   = pwat_tr_sum(n)   / G_PWAT
+                  grid%vimf_tr_u(i,n,j) = vimf_tr_u_sum(n) / G_PWAT
+                  grid%vimf_tr_v(i,n,j) = vimf_tr_v_sum(n) / G_PWAT
+               END DO
             ELSE
-               grid%pwat_tr(i,j)   = 0.0
-               grid%vimf_tr_u(i,j) = 0.0
-               grid%vimf_tr_v(i,j) = 0.0
+               grid%pwat_tr(i,:,j)   = 0.0
+               grid%vimf_tr_u(i,:,j) = 0.0
+               grid%vimf_tr_v(i,:,j) = 0.0
             END IF
 
             ! IVT = magnitude of VIMF vector (cheap convenience scalar).

@@ -4096,7 +4096,8 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
    REAL , DIMENSION( ims:ime, jms:jme), INTENT(INOUT)            :: hfx,  &
                                                                     qfx
    REAL , DIMENSION( ims:ime, jms:jme), INTENT(IN   )            :: ust
-   REAL , DIMENSION( ims:ime, jms:jme), INTENT(IN)               :: trqfx  ! wvt - tracer surface flux
+   REAL , DIMENSION( ims:, :, jms:), INTENT(IN)                  :: trqfx  ! wvt - per-region tracer surface flux (ims:,wvtreg,jms:)
+   INTEGER                                                       :: wvt_nreg, wvt_irel  ! wvt: region of im (qv_tr), 0 if not
    REAL , DIMENSION( ims:ime, kms:kme, jms:jme), INTENT(INOUT) ::    thp
 
 ! LOCAL VAR
@@ -4429,14 +4430,23 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
 
      tracer_loop: do im = PARAM_FIRST_SCALAR, n_tracer
 
-!--- wvt: inject tracer surface flux BEFORE diffusion solver (matches moisture pattern)
-          IF (config_flags%tracer_opt .EQ. 4 .AND. im .EQ. P_QV_TR) THEN  ! wvt
+!--- wvt: inject tracer surface flux BEFORE diffusion solver (matches moisture pattern).
+!    If im is a region's qv_tr (contiguous index P_QV_TR+(n-1)*6) inject that region's trqfx.
+          wvt_nreg = 0                                                     ! wvt
+          IF (config_flags%tracer_opt .EQ. 4) THEN                        ! wvt
+            wvt_irel = im - P_QV_TR                                        ! wvt
+            IF (wvt_irel .GE. 0 .AND. MOD(wvt_irel,6) .EQ. 0) THEN         ! wvt
+              wvt_irel = wvt_irel/6 + 1                                    ! wvt
+              IF (wvt_irel .GE. 1 .AND. wvt_irel .LE. config_flags%num_wvt_regions) wvt_nreg = wvt_irel  ! wvt
+            ENDIF                                                          ! wvt
+          ENDIF                                                           ! wvt
+          IF (wvt_nreg .GT. 0) THEN                                       ! wvt
             trqflux: SELECT CASE( config_flags%isfflx )                    ! wvt
             CASE (1,2)                                                     ! wvt
               DO j = j_start, j_end                                        ! wvt
               DO i = i_start, i_end                                        ! wvt
                 tracer_tendf(i,kts,j,im) = tracer_tendf(i,kts,j,im)      &! wvt
-                    -g*trqfx(i,j)/dnw(kts)                                 ! wvt
+                    -g*trqfx(i,wvt_nreg,j)/dnw(kts)                        ! wvt
               ENDDO                                                        ! wvt
               ENDDO                                                        ! wvt
             END SELECT trqflux                                             ! wvt
@@ -7731,7 +7741,8 @@ END SUBROUTINE phy_bc
 
    REAL , DIMENSION( ims:ime, jms:jme),          INTENT(INOUT)   :: hfx,  &
                                                                     qfx
-   REAL , DIMENSION( ims:ime, jms:jme), INTENT(IN   )            :: trqfx  ! wvt
+   REAL , DIMENSION( ims:, :, jms:), INTENT(IN   )               :: trqfx  ! wvt - per-region (ims:,wvtreg,jms:)
+   INTEGER                                                       :: wvt_nreg, wvt_irel  ! wvt: region of im (qv_tr), 0 if not
 
    REAL , DIMENSION( ims:ime, jms:jme), INTENT(IN   )            :: ust
 
@@ -8405,6 +8416,15 @@ END SUBROUTINE phy_bc
 !!============================================
    IF (n_tracer .ge. PARAM_FIRST_SCALAR) THEN
      tracer_loop: do im = PARAM_FIRST_SCALAR, n_tracer
+         ! wvt: region n if im is a region's qv_tr (contiguous P_QV_TR+(n-1)*6), else 0
+         wvt_nreg = 0
+         IF (config_flags%tracer_opt .EQ. 4) THEN
+           wvt_irel = im - P_QV_TR
+           IF (wvt_irel .GE. 0 .AND. MOD(wvt_irel,6) .EQ. 0) THEN
+             wvt_irel = wvt_irel/6 + 1
+             IF (wvt_irel .GE. 1 .AND. wvt_irel .LE. config_flags%num_wvt_regions) wvt_nreg = wvt_irel
+           ENDIF
+         ENDIF
          DO j = jts, min(jte,jde-1)
          DO k = kts, kte-1
          DO i = its, min(ite,ide-1)
@@ -8421,8 +8441,8 @@ END SUBROUTINE phy_bc
              b(k) = 1.+rdz_w*(rdz(i,k+1,j)*xkxavg(i,k+1,j))*dt
              c(k) =   -rdz_w* rdz(i,k+1,j)*xkxavg(i,k+1,j)*dt
 !--- wvt: inject tracer surface flux into RHS at bottom level
-             IF (config_flags%tracer_opt .EQ. 4 .AND. im .EQ. P_QV_TR) THEN  ! wvt
-               d(k) = var_mix(i,kts,j) + dt*rdz_w*trqfx(i,j)                 ! wvt
+             IF (wvt_nreg .GT. 0) THEN                                        ! wvt
+               d(k) = var_mix(i,kts,j) + dt*rdz_w*trqfx(i,wvt_nreg,j)         ! wvt
              ELSE                                                              ! wvt
                d(k) = var_mix(i,kts,j)                                         ! wvt
              ENDIF                                                             ! wvt
