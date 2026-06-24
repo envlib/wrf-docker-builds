@@ -58,6 +58,15 @@ A build with WRF Hydro coupled with WRF and WPS. This is contained in the folder
 ### wrf-hydro-sa-debian
 A build with a stand alone WRF-Hydro installation. This is contained in the folder /debian/wrf-hydro-sa.
 
+### WVT builds (water-vapour tracer)
+WRF + WPS with water-vapour-tracer (WVT) source-attribution modifications, in two variants:
+`wrf-wps-wvt-debian` (gfortran, /debian/wrf-wps-wvt) and `wrf-wps-intel-wvt-ubuntu` (Intel oneAPI,
+multi-stage, /debian/wrf-wps-intel-wvt). **v2.0 of the intel image is multi-region** — it tags up to 8
+disjoint evaporative source regions simultaneously in one run (`num_wvt_regions`; `N=1` reproduces the
+single-region build bit-for-bit), replacing N duplicate runs. Source lives on the `multi-tracer` branch
+(overlay /debian/wvt). See `debian/wrf-wps-intel-wvt/readme.md` (capability + namelist),
+`debian/wvt/MULTI_REGION_WIP.md` (implementation/resume doc), and `CLAUDE.md`.
+
 # Others
 https://jiririchter.github.io/WRFDomainWizard/
 

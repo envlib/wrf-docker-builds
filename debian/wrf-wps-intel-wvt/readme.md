@@ -24,6 +24,24 @@ reproduces a single all-regions run to numerical precision.
 
 `num_wvt_regions = 1` is fully backward-compatible (original single-region behaviour, bit-for-bit).
 
+### Regions must be disjoint
+
+No grid cell may belong to more than one region's mask — `create_trmask.py` errors on overlap. This is
+a requirement of the **attribution semantics**, not a WRF limitation (WRF would run with overlapping
+masks; the result would just be meaningless). Each region tags the surface evaporation from its masked
+cells (`TRQFX_n = QFX × TRMASK_n`); a cell in two regions has its moisture tagged **twice** — once per
+region — so the per-region amounts double-count and "fraction from A" + "fraction from B" can exceed 1.
+That is no longer a partition, and "what fraction of the rain came from where" is a partition question.
+With disjoint regions the per-region precip sums **exactly** to the single all-source run — the linearity
+property that makes the attribution exact rather than approximate. (The cross-region microphysics clipping
+also assumes `Σ_n tracer ≤ base`, which overlapping source injection violates at the source.)
+
+Practical consequence: you do **not** subtract one region's tagged precip from another's to get a
+difference — each region already **is** the isolated contribution from its own source area. To combine
+areas you **add** them (the disjoint set sums to the total). To compare genuinely overlapping or nested
+fetches (e.g. "broad Tasman" vs "a sub-box inside it"), run them as separate single-region simulations and
+read each on its own.
+
 **Scope** (enforced by `check_a_mundo` — a non-conforming namelist aborts at startup). Multi-region
 (`num_wvt_regions > 1`) currently requires:
 

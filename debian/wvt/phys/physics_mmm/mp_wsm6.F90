@@ -539,7 +539,7 @@
    do k = kts, kte                                                 ! wvt
      do i = its, ite                                               ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qc(i,k,n) ; enddo  ! wvt
-       if (tr_sum.gt.qc(i,k)) then                                 ! wvt
+       if (tr_sum.gt.qc(i,k) .and. tr_sum.gt.0.) then                                 ! wvt
          do n = 1, nreg                                            ! wvt
            tr_frac = tr_qc(i,k,n)/tr_sum                           ! wvt
            tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qc(i,k))*tr_frac    ! wvt
@@ -547,7 +547,7 @@
          enddo                                                     ! wvt
        endif                                                       ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qi(i,k,n) ; enddo  ! wvt
-       if (tr_sum.gt.qi(i,k)) then                                 ! wvt
+       if (tr_sum.gt.qi(i,k) .and. tr_sum.gt.0.) then                                 ! wvt
          do n = 1, nreg                                            ! wvt
            tr_frac = tr_qi(i,k,n)/tr_sum                           ! wvt
            tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qi(i,k))*tr_frac    ! wvt
@@ -555,7 +555,7 @@
          enddo                                                     ! wvt
        endif                                                       ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qr(i,k,n) ; enddo  ! wvt
-       if (tr_sum.gt.qr(i,k)) then                                 ! wvt
+       if (tr_sum.gt.qr(i,k) .and. tr_sum.gt.0.) then                                 ! wvt
          do n = 1, nreg                                            ! wvt
            tr_frac = tr_qr(i,k,n)/tr_sum                           ! wvt
            tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qr(i,k))*tr_frac    ! wvt
@@ -563,7 +563,7 @@
          enddo                                                     ! wvt
        endif                                                       ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qs(i,k,n) ; enddo  ! wvt
-       if (tr_sum.gt.qs(i,k)) then                                 ! wvt
+       if (tr_sum.gt.qs(i,k) .and. tr_sum.gt.0.) then                                 ! wvt
          do n = 1, nreg                                            ! wvt
            tr_frac = tr_qs(i,k,n)/tr_sum                           ! wvt
            tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qs(i,k))*tr_frac    ! wvt
@@ -571,7 +571,7 @@
          enddo                                                     ! wvt
        endif                                                       ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qg(i,k,n) ; enddo  ! wvt
-       if (tr_sum.gt.qg(i,k)) then                                 ! wvt
+       if (tr_sum.gt.qg(i,k) .and. tr_sum.gt.0.) then                                 ! wvt
          do n = 1, nreg                                            ! wvt
            tr_frac = tr_qg(i,k,n)/tr_sum                           ! wvt
            tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qg(i,k))*tr_frac    ! wvt
@@ -579,7 +579,7 @@
          enddo                                                     ! wvt
        endif                                                       ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_q(i,k,n) ; enddo   ! wvt
-       if (tr_sum.gt.q(i,k)) then                                  ! wvt
+       if (tr_sum.gt.q(i,k) .and. tr_sum.gt.0.) then                                  ! wvt
          do n = 1, nreg                                            ! wvt
            tr_q(i,k,n) = q(i,k)*(tr_q(i,k,n)/tr_sum)               ! wvt
          enddo                                                     ! wvt
@@ -881,7 +881,7 @@
      do k = kts, kte                                               ! wvt
        do i = its, ite                                             ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qr(i,k,n) ; enddo   ! wvt
-         if (tr_sum.gt.qr(i,k)) then                               ! wvt
+         if (tr_sum.gt.qr(i,k) .and. tr_sum.gt.0.) then                               ! wvt
            do n=1,nreg                                             ! wvt
              tr_frac=tr_qr(i,k,n)/tr_sum                           ! wvt
              tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qr(i,k))*tr_frac      ! wvt
@@ -889,7 +889,7 @@
            enddo                                                   ! wvt
          endif                                                     ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qs(i,k,n) ; enddo   ! wvt
-         if (tr_sum.gt.qs(i,k)) then                               ! wvt
+         if (tr_sum.gt.qs(i,k) .and. tr_sum.gt.0.) then                               ! wvt
            do n=1,nreg                                             ! wvt
              tr_frac=tr_qs(i,k,n)/tr_sum                           ! wvt
              tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qs(i,k))*tr_frac      ! wvt
@@ -897,7 +897,7 @@
            enddo                                                   ! wvt
          endif                                                     ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qg(i,k,n) ; enddo   ! wvt
-         if (tr_sum.gt.qg(i,k)) then                               ! wvt
+         if (tr_sum.gt.qg(i,k) .and. tr_sum.gt.0.) then                               ! wvt
            do n=1,nreg                                             ! wvt
              tr_frac=tr_qg(i,k,n)/tr_sum                           ! wvt
              tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qg(i,k))*tr_frac      ! wvt
@@ -905,7 +905,7 @@
            enddo                                                   ! wvt
          endif                                                     ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_q(i,k,n) ; enddo    ! wvt
-         if (tr_sum.gt.q(i,k)) then                                ! wvt
+         if (tr_sum.gt.q(i,k) .and. tr_sum.gt.0.) then                                ! wvt
            do n=1,nreg ; tr_q(i,k,n)=q(i,k)*(tr_q(i,k,n)/tr_sum) ; enddo  ! wvt
          endif                                                     ! wvt
        enddo                                                       ! wvt
@@ -1049,7 +1049,7 @@
      do k = kts, kte                                               ! wvt
        do i = its, ite                                             ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qi(i,k,n) ; enddo   ! wvt
-         if (tr_sum.gt.qi(i,k)) then                               ! wvt
+         if (tr_sum.gt.qi(i,k) .and. tr_sum.gt.0.) then                               ! wvt
            do n=1,nreg                                             ! wvt
              tr_frac=tr_qi(i,k,n)/tr_sum                           ! wvt
              tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qi(i,k))*tr_frac      ! wvt
@@ -1057,7 +1057,7 @@
            enddo                                                   ! wvt
          endif                                                     ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_q(i,k,n) ; enddo    ! wvt
-         if (tr_sum.gt.q(i,k)) then                                ! wvt
+         if (tr_sum.gt.q(i,k) .and. tr_sum.gt.0.) then                                ! wvt
            do n=1,nreg ; tr_q(i,k,n)=q(i,k)*(tr_q(i,k,n)/tr_sum) ; enddo  ! wvt
          endif                                                     ! wvt
        enddo                                                       ! wvt
