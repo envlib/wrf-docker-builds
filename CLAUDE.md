@@ -62,6 +62,19 @@ duplicate single-region runs. `num_wvt_regions=1` reproduces the original single
   `dimspec wvtreg` (`i{wvtreg}j` → `grid%f(i,n,j)`); 3D fields use named members (`qv_tr`, `qv_tr_02`..).
   Cross-region WSM6 clipping caps `Σ_n tracer ≤ base` (guard `.and. tr_sum>0.` on every cap — a `0/0` there
   produced NaN that masqueraded as a ~13% deficit). Scoped to `bl_pbl_physics=0` + 2D source.
+- **Cost — single base pass:** the base atmosphere/physics is integrated ONCE; the per-region tracer loops
+  ride on top. Wall-clock ≈ `T_base + N·T_tracer` — fixed base (dynamics/radiation/surface/PBL + base
+  microphysics *rates*) plus a per-region increment (tracer advection/diffusion of 6 species, WSM6 tracer
+  updates + sedimentation, cumulus) that scales ~linearly with `num_wvt_regions`; memory + wrfout scale the
+  same way. So one N-region run ≪ N single-region runs (which recompute the identical base N times).
+- **Validation — production cross-check (2026-06-26):** a full production-config 4-region run (Cyclone
+  Gabrielle, 12 km NZ d01, FDDA nudging + CCI SST + 28-day spin-up + restart chunking) reproduces the
+  **independent legacy image** `:1.14` single-region runs (a different WRF build *and* a different
+  `create_trmask`, driven with identical lat/lon masks): **zero NaN**; per-region precip ratios **0.993**
+  (north) / **0.989** (west) at spatial **r≈0.9999** (the ~1% deficit is the cross-region cap apportioning
+  condensate among co-present regions — conservative, scales with mixing); Σ-regions ≤ total precip exact
+  (max +0.008 mm); bucket reconstruction + restart continuity clean. Per-stage development checks (N=1
+  bit-match, N=2 linearity/conservation) are in `debian/wvt/MULTI_REGION_WIP.md`. → production-trustworthy.
 - **Compile test** (cache-warm): `docker build --target builder -t wrf-wvt-mt-test debian/ -f
   debian/wrf-wps-intel-wvt/Dockerfile`, then verify the exes exist (`./compile` exits 0 even on a link
   failure). **Runtime gotcha:** `wrf.exe` needs `ulimit -s unlimited` (docker `--ulimit stack=-1:-1`) or it

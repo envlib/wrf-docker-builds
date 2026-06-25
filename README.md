@@ -63,8 +63,10 @@ WRF + WPS with water-vapour-tracer (WVT) source-attribution modifications, in tw
 `wrf-wps-wvt-debian` (gfortran, /debian/wrf-wps-wvt) and `wrf-wps-intel-wvt-ubuntu` (Intel oneAPI,
 multi-stage, /debian/wrf-wps-intel-wvt). **v2.0 of the intel image is multi-region** — it tags up to 8
 disjoint evaporative source regions simultaneously in one run (`num_wvt_regions`; `N=1` reproduces the
-single-region build bit-for-bit), replacing N duplicate runs. Source lives on the `multi-tracer` branch
-(overlay /debian/wvt). See `debian/wrf-wps-intel-wvt/readme.md` (capability + namelist),
+single-region build bit-for-bit), replacing N duplicate runs. **Production-validated (2026-06-26)** against
+the independent legacy single-region image (`:1.14`) on a 4-region Cyclone Gabrielle run — zero NaN,
+per-region precip reproduces the standalone runs at r≈0.9999, exact conservation. Source lives on the
+`multi-tracer` branch (overlay /debian/wvt). See `debian/wrf-wps-intel-wvt/readme.md` (capability + namelist),
 `debian/wvt/MULTI_REGION_WIP.md` (implementation/resume doc), and `CLAUDE.md`.
 
 # Others

@@ -2,7 +2,11 @@
 
 > Resume context for the `multi-tracer` branch (wrf-docker-builds). Captures state, the next
 > stage, design invariants, and the build/test workflow so development can continue cleanly
-> across a context compaction or new session. Last updated: **2026-06-23**.
+> across a context compaction or new session. Last updated: **2026-06-26**.
+>
+> **STATUS: implementation COMPLETE + PRODUCTION-VALIDATED (2026-06-26).** A 4-region Cyclone Gabrielle
+> run (production config) reproduces the independent `:1.14` single-region runs at r≈0.9999, zero NaN,
+> exact conservation — see the NEXT section. Remaining work is downstream (cfdb-ingest), not the build.
 
 ## Goal
 Tag **N disjoint ocean source regions simultaneously in one WRF-WVT run** so a single
@@ -57,10 +61,19 @@ acceptance targets).
   region-2 flux non-zero (max 127); linearity Σ(N=2)==N=1 totals to ~4e-6, unbiased symmetric FP
   (bias ratio <2.3%, 50% of cells bit-identical) — `tr_thum` accumulates `qv_tr×wind×dt` so it
   amplifies 1d-b's single-precision qv_tr noise but stays unbiased. N=1 bit-identical by construction.
-- **NEXT (YSU SKIPPED — user happy with bl_pbl=0 production path)**: downstream tooling —
-  `create_trmask.py` (wrf-auto-runs) N-mask emission + cfdb-ingest reading the N
-  `TR_RAINNC`/`TR_RAINC`/`PWAT_TR`/`TR_THUM_*` sets — so a real N=2 (north+west) production run can be
-  launched and hit the acceptance test (north −3.0% / west −10.5%).
+- **PRODUCTION VALIDATION — DONE (2026-06-26).** `create_trmask.py` N-mask emission is in. A full
+  production-config **4-region** Cyclone Gabrielle run (12 km NZ d01; FDDA + CCI SST + 28-day spin-up +
+  restart chunking) was cross-checked against the **independent `:1.14`** single-region runs (identical
+  lat/lon masks, different WRF build + `create_trmask`): **zero NaN**, per-region precip ratios **0.993**
+  (north) / **0.989** (west) at spatial **r≈0.9999**, **exact conservation** (Σ4 ≤ total, max +0.008 mm),
+  bucket + restart continuity clean. The ~1% per-region deficit is the cross-region cap apportioning
+  condensate among co-present regions (conservative; scales with mixing). Bundle + analysis:
+  `wrf-runs/projects/tests/wvt_multiregion_12km/analyze_bundle.py`.
+  - *Note:* this independence cross-check **supersedes** the original sensitivity-reproduction acceptance
+    target — the validation bands are disjoint lat/lon partitions, not the overlapping −3.0% / −10.5%
+    sensitivity bands, so per-region numbers are not expected to match those.
+- **NEXT (YSU SKIPPED — user happy with bl_pbl=0 production path)**: cfdb-ingest reading the N
+  `TR_RAINNC`/`TR_RAINC`/`PWAT_TR`/`TR_THUM_*` sets (per-region attribution into cfdb).
 
 ## Design invariants (MUST hold in every stage)
 1. **Contiguous tracer indices.** Region n's species live at `P_QV_TR + (n-1)*6 + s`, s=0..5 for

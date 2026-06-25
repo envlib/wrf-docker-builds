@@ -71,6 +71,47 @@ Two conventions appear, because the WRF registry can region-dimension 2D fields 
 
 Region `n`'s six tracer species occupy a contiguous block in WRF's tracer array at `P_QV_TR + (n-1)*6`.
 
+### Cost and scaling
+
+Adding regions does **not** re-run the simulation per region — the base atmosphere is integrated **once**
+and the per-region tracers ride on top of it (the "single base pass" design invariant). So wall-clock is
+roughly `T_base + N · T_tracer`: a large fixed cost plus a per-region increment.
+
+- **Fixed (`T_base`, independent of N):** dynamics/pressure solver, radiation, surface, PBL, and the base
+  microphysics *rate* computation (the per-region loops only *apply* those shared rates).
+- **Scales ~linearly with `num_wvt_regions` (`T_tracer`):** advection + vertical diffusion of each region's
+  six tracer species, the per-region WSM6 microphysics tracer updates + sedimentation, and the per-region
+  cumulus pass. Memory and wrfout size scale the same way (six 3D species/region + the region-dimensioned
+  2D accumulators + the `qv_tr_0n` members).
+
+The upshot — and the reason for this feature: one N-region run is far cheaper than N separate single-region
+runs. The latter recompute the identical base atmosphere N times (`N · (T_base + T_tracer)`); the
+multi-region run pays `T_base` once, so each extra region costs a *fraction* of a full run, not a whole one.
+
+### Validation
+
+The implementation was checked **per development stage** (N=1 bit-match against the single-region build;
+N=2 region linearity, conservation, and convective/flux diagnostics — recorded in
+`../wvt/MULTI_REGION_WIP.md`) and then **end-to-end on a production-config run** (2026-06-26).
+
+A 4-region Cyclone Gabrielle case (12 km NZ d01; FDDA nudging + CCI SST + 28-day spin-up + restart
+chunking) was cross-checked against the **independent legacy image** (`:1.14` — a different WRF build and a
+different `create_trmask`) running the **identical lat/lon masks** as standalone single-region simulations:
+
+- **Zero NaN** in the tracer fields (the `Σ_n tracer ≤ base` cap `0/0` that previously masqueraded as a
+  ~13% deficit is fixed by the `.and. tr_sum > 0.` guard).
+- **Per-region independence** — the multi-region north and west regions reproduce their standalone
+  counterparts: domain-total precip ratios **0.993** / **0.989** at spatial correlation **r ≈ 0.9999**. The
+  ~1% deficit is the cross-region microphysics cap apportioning condensate among co-present regions (a
+  standalone run, having no competing tracer, slightly over-attributes); it is conservative and scales with
+  how much a region mixes with its neighbours (west > north).
+- **Conservation exact** — Σ over all 4 regions ≤ total precip at every cell and frame (max excess
+  +0.008 mm, i.e. floating-point).
+- **Bucket reconstruction** correct (the storm ticked the 100 mm `I_*RAINNC` counters) and **restart
+  continuity** clean across the `wrfrst` at the spin-up/output boundary.
+
+→ multi-region attribution is trustworthy for production (multi-decade) runs.
+
 ## Supported Physics Schemes
 
 | Component | Schemes | Notes |
