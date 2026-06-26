@@ -118,7 +118,7 @@ acceptance targets).
   poll the exes.
 - **Runtime test**: run real+wrf inside the builder image, mounting the test harness, the test_data
   (pre-built `geo_em`+`met_em` at `~/data/wrf/test_data`), and an out dir. See
-  `debian/wvt/test/` (copied from `/tmp/wvt_rt_test/`): `make_trmask.py` (region-dimensioned 2-region
+  `debian/wvt-multi/test/` (copied from `/tmp/wvt_rt_test/`): `make_trmask.py` (region-dimensioned 2-region
   trmask), `namelist.input.n1`/`.n2` (WVT-enabled, `num_wvt_regions=1`/`2`, `bl_pbl=0`, WSM6+Tiedtke),
   `run_n2.sh`, `check_*.py`. Inspect wrfout with
   `uv run --project ~/git/wrf-repos/wrf-auto-runs python <check>.py` (has h5netcdf + scipy).
