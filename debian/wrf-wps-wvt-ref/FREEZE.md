@@ -16,7 +16,9 @@ not a production build. gfortran + serial WPS, by design.
 - Original online WVT method: **Insua-Costa, D. and Miguez-Macho, G. (2018)**, "A new moisture tagging
   capability in the Weather Research and Forecasting model: formulation, validation and application to the
   2014 Great Lake-effect snowstorm", *Earth Syst. Dynam.*, **9**, 167–185.
-  *[TODO: confirm the overlay tar is exactly the authors' published code, and note any local adaptation.]*
+- Source repo: the authors' own `github.com/damianinsua/WRF-WVTs` (cloned locally at
+  `~/git/wrf-repos/WRF-WVTs`), from which `modules_tracers_4.3.3.tar` is taken. **Confirmed byte-identical**
+  to their committed copy (SHA-256 matches), i.e. the base WVT scheme is used unmodified.
 - Overlay tar SHA-256: `c425928f439f441629530f90a35a720af05eb546d063f4c25faa80d85dda17c0`
   (`debian/wvt-ref/modules_tracers_4.3.3.tar`). Verify: `sha256sum debian/wvt-ref/modules_tracers_4.3.3.tar`.
 
