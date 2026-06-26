@@ -1,6 +1,9 @@
-# WRF 4.3.3 + Original WVT (reference build for validation)
-# Uses Debian 11 (GCC 10) because WRF 4.3.3 doesn't compile cleanly with GCC 13+
-FROM debian:11-slim
+# WRF 4.3.3 + Original WVT — FROZEN PROVENANCE REFERENCE. See FREEZE.md (provenance, checksums,
+# pinned inputs, archive procedure). The original WVT modules (debian/wvt-ref/modules_tracers_4.3.3.tar)
+# are the method authors' unmodified code — this is the citable origin reference, not a production build.
+# Uses Debian 11 (GCC 10) because WRF 4.3.3 doesn't compile cleanly with GCC 13+; base pinned by digest
+# (debian:11-slim, linux/amd64, observed 2026-06-26 — re-derive via `docker manifest inspect debian:11-slim`).
+FROM debian:11-slim@sha256:7d5a9679452f9a25d9c8ef2fcb3b9ba0cd1653799a998591292aec1679fad7a2
 
 RUN apt-get update && apt-get install -y \
     build-essential csh gfortran m4 curl perl mpich \
