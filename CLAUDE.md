@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Hub repo = `wrf-model-eval`.** This repo is one part of the WRF/WVT project. Claude's memory is keyed to the **launch directory**, so **start Claude in the hub (`~/git/wrf-repos/wrf-model-eval`) and edit this repo from there** to keep context continuous — launching here instead gives a separate, sparse memory. Cross-repo open work + context: **`wrf-model-eval/OPEN_WORK.md`** and the hub's Claude memory.
+
 ## Project Overview
 
 Docker containerization of the Weather Research and Forecasting (WRF) model and related tools (WPS, WRF-Hydro). Provides reproducible builds for meteorological simulation. Two compiler families are supported: gfortran (Debian 13 base) and Intel oneAPI (Ubuntu 24.04 base).
