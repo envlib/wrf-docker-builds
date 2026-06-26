@@ -10,14 +10,14 @@ RUN wget https://github.com/wrf-model/WRF/releases/download/v${WRF_VERSION}/v${W
         && rm v${WRF_VERSION}.tar.gz
 
 # Overlay WRF-WVT modifications onto WRF source tree
-COPY wvt/phys/ /WRF/phys/
-COPY wvt/dyn_em/ /WRF/dyn_em/
-COPY wvt/share/ /WRF/share/
-COPY wvt/Registry/ /WRF/Registry/
-COPY wvt/main/depend.common /WRF/main/depend.common
-COPY wvt/main/ndown_em.F /WRF/main/ndown_em.F
-COPY wvt/run/README.tracers /WRF/run/
-COPY wvt/run/namelist.input.tracers /WRF/run/
+COPY wvt-single/phys/ /WRF/phys/
+COPY wvt-single/dyn_em/ /WRF/dyn_em/
+COPY wvt-single/share/ /WRF/share/
+COPY wvt-single/Registry/ /WRF/Registry/
+COPY wvt-single/main/depend.common /WRF/main/depend.common
+COPY wvt-single/main/ndown_em.F /WRF/main/ndown_em.F
+COPY wvt-single/run/README.tracers /WRF/run/
+COPY wvt-single/run/namelist.input.tracers /WRF/run/
 
 WORKDIR /WRF
 RUN sed -i 's#$NETCDF/lib#$NETCDF/lib/x86_64-linux-gnu#g' configure && ( echo 34 ; echo 1 ) | ./configure

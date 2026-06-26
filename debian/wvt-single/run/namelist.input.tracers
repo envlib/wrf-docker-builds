@@ -1,0 +1,156 @@
+ &time_control
+ run_days                            = 29, 
+ run_hours                           = 18, 
+ run_minutes                         = 0, 
+ run_seconds                         = 0, 
+ start_year                          = 2014, 
+ start_month                         = 11,   
+ start_day                           = 01,    
+ start_hour                          = 00,    
+ start_minute                        = 00,   
+ start_second                        = 00,    
+ end_year                            = 2014, 
+ end_month                           = 11,   
+ end_day                             = 30,   
+ end_hour                            = 18,   
+ end_minute                          = 00,   
+ end_second                          = 00,  
+ interval_seconds                    = 21600
+ input_from_file                     = .true.,
+ history_interval                    = 360,  
+ frames_per_outfile                  = 999999,    
+ restart                             = .false.,
+ restart_interval                    = 999999,
+ force_use_old_data                  = .true.,
+ io_form_history                     = 2
+ io_form_restart                     = 2
+ io_form_input                       = 2
+ io_form_boundary                    = 2
+ io_form_auxinput4                   = 2
+ io_form_auxinput8                   = 2
+ auxinput4_inname                    = "wrflowinp_d<domain>",
+ auxinput8_inname                    = "trmask_d<domain>",
+ auxinput4_interval                  = 1440,
+ debug_level                         = 0,
+ /
+
+ &domains
+ time_step                           = 120,
+ time_step_fract_num                 = 0,
+ time_step_fract_den                 = 1,
+ max_dom                             = 1,
+ e_we                                = 300,   
+ e_sn                                = 200,   
+ e_vert                              = 39,    
+ p_top_requested                     = 5000,
+ num_metgrid_levels                  = 38,
+ num_metgrid_soil_levels             = 4,
+ dx                                  = 20000, 
+ dy                                  = 20000, 
+ grid_id                             = 1,     
+ parent_id                           = 0,     
+ i_parent_start                      = 1,     
+ j_parent_start                      = 1,     
+ parent_grid_ratio                   = 1,     
+ parent_time_step_ratio              = 1,     
+ feedback                            = 0,
+ smooth_option                       = 0,
+ /
+
+ &physics
+ mp_physics                          = 6,          
+ ra_lw_physics                       = 1,         
+ ra_sw_physics                       = 1,        
+ radt                                = 20,        
+ sf_sfclay_physics                   = 1,        
+ sf_surface_physics                  = 2,        
+ bl_pbl_physics                      = 1,       
+ bldt                                = 0,         
+ cu_physics                          = 1,         
+ cudt                                = 5,         
+ isfflx                              = 1,
+ ifsnow                              = 1,
+ icloud                              = 1,
+ surface_input_source                = 1,
+ num_soil_layers                     = 4,
+ num_land_cat                        = 21,
+ maxiens                             = 1,
+ maxens                              = 3,
+ maxens2                             = 3,
+ maxens3                             = 16,
+ ensdim                              = 144,
+ sst_update                          = 1,	
+ sf_urban_physics                    = 0,       
+ wtddt                               = 30.,
+ mp_zero_out                         = 2, 
+ mp_zero_out_thresh                  = 0.,
+ scalar_pblmix                       = 0,
+ tracer_pblmix                       = 0,
+ /
+
+ &fdda
+ grid_fdda                           = 2,     
+ gfdda_inname                        = "wrffdda_d<domain>",
+ gfdda_end_h                         = 8640, 
+ gfdda_interval_m                    = 360,   
+ fgdt                                = 3,     
+ fgdtzero                            = 1,     
+ if_no_pbl_nudging_uv                = 0,    
+ if_no_pbl_nudging_t                 = 0,     
+ if_no_pbl_nudging_ph                = 0,     
+ if_zfac_uv                          = 1,     
+  k_zfac_uv                          = 10,   
+  dk_zfac_uv                         = 5,     
+ if_zfac_t                           = 1,     
+  k_zfac_t                           = 10,   
+  dk_zfac_t                          = 5,     
+ if_zfac_ph                          = 1,     
+  k_zfac_ph                          = 10,   
+  dk_zfac_ph                         = 5,    
+ guv                                 = 0.0003,     
+ gt                                  = 0.0003,     
+ gph                                 = 0.0003,     
+ if_ramping                          = 0,
+ dtramp_min                          = 60.0,
+ io_form_gfdda                       = 2,
+ xwavenum                            = 7,
+ ywavenum                            = 5,
+ /
+
+ &dynamics
+ w_damping                           = 0,
+ diff_opt                            = 1, 
+ km_opt                              = 4, 
+ diff_6th_opt                        = 0,    
+ diff_6th_factor                     = 0.12, 
+ base_temp                           = 290.,
+ damp_opt                            = 0,
+ zdamp                               = 5000., 
+ dampcoef                            = 0.2,  
+ khdif                               = 0,     
+ kvdif                               = 0,  
+ non_hydrostatic                     = .true., 
+ moist_adv_opt                       = 4,        
+ scalar_adv_opt                      = 4,        
+ tracer_adv_opt                      = 4,    
+ tracer_opt                          = 4, 
+ tracer2dsource		                 = 1, 
+ tracer3dsource		                 = 0, 
+ tracer3dsink		                 = 0,  
+ /
+
+ &bdy_control
+ spec_bdy_width                      = 5,
+ spec_zone                           = 1,
+ relax_zone                          = 4,
+ specified                           = .true., 
+ nested                              = .false., 
+ /
+
+ &grib2
+ /
+
+ &namelist_quilt
+ nio_tasks_per_group = 0,
+ nio_groups = 1,
+ /

@@ -77,14 +77,14 @@ RUN wget https://github.com/wrf-model/WRF/releases/download/v${WRF_VERSION}/v${W
     && rm v${WRF_VERSION}.tar.gz
 
 # Overlay WRF-WVT modifications onto WRF source tree
-COPY wvt/phys/ /WRF/phys/
-COPY wvt/dyn_em/ /WRF/dyn_em/
-COPY wvt/share/ /WRF/share/
-COPY wvt/Registry/ /WRF/Registry/
-COPY wvt/main/depend.common /WRF/main/depend.common
-COPY wvt/main/ndown_em.F /WRF/main/ndown_em.F
-COPY wvt/run/README.tracers /WRF/run/
-COPY wvt/run/namelist.input.tracers /WRF/run/
+COPY wvt-multi/phys/ /WRF/phys/
+COPY wvt-multi/dyn_em/ /WRF/dyn_em/
+COPY wvt-multi/share/ /WRF/share/
+COPY wvt-multi/Registry/ /WRF/Registry/
+COPY wvt-multi/main/depend.common /WRF/main/depend.common
+COPY wvt-multi/main/ndown_em.F /WRF/main/ndown_em.F
+COPY wvt-multi/run/README.tracers /WRF/run/
+COPY wvt-multi/run/namelist.input.tracers /WRF/run/
 
 # Compile WRF - option 78 = INTEL (ifx/icx) oneAPI LLVM, dmpar
 WORKDIR /WRF
