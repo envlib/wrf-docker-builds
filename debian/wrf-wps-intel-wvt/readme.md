@@ -92,7 +92,7 @@ multi-region run pays `T_base` once, so each extra region costs a *fraction* of 
 
 The implementation was checked **per development stage** (N=1 bit-match against the single-region build;
 N=2 region linearity, conservation, and convective/flux diagnostics — recorded in
-`../wvt/MULTI_REGION_WIP.md`) and then **end-to-end on a production-config run** (2026-06-26).
+`../wvt-multi/MULTI_REGION_WIP.md`) and then **end-to-end on a production-config run** (2026-06-26).
 
 A 4-region Cyclone Gabrielle case (12 km NZ d01; FDDA nudging + CCI SST + 28-day spin-up + restart
 chunking) was cross-checked against the **independent legacy image** (`:1.14` — a different WRF build and a
@@ -279,6 +279,13 @@ true total before taking the ratio: `TR_RAINNC + bucket_mm·I_TR_RAINNC` (and li
 ```bash
 docker compose build
 ```
+
+**Source overlay.** This image overlays `debian/wvt-multi/` (the multi-region WVT source) onto a stock WRF
+4.7.1 tree. The original **single-region** WVT source lives in `debian/wvt-single/` and is built by the
+`wrf-wps-wvt` (gfortran) and `wrf-wps-intel-wvt-sr` (Intel) images — kept as a frozen independent reference
+(multi-region at `num_wvt_regions=1` reproduces it bit-for-bit). The two overlays were split from a single
+`debian/wvt/` so both variants can be maintained from one branch. See the build matrix in the repo
+`CLAUDE.md` for the full variant × compiler grid.
 
 ## Test
 

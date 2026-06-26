@@ -33,21 +33,49 @@ For ARM64 cross-compilation on amd64: install `qemu-user-static` and enable Dock
 
 ```
 wrf-base (Debian 13 + gfortran + mpich + HDF5 + NetCDF + tools)
-├── wrf-debian             — WRF only
-├── wrf-wps-debian:1.3     — WRF 4.7.1 + WPS 4.6.0 (gfortran, dmpar, -fno-stack-arrays)
-├── wrf-wps-wvt-debian:1.3 — WRF 4.7.1 + WPS 4.6.0 + WVT (gfortran, dmpar, -fno-stack-arrays)
-├── wrf-wps-wvt-ref-debian:1.0 — WRF 4.3.3 + WPS reference build
-├── wrf-wps-hydro-coupled  — WRF 4.7.1 + WPS 4.6.0 + WRF-Hydro 5.4.0
-└── wrf-hydro-sa           — WRF-Hydro 5.4.0 standalone
+├── wrf-debian                  — WRF only
+├── wrf-wps-debian:1.2          — WRF 4.7.1 + WPS 4.6.0 (gfortran, dmpar)                   [no-WVT]
+├── wrf-wps-wvt-debian:1.3      — + single-region WVT  (overlay debian/wvt-single/)         [SR]
+├── wrf-wps-wvt-mr-debian:1.0   — + multi-region WVT   (overlay debian/wvt-multi/)          [MR] NEW
+├── wrf-wps-wvt-ref-debian:1.0  — WRF 4.3.3 + original WVT (frozen ref; debian/wvt-ref/ + FREEZE.md)
+├── wrf-wps-hydro-coupled       — WRF 4.7.1 + WPS 4.6.0 + WRF-Hydro 5.4.0
+└── wrf-hydro-sa                — WRF-Hydro 5.4.0 standalone
 
 intel/oneapi-hpckit (multi-stage — builder + runtime)
-├── wrf-wps-intel-ubuntu:1.0     — WRF 4.7.1 + WPS 4.6.0 (Intel oneAPI, serial WPS)
-└── wrf-wps-intel-wvt-ubuntu:2.0 — WRF 4.7.1 + WPS 4.6.0 + multi-region WVT (Intel oneAPI, dmpar WPS, -heap-arrays)
+├── wrf-wps-intel-ubuntu:1.0         — WRF 4.7.1 + WPS 4.6.0 (Intel oneAPI)                 [no-WVT]
+├── wrf-wps-intel-wvt-sr-ubuntu:1.0  — + single-region WVT  (overlay debian/wvt-single/)    [SR] NEW
+└── wrf-wps-intel-wvt-ubuntu:2.0     — + multi-region WVT   (overlay debian/wvt-multi/)      [MR]
 
 wps-geog-nz (separate, no base dependency) — WPS geographical static data
 ```
 
-Downstream pipeline images (`wrf-auto-runs`, `wrf-auto-runs-wvt`, `wrf-auto-runs-intel-wvt`, `wrf-auto-runs-wvt-ref`) are built in the `wrf-auto-runs` repo and `FROM` the WPS images here.
+### Build matrix (3 variants × 2 compilers, + the WRF-4.3.3 reference)
+
+`num_wvt_regions=1` on the multi-region build reproduces the single-region build bit-for-bit; the
+single-region images are kept as a **frozen, independent** reference. WVT source overlays:
+`debian/wvt-single/` (SR), `debian/wvt-multi/` (MR), `debian/wvt-ref/` (4.3.3). The pipeline images
+(right columns) are built in `wrf-auto-runs` and `FROM` these bases.
+
+| Variant | Compiler | Base image (here) | Base context | Pipeline image (wrf-auto-runs) | Pipeline context |
+|---|---|---|---|---|---|
+| no-WVT | gfortran | `wrf-wps-debian:1.2` | `debian/wrf-wps/` | `wrf-auto-runs` | `gfortran_wrf/` ✦ |
+| no-WVT | Intel | `wrf-wps-intel-ubuntu:1.0` | `debian/wrf-wps-intel/` | `wrf-auto-runs-intel` | `intel_wrf/` |
+| single-region | gfortran | `wrf-wps-wvt-debian:1.3` | `debian/wrf-wps-wvt/` | `wrf-auto-runs-wvt` | `gfortran_wvt/` |
+| single-region | Intel | `wrf-wps-intel-wvt-sr-ubuntu:1.0` ✦ | `debian/wrf-wps-intel-wvt-sr/` | `wrf-auto-runs-intel-wvt-sr` ✦ | `intel_wvt_sr/` ✦ |
+| multi-region | gfortran | `wrf-wps-wvt-mr-debian:1.0` ✦ | `debian/wrf-wps-wvt-mr/` | `wrf-auto-runs-wvt-mr` ✦ | `gfortran_wvt_mr/` ✦ |
+| multi-region | Intel | `wrf-wps-intel-wvt-ubuntu:2.0` | `debian/wrf-wps-intel-wvt/` | `wrf-auto-runs-intel-wvt:2.0` | `intel_wvt/` |
+| reference (4.3.3) | gfortran | `wrf-wps-wvt-ref-debian:1.0` | `debian/wrf-wps-wvt-ref/` | `wrf-auto-runs-wvt-ref` | `gfortran_wvt_ref/` |
+
+✦ = **new scaffolding — build + validate on demand**. The gfortran multi-region build is the higher-risk
+cross-compile (the MR overlay was developed/validated on Intel `ifx`). The legacy
+`wrf-auto-runs-intel-wvt:1.14` ≈ the Intel single-region image (now `…-wvt-sr`).
+
+**Which image?** The wrf-auto-runs pipeline derives the *behaviour* purely from `parameters.toml`
+(`tracer_opt`/`[wvt]`), so you only pick the image's variant + compiler:
+- `tracer_opt ≠ 4` → **no-WVT**.
+- `tracer_opt = 4`, one `[wvt]` region → **single-region** (or the multi-region image at `num_wvt_regions=1`).
+- `tracer_opt = 4`, multiple `[[wvt.regions]]` → **multi-region**.
+- Compiler: **Intel** for production throughput, **gfortran** for portability/backup.
 
 ## Multi-region WVT (`wrf-wps-intel-wvt-ubuntu:2.0`)
 
@@ -56,8 +84,9 @@ hydrological cycle to attribute precipitation by source. **v2.0 generalises this
 regions tracked simultaneously in one run** (1..8, scalar namelist `num_wvt_regions`) — replacing N
 duplicate single-region runs. `num_wvt_regions=1` reproduces the original single-region build bit-for-bit.
 
-- Source lives on the **`multi-tracer` branch**, overlay `debian/wvt/` (COPYed over a stock WRF 4.7.1 in
-  the builder stage, then `./compile em_real`). Resume/design doc: **`debian/wvt/MULTI_REGION_WIP.md`**.
+- Source is the overlay `debian/wvt-multi/` (COPYed over a stock WRF 4.7.1 in the builder stage, then
+  `./compile em_real`; split from the former `debian/wvt/` — single-region is now `debian/wvt-single/`).
+  Resume/design doc: **`debian/wvt-multi/MULTI_REGION_WIP.md`**.
 - Region n's 6 tracer species are contiguous at `P_QV_TR+(n-1)*6`; 2D fields gain a region dimension via
   `dimspec wvtreg` (`i{wvtreg}j` → `grid%f(i,n,j)`); 3D fields use named members (`qv_tr`, `qv_tr_02`..).
   Cross-region WSM6 clipping caps `Σ_n tracer ≤ base` (guard `.and. tr_sum>0.` on every cap — a `0/0` there
@@ -74,7 +103,7 @@ duplicate single-region runs. `num_wvt_regions=1` reproduces the original single
   (north) / **0.989** (west) at spatial **r≈0.9999** (the ~1% deficit is the cross-region cap apportioning
   condensate among co-present regions — conservative, scales with mixing); Σ-regions ≤ total precip exact
   (max +0.008 mm); bucket reconstruction + restart continuity clean. Per-stage development checks (N=1
-  bit-match, N=2 linearity/conservation) are in `debian/wvt/MULTI_REGION_WIP.md`. → production-trustworthy.
+  bit-match, N=2 linearity/conservation) are in `debian/wvt-multi/MULTI_REGION_WIP.md`. → production-trustworthy.
 - **Compile test** (cache-warm): `docker build --target builder -t wrf-wvt-mt-test debian/ -f
   debian/wrf-wps-intel-wvt/Dockerfile`, then verify the exes exist (`./compile` exits 0 even on a link
   failure). **Runtime gotcha:** `wrf.exe` needs `ulimit -s unlimited` (docker `--ulimit stack=-1:-1`) or it

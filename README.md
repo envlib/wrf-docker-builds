@@ -66,8 +66,15 @@ disjoint evaporative source regions simultaneously in one run (`num_wvt_regions`
 single-region build bit-for-bit), replacing N duplicate runs. **Production-validated (2026-06-26)** against
 the independent legacy single-region image (`:1.14`) on a 4-region Cyclone Gabrielle run — zero NaN,
 per-region precip reproduces the standalone runs at r≈0.9999, exact conservation. Source lives on the
-`multi-tracer` branch (overlay /debian/wvt). See `debian/wrf-wps-intel-wvt/readme.md` (capability + namelist),
-`debian/wvt/MULTI_REGION_WIP.md` (implementation/resume doc), and `CLAUDE.md`.
+the overlay /debian/wvt-multi. See `debian/wrf-wps-intel-wvt/readme.md` (capability + namelist),
+`debian/wvt-multi/MULTI_REGION_WIP.md` (implementation/resume doc), and `CLAUDE.md`.
+
+The WVT source overlay is split so single- and multi-region builds coexist: `debian/wvt-single/` (the frozen
+single-region reference, built by `wrf-wps-wvt` gfortran + `wrf-wps-intel-wvt-sr` Intel) and
+`debian/wvt-multi/` (multi-region, built by `wrf-wps-wvt-mr` gfortran + `wrf-wps-intel-wvt` Intel). The
+WRF-4.3.3 original-WVT **frozen reference** (`wrf-wps-wvt-ref`, overlay `debian/wvt-ref/`, see its
+`FREEZE.md`) is the provenance anchor. See the **build matrix** in `CLAUDE.md` for the full
+variant × compiler grid.
 
 # Others
 https://jiririchter.github.io/WRFDomainWizard/
