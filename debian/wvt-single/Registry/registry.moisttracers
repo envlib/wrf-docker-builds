@@ -30,3 +30,8 @@ state   real  tr_thum_v_phy_dt   ikj      misc        1         -      rh       
 rconfig   integer tracer3dsource        namelist,dynamics      max_domains    0        rh    "tracer3dsource"    "switch to activate 3D region (read in from file) as tracer moisture source " ""
 rconfig   integer tracer2dsource        namelist,dynamics      max_domains    0        rh    "tracer2dsource"    "switch to activate 2D region (read in from file) as tracer moisture source " ""
 rconfig   integer tracer3dsink          namelist,dynamics      max_domains    0        rh    "tracer3dsink"      "switch to activate 3D region (read in from file) as tracer moisture sink " ""
+
+# Accepted-but-unused in the single-region build. The shared multi-region orchestration always injects
+# num_wvt_regions into &dynamics (set_params.py); declaring it here (scalar, default 1) lets the single-region
+# WRF read that namelist without a fatal "&dynamics" error. No single-region code references it.
+rconfig   integer num_wvt_regions       namelist,dynamics      1              1        rh    "num_wvt_regions"   "number of WVT tagged source regions (single-region build: always 1; accepted for namelist compatibility)" ""

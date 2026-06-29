@@ -1,0 +1,20 @@
+services:
+  wrf:
+    image: mullenkamp/wrf-wps-intel-wvt-sr-ubuntu:1.0
+    build:
+      context: ../
+      dockerfile: wrf-wps-intel-wvt-sr/Dockerfile
+    stdin_open: true
+    tty: true
+    shm_size: '2gb'   # >=2gb required for multi-rank Intel MPI (mpirun -n N); 1gb SIGBUSes
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /media/data/WRF/testing:/testing
+      - wps-geog:/WPS_GEOG
+
+volumes:
+  wps-geog:
+    external: true
