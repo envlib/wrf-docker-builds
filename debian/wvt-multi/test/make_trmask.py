@@ -10,9 +10,10 @@ wrf-auto-runs uv env (h5netcdf + scipy.io.netcdf).
 import numpy as np
 import h5netcdf
 import scipy.io.netcdf as nc3
+import os
 
-GEO = '/home/mike/data/wrf/test_data/geo_em.d01.nc'
-OUT = '/tmp/wvt_rt_test/trmask_d01'
+GEO = os.environ.get('WVT_TEST_DATA', os.path.expanduser('~/data/wrf/test_data')) + '/geo_em.d01.nc'
+OUT = os.environ.get('WVT_TEST_WORK', '/tmp/wvt_rt_test') + '/trmask_d01'
 START = '2023-02-10_00:00:00'
 RELAX = 5
 NREG = 2

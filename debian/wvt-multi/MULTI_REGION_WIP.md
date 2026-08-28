@@ -1,8 +1,8 @@
 # Multi-region WVT — work-in-progress / resume doc
 
-> Resume context for the `multi-tracer` branch (wrf-docker-builds). Captures state, the next
-> stage, design invariants, and the build/test workflow so development can continue cleanly
-> across a context compaction or new session. Last updated: **2026-06-26**.
+> Design record for the multi-region WVT overlay (`debian/wvt-multi/`). Captures the design
+> invariants, the stage-by-stage implementation history, and the build/test workflow.
+> Last updated: **2026-06-26**.
 >
 > **STATUS: implementation COMPLETE + PRODUCTION-VALIDATED (2026-06-26).** A 4-region Cyclone Gabrielle
 > run (production config) reproduces the independent `:1.14` single-region runs at r≈0.9999, zero NaN,
@@ -11,28 +11,26 @@
 ## Goal
 Tag **N disjoint ocean source regions simultaneously in one WRF-WVT run** so a single
 simulation yields per-region precipitation attribution over NZ land (replaces N duplicate runs).
-Passive tracers ⇒ exact (linearity verified). Approved plan:
-`~/.claude/plans/please-read-the-docs-rosy-floyd.md`. Driven by the
-[[project_wvt_ocean_area_sensitivity]] study (north −3.0% / west −10.5% are the eventual N=2
-acceptance targets).
+Passive tracers ⇒ exact (linearity verified). Driven by the ocean-source-area sensitivity study
+(north −3.0% / west −10.5% are the eventual N=2 acceptance targets).
 
 ## Status (stage-by-stage)
-- **Phase 0 — DONE, committed by user.** Tracer 4D array expanded to 6×MAX members (MAX=8) via
+- **Phase 0 — DONE.** Tracer 4D array expanded to 6×MAX members (MAX=8) via
   `Registry/gen_wvt_tracers.py`; activation scales with `num_wvt_regions` through conditional
   packages (`tracer_moist` on `tracer_opt==4` for region 1 + `wvt_nr2..8` on `num_wvt_regions==N`);
   bounds check in `module_check_a_mundo.F`. Validated: compile + runtime (num_tracer scales, N=1
-  bit-identical). Gemini-approved.
-- **Stage E1 (diagnostics) — DONE, validated, Gemini-approved. UNCOMMITTED.** `dimspec wvtreg` +
+  bit-identical). Independently reviewed.
+- **Stage E1 (diagnostics) — DONE, validated, independently reviewed.** `dimspec wvtreg` +
   `PWAT_TR`/`VIMF_TR_U`/`VIMF_TR_V` → `i{wvtreg}j` + per-region loop in `module_diag_wvt_columns.F`.
-- **Stage 1b (source+transport, bl_pbl=0 path) — DONE, compiles, validated, Gemini-approved.
-  UNCOMMITTED (ready to commit).** `TRMASK`/`TRQFX` → `i{wvtreg}j`; surface-ET TRQFX derivation moved out of
+- **Stage 1b (source+transport, bl_pbl=0 path) — DONE, compiles, validated, independently reviewed.
+ ** `TRMASK`/`TRQFX` → `i{wvtreg}j`; surface-ET TRQFX derivation moved out of
   `module_surface_driver.F` into `module_first_rk_step_part1.F` (after the surface call, ~line 1104);
   per-region diffusion injection at both sites in `module_diffusion_em.F` (assumed-shape `trqfx` +
   reverse-map `im→region`); guards in `module_check_a_mundo.F`. Runtime check passed: region-2
   `PWAT_TR` non-zero (mean 0.20), and region1+region2 = 0.486 == the E1 single-full-ocean value
   (vapour linearity holds).
 - **Stage 1c (WSM6 microphysics + cross-region clipping) — DONE, compiles clean, validated,
-  Gemini-approved. The go/no-go gate: PASSED. UNCOMMITTED (ready to commit).** Registry precip accumulators
+  Independently reviewed. The go/no-go gate: PASSED.** Registry precip accumulators
   (`TR_RAINNC`/`TR_SNOWNC`/`TR_GRAUPELNC`/`I_TR_RAINNC`) → `i{wvtreg}j`; `mp_wsm6.F90` wsm62d
   region-dimensioned (6 species + 3 precip + rate temps, per-region `do n` loops, cross-region
   frac-form caps at every base-cap site, per-region sedimentation via base-save/restore, per-region
@@ -44,10 +42,10 @@ acceptance targets).
   **conservation** Σ TR_RAINNC ≤ RAINNC exactly (max excess 0.0); Σ qv_tr ≤ QVAPOR. Notes: (a) gate
   must use `f_tr_qv` (tracer_opt=4), not just block-present, or non-WVT WSM6 runs crash; (b) Docker
   needs `--shm-size=2g` for Intel-MPI multi-rank (else SIGBUS, env not code).
-- **Stage 1d (cumulus / cu_ntiedtke) — DONE (1d-a committed 793f0ef; 1d-b validated+Gemini-approved,
+- **Stage 1d (cumulus / cu_ntiedtke) — DONE (1d-a committed 793f0ef; 1d-b validated + independently reviewed,
   uncommitted).** See the "Stage 1d" section below for the full 1d-a/1d-b record.
 - **Stage tr_thum (per-region moisture-flux diagnostics) — DONE, compiles clean, validated,
-  Gemini-approved. UNCOMMITTED (ready to commit).** (Bonus: gating region 1 on `p_qv_tr >=
+  Independently reviewed.** (Bonus: gating region 1 on `p_qv_tr >=
   PARAM_FIRST_SCALAR` instead of the old `n_tracer >= PARAM_FIRST_SCALAR` also fixes a latent WRF bug
   where non-moisture tracers would be summed into tr_thum when `tracer_opt != 4`.) `calc_moist_fluxes` (module_big_step_utilities_em.F) gained an
   `ispe_start` arg (loop `ispe=ispe_start..n_moist`) so a single region's contiguous 6-species
@@ -78,7 +76,7 @@ acceptance targets).
 ## Design invariants (MUST hold in every stage)
 1. **Contiguous tracer indices.** Region n's species live at `P_QV_TR + (n-1)*6 + s`, s=0..5 for
    (qv,qc,qr,qi,qs,qg). Guaranteed by the conditional packages declaring regions contiguously.
-   1b uses inline `P_QV_TR+(n-1)*6`; **1c should build an explicit `p_tr(species,n)` map** (Gemini's
+   1b uses inline `P_QV_TR+(n-1)*6`; **1c should build an explicit `p_tr(species,n)` map** (the review's
    suggestion — cleaner when manipulating all 6 species × N).
 2. **Region dimension** via `dimspec wvtreg 2 namelist=num_wvt_regions z wvt_regions`
    (in `Registry.EM_COMMON`). 2D fields use `i{wvtreg}j` ⇒ Fortran `grid%field(i,n,j)`.
@@ -110,18 +108,17 @@ acceptance targets).
 
 ## Build / test workflow (exact)
 - **Compile test** (cache warm, ~few min): from repo root —
-  `docker build -f /home/mike/git/wrf-repos/wrf-docker-builds/debian/wrf-wps-intel-wvt/Dockerfile --target builder -t wrf-wvt-mt-test:latest /home/mike/git/wrf-repos/wrf-docker-builds/debian/`
+  `docker build -f debian/wrf-wps-intel-wvt/Dockerfile --target builder -t wrf-wvt-mt-test:latest debian/`
   Then **verify exes** (the `./compile` exits 0 even on link failure!):
   `docker run --rm wrf-wvt-mt-test:latest bash -lc 'ls -la /WRF/main/*.exe'` — if absent, grep the
   log for the registry warning / undefined references. **Do NOT** wait with a `pgrep -f 'docker
   build...'` loop — it matches its own command line and never exits; use `run_in_background:true` or
   poll the exes.
-- **Runtime test**: run real+wrf inside the builder image, mounting the test harness, the test_data
-  (pre-built `geo_em`+`met_em` at `~/data/wrf/test_data`), and an out dir. See
-  `debian/wvt-multi/test/` (copied from `/tmp/wvt_rt_test/`): `make_trmask.py` (region-dimensioned 2-region
-  trmask), `namelist.input.n1`/`.n2` (WVT-enabled, `num_wvt_regions=1`/`2`, `bl_pbl=0`, WSM6+Tiedtke),
-  `run_n2.sh`, `check_*.py`. Inspect wrfout with
-  `uv run --project ~/git/wrf-repos/wrf-auto-runs python <check>.py` (has h5netcdf + scipy).
+- **Runtime test**: run real+wrf inside the builder image, mounting the test harness, a test_data
+  directory (pre-built `geo_em`+`met_em`), and an out dir. See `debian/wvt-multi/test/`:
+  `make_trmask.py` (region-dimensioned 2-region trmask), `namelist.input.n1`/`.n2` (WVT-enabled,
+  `num_wvt_regions=1`/`2`, `bl_pbl=0`, WSM6+Tiedtke), `run_1c.sh`, `run_in_container.sh`,
+  `check_*.py`. Inspecting wrfout needs h5netcdf + scipy.
 - Test domain: 99×111 single domain, WSM6/Tiedtke/SMS-3DTKE, 3-h run, `met_em` for 2023-02-10.
 
 ## Stage 1d (cumulus / Tiedtke) — MAPPED; awaiting design decision on tendency storage
@@ -147,16 +144,16 @@ Options for per-region convective tracer tendencies: **(B)** named members `RTRQ
 species ×MAX (consistent w/ Phase-0 tracer members; verbose; awkward to apply in a loop — needs
 generated/unrolled add_a2a); **(C)** new 4D `ikjf` package array for tendencies (clean looping, more
 machinery); **(D)** rejected — single reused storage breaks between-step reuse.
-**DECISION (user + Gemini): Option B, and SPLIT 1d:**
-- **1d-a (convective precip) — DONE, compiles, validated, Gemini-approved, COMMITTED (793f0ef).**
+**DECISION: Option B, and SPLIT 1d:**
+- **1d-a (convective precip) — DONE, compiles, validated, independently reviewed, COMMITTED (793f0ef).**
   region-dim `TR_RAINC`/`TR_PRATEC`/`I_TR_RAINC`→`i{wvtreg}j` + per-region
   cumulus calls in cu_ntiedtke_driver yielding per-region `tr_pratec`→`tr_rainc`;
   thread tr_block+count+f_tr_qv through solve_em(first_rk_step_part1)→cumulus_driver→cu_ntiedtke_driver;
   diag_misc TR_RAINC bucket region-loop; advance_ppt tr_rainc accumulation; init. Regions 2..N's
   `rtrq*cuten` were COMPUTED but discarded (only region 1 stored) — 1d-a tagged convective precip but
   not the convective column transport (now recovered by 1d-b).
-- **1d-b (convective column transport) — DONE, compiles clean, validated, Gemini-approved.
-  UNCOMMITTED (ready to commit).**
+- **1d-b (convective column transport) — DONE, compiles clean, validated, independently reviewed.
+ **
   Option B named members `RTRQ{V,C,I}CUTEN_02..08` (3 species × 7 regions = 21 fields) via
   `Registry/gen_wvt_cuten.py`. Key simplification vs the original plan: the named fields' couple/
   apply/decouple are done **in-place where `grid` is in scope** (NOT threaded through
@@ -168,7 +165,8 @@ machinery); **(D)** rejected — single reused storage breaks between-step reuse
     untouched); `cumulus_driver` (has `TYPE(domain) grid`) passes `grid%rtrq*cuten_0n` to the
     cu_ntiedtke call — no cumulus_driver signature change.
   - **COUPLE**: `first_rk_step_part2` after `calculate_phy_tend` — `×(c1h·mut+c2h)`, patch loop.
-  - **APPLY**: `first_rk_step_part2` after `update_phy_ten` — `add_a2a` (made importable) into
+  - **APPLY**: `first_rk_step_part2` after `update_phy_ten` — `add_a2a` (already importable:
+    `module_physics_addtendc` declares no `PRIVATE`) into
     `tracer_tend(P_*_TR+(n-1)·6)`, gated on cu_physics∈{NTIEDTKE,TIEDTKE}. (Only cu_ntiedtke is
     multi-region; kfeta/mskf/other schemes stay region-1, matching 1d-a.)
   - **DECOUPLE**: `solve_em` after the `phy_prep_part2` tile loop — `÷(c1h·muts+c2h)`, patch loop.
@@ -182,6 +180,5 @@ machinery); **(D)** rejected — single reused storage breaks between-step reuse
   TR_RAINNC 1.8e-12, conservation exact. N=1 bit-identical by construction (all `>=2` guards false).
 
 ## Cadence
-Implement a stage → compile-build → runtime-check → **PAUSE** → user runs Gemini code-review on the
-diff → incorporate feedback → next stage. The **user commits to git** themselves. Each pause is a
-hard stop.
+Each stage is implemented, compiled, runtime-checked and independently reviewed before the next
+stage begins.

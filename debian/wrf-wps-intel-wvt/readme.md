@@ -305,7 +305,11 @@ See the `wrf-wps-intel` readme for Intel compiler gotchas (MPI fabric settings, 
 
 - `wvt-porting-notes.md` -- Implementation details and validation results
 - `wvt-integration-guide.md` -- How to add WVT support to additional physics schemes
-- `sms-3dtke-wvt-status.md` -- SMS-3DTKE integration details
+- `wvt-source-edge-ringing.md` -- Numerical analysis of the hard-edged source mask
+- `../wvt-multi/MULTI_REGION_WIP.md` -- Multi-region design record: invariants, stage history, validation
+
+The same source is kept as an integrated WRF tree at `~/git/wrf-repos/WRF-WVT` for a possible upstream
+contribution. It is synced *from* these overlays; `debian/check_fork_sync.sh` asserts they agree.
 
 ## Reference
 

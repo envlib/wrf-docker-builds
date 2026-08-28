@@ -111,6 +111,32 @@ duplicate single-region runs. `num_wvt_regions=1` reproduces the original single
   failure). **Runtime gotcha:** `wrf.exe` needs `ulimit -s unlimited` (docker `--ulimit stack=-1:-1`) or it
   SIGSEGVs at the first integration step — the wrf-auto-runs pipeline sets this; a bare `docker run` must too.
 
+## The integrated source fork (`~/git/wrf-repos/WRF-WVT`)
+
+The WVT source lives in **two** places and they must agree:
+
+- **the overlays here** (`debian/wvt-single/`, `debian/wvt-multi/`) — where development happens and
+  what the Docker images compile;
+- **`~/git/wrf-repos/WRF-WVT`** — a clone of `wrf-model/WRF` @ `v4.7.1` with the same modifications
+  as an area-partitioned commit series on `feature/water-vapor-tracers`. This is the *integrated*
+  tree, kept for a possible upstream contribution and cited in the GMD paper draft. Tag
+  `wvt-4.7.1-single-region` marks the single-region scheme exactly as the SR images compile it.
+
+**The direction is overlay → fork, never the reverse.** Nothing detected three months of drift
+between them (May–Aug 2026), so after changing any overlay file, sync the fork and run:
+
+```bash
+debian/check_fork_sync.sh          # WRF_WVT=... to override the fork location
+```
+
+It asserts byte-equality both ways round — hard-failing on files the Dockerfiles `COPY` into the
+image, warning on auxiliary files (`test/`, `MULTI_REGION_WIP.md`, `run/2Dsource.py`) — plus
+containment: the fork may modify no file outside the overlay set (bar `CONTRIBUTING.md`).
+
+A clean run proves that no source the compile consumes differs between the two. It does **not**
+prove the fork builds: `phys/physics_mmm/` is an NCAR external and the fork carries only the 3
+WVT-modified files of its 15. Build from the overlay, never the fork.
+
 ## Critical: WPS heap-array allocation flags
 
 Both WPS builds inject Fortran flags that force automatic-array allocation onto the heap rather than the stack. **This is load-bearing — without these flags, `metgrid.exe` segfaults in `libc.so.6` partway through long preprocessing runs (~1 month of ERA5 data is the typical threshold).**

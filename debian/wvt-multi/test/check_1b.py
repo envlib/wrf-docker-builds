@@ -2,8 +2,9 @@
 """Stage 1b check: both regions now sourced (region-2 PWAT_TR becomes non-zero)."""
 import numpy as np
 import h5netcdf
+import os
 
-P = '/tmp/wvt_rt_test/out/wrfout_1b_n2.nc'
+P = os.environ.get('WVT_TEST_WORK', '/tmp/wvt_rt_test') + '/out/wrfout_1b_n2.nc'
 with h5netcdf.File(P, 'r') as f:
     pt = np.asarray(f['PWAT_TR'][:])          # (Time, wvt_regions, sn, we)
     pwat = np.asarray(f['PWAT'][:])           # (Time, sn, we) total column

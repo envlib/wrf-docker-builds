@@ -2,8 +2,9 @@
 """Confirm PWAT_TR is region-dimensioned: region 1 sourced (>0), region 2 inert (==0)."""
 import numpy as np
 import h5netcdf
+import os
 
-P = '/tmp/wvt_rt_test/out/wrfout_p1n2.nc'
+P = os.environ.get('WVT_TEST_WORK', '/tmp/wvt_rt_test') + '/out/wrfout_p1n2.nc'
 with h5netcdf.File(P, 'r') as f:
     for v in ['PWAT_TR', 'VIMF_TR_U', 'PWAT']:
         if v in f.variables:
