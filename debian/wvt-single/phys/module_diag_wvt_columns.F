@@ -3,9 +3,8 @@
 ! 2D column-integrated diagnostics for the WVT branch.
 !
 ! Computed at history-write time (gated by diag_flag in module_diagnostics_driver.F).
-! Formulas match cfdb-ingest's offline computation exactly so the runtime values
-! are bit-comparable to the existing downstream pipeline. See
-! /home/mike/git/cfdb-repos/cfdb-ingest/cfdb_ingest/wrf.py:1005-1221.
+! Formulas match the offline computation in the downstream cfdb-ingest pipeline
+! exactly, so the runtime values are bit-comparable with it.
 !
 ! Outputs (all 2D, kg/m^2 for column water, kg/m/s for fluxes, Pa for SLP):
 !   PWAT       = (1/g) * sum_k QVAPOR(k) * dp(k)
