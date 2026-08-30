@@ -117,7 +117,8 @@ The WVT source lives in **two** places and they must agree:
 
 - **the overlays here** (`debian/wvt-single/`, `debian/wvt-multi/`) — where development happens and
   what the Docker images compile;
-- **`~/git/wrf-repos/WRF-WVT`** — a clone of `wrf-model/WRF` @ `v4.7.1` with the same modifications
+- **`~/git/wrf-repos/WRF-WVT`** → **`github.com/mullenkamp/WRF`** (a fork of `wrf-model/WRF`,
+  published 2026-08-30) @ `v4.7.1` with the same modifications
   as an area-partitioned commit series on `feature/water-vapor-tracers`. This is the *integrated*
   tree, kept for a possible upstream contribution and cited in the GMD paper draft. Tag
   `wvt-4.7.1-single-region` marks the single-region scheme exactly as the SR images compile it.
