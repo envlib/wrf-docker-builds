@@ -134,9 +134,15 @@ It asserts byte-equality both ways round — hard-failing on files the Dockerfil
 image, warning on auxiliary files (`test/`, `MULTI_REGION_WIP.md`, `run/2Dsource.py`) — plus
 containment: the fork may modify no file outside the overlay set (bar `CONTRIBUTING.md`).
 
-A clean run proves that no source the compile consumes differs between the two. It does **not**
-prove the fork builds: `phys/physics_mmm/` is an NCAR external and the fork carries only the 3
-WVT-modified files of its 15. Build from the overlay, never the fork.
+A clean run proves that no source the compile consumes differs between the two.
+
+**The same source now lives in THREE places, not two.** `phys/physics_mmm/` is an external, so the
+WVT versions of `mp_wsm6.F90`, `bl_ysu.F90` and `cu_ntiedtke.F90` live in
+`github.com/mullenkamp/MMM-physics` (branch `feature/water-vapor-tracers`, cut from the tag WRF
+4.7.1 pins), cloned locally at `~/git/wrf-repos/MMM-physics`. The WRF fork tracks none of them; the
+overlay still carries them because the Docker builds copy the overlay over a release tarball that
+ships `physics_mmm` already populated and never run `manage_externals`. `check_fork_sync.sh` routes
+those three files to the MMM repo (override with `WVT_MMM=`), so all three homes are guarded.
 
 ## Critical: WPS heap-array allocation flags
 

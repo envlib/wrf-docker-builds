@@ -28,6 +28,11 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FORK="${WRF_WVT:-$HOME/git/wrf-repos/WRF-WVT}"
+# The three phys/physics_mmm/ files are NOT in the WRF fork: WRF pulls that directory from an
+# external (arch/Externals.cfg -> mullenkamp/MMM-physics, branch feature/water-vapor-tracers), so
+# the WVT versions live there. The overlay still carries them because the Docker builds copy the
+# overlay over a release tarball that ships physics_mmm already populated. Three homes, one source.
+MMM="${WVT_MMM:-$HOME/git/wrf-repos/MMM-physics}"
 QUIET=0; [[ "${1:-}" == "--quiet" ]] && QUIET=1
 
 # The single-region overlay is frozen; this tag is the fork commit that matches it exactly.
@@ -53,6 +58,9 @@ fork_path() {
     esac
 }
 
+# Overlay files that live in the MMM-physics repo rather than the WRF fork.
+in_mmm() { case "$1" in phys/physics_mmm/*) return 0 ;; *) return 1 ;; esac; }
+
 # Is this overlay file part of what the Dockerfiles COPY into the image? Mismatches inside this
 # set are production-source drift and fail hard; everything else is auxiliary and warns.
 # Mirrors the eight COPY lines in the WVT Dockerfiles.
@@ -71,7 +79,8 @@ compare_overlay() {   # $1 = overlay dir name
     say "--- $ov vs $(basename "$FORK") ---"
     local n_ok=0 n_bad=0
     while IFS= read -r rel; do
-        tgt="$FORK/$(fork_path "$rel")"
+        if in_mmm "$rel"; then tgt="$MMM/$(basename "$rel")"
+        else                   tgt="$FORK/$(fork_path "$rel")"; fi
         if [[ ! -f "$tgt" ]]; then
             if is_image_source "$rel"; then red "  MISSING  $ov/$rel"; hard=$((hard+1))
             else                            ylw "  missing  $ov/$rel"; warn=$((warn+1)); fi
@@ -112,9 +121,13 @@ fi
 say "--- containment: fork changes vs $BASE_TAG ---"
 allow="$(mktemp)"; trap 'rm -f "$allow"' EXIT
 {
-    (cd "$HERE/wvt-multi"  && find . -type f | sed 's|^\./||' | while read -r r; do fork_path "$r"; echo; done)
+    (cd "$HERE/wvt-multi"  && find . -type f | sed 's|^\./||' | while read -r r; do in_mmm "$r" || { fork_path "$r"; echo; }; done)
     (cd "$HERE/wvt-single" && find . -type f | sed 's|^\./||')
     echo CONTRIBUTING.md          # the fork's own contribution guide; deliberately not in an overlay
+    echo arch/Externals.cfg       # fork-only: repoints physics_mmm at the WVT external. The Docker
+                                  # builds never run manage_externals -- the release tarball ships
+                                  # physics_mmm populated and the overlay lands on top -- so the
+                                  # overlay has no counterpart for this file.
 } | sort -u > "$allow"
 
 extra="$(git -C "$FORK" diff --name-only "$BASE_TAG" HEAD | sort -u | comm -23 - "$allow")"
