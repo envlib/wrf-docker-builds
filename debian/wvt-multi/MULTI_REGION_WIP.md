@@ -183,7 +183,34 @@ machinery); **(D)** rejected — single reused storage breaks between-step reuse
 Each stage is implemented, compiled, runtime-checked and independently reviewed before the next
 stage begins.
 
-## Next stage — LATERAL-BOUNDARY TAGS (design settled 2026-09-06, not started)
+## Stage bdy-tags — LATERAL-BOUNDARY TAGS — DONE, COMPILES, RUNS at 12 regions (2026-09-07)
+
+**Implemented, built and run.** `MAX_WVT_REGIONS` raised 8 → 12 (regenerate with
+`gen_wvt_tracers.py 12`, `gen_wvt_cuten.py 12`, `gen_wvt_thum.py 12` — the generators emit EVERY
+site, including the `phy_prep` call site and dummy/declaration blocks that hand-written checklists
+missed); new `num_wvt_bdy_regions` rconfig + bounds in `module_check_a_mundo.F`; the face relabel in
+`solve_em.F` (search `LATERAL-BOUNDARY FACE TAGS`); `MAXREG` raised WITH a clamp, since it and the
+namelist bound size the same arrays and a mismatch writes out of bounds rather than erroring; a
+fatal `case default` in the `module_cu_ntiedtke.F` ladder, which previously dropped regions above
+the cap in silence.
+
+**Verified:** Intel build, 301 s, all four exes. `real.exe` + `wrf.exe` complete a 3 h 12-region run
+(8 ocean strips + 4 face shells) on the 99×111 harness. **Gate 0** — the 12-region build with
+`boundary_faces = []` reproduces the pre-change 8-region build **bit-for-bit** (0 of 1792 variable
+instances, with a determinism control). Shell tagging measured at 0.9955 of vapour.
+
+**New in `test/`:** `make_trmask_n12.py` (imports the PRODUCTION mask geometry rather than
+reimplementing it), `namelist.input.n12` (production advection) and `.n12_matchadv` (the gate-3a
+control), `run_n12.sh`, `run_gate0.sh`, `check_bdy_gates.py`, `compare_gate0.py`.
+`Registry/check_generators.sh` diffs the committed code against what the generators emit, and
+asserts `MAXREG` equals the namelist bound.
+
+⚠ **Three dual-blind review rounds found nine defects, every one in the CHECKS rather than the
+physics.** Full record: `wrf-model-eval/docs/wvt_boundary_tags_review_record.md`. Read it before
+writing a gate for the next stage — the recurring failure is a check whose passing condition was
+never adversarially tested.
+
+### Original design notes (kept; the spec they point at has since been revised by review)
 
 **Specification: `wrf-model-eval/docs/wvt_boundary_tags_design.md`** — read it before touching the
 code; this section is a pointer plus the invariants that bind the implementation.
@@ -194,17 +221,34 @@ code; this section is a pointer plus the invariants that bind the implementation
   need it. The legacy `tracer3dsource`/`tracer3dsink`/`TRMASK3D` path stays single-region and
   guarded off in `module_check_a_mundo.F` exactly as today.
 - The relabel loop goes beside the existing region-1 block in `solve_em.F` (after the end-of-step
-  filters); it must set region `n`'s six species to `moist` **and zero the other regions' six species**
-  in the shell. Template: the flux loop in `module_first_rk_step_part1.F` (`iqvtr = P_QV_TR + (n-1)*6`).
-- New namelist scalar (working name `num_wvt_bdy_regions`, 0..4). Boundary regions skipped in the
-  surface-flux loop (`trqfx = 0`).
+  filters), guarded on `num_wvt_bdy_regions > 0`. ⚠ **REVISED after review round `wvt-bdytags-1`:**
+  it sets region `n`'s six species to the **untagged residual**, `MAX(0., moist - SUM_{m/=n} tr_m)`,
+  and leaves every other region alone. The earlier "set to moist and zero the others" destroys ocean
+  labels on air that grazes the shell; the residual form is identical at an inflow row (where
+  `flow_dep_bdy` has already zeroed everything) and strictly better elsewhere. Index template: the
+  flux loop in `module_first_rk_step_part1.F` (`iqvtr = P_QV_TR + (n-1)*6`).
+- New namelist scalar (working name `num_wvt_bdy_regions`, 0..4). ⚠ **Do NOT skip boundary regions in
+  the surface-flux loop** — withdrawn by the same round, verified at `module_first_rk_step_part1.F:1124-1133`:
+  only the evaporation branch consults `trmask`, while the dew branch (`qfx < 0`) drains every region
+  proportionally everywhere, so skipping would suppress the dew sink for face-tagged vapour across
+  the whole interior and produce a composition error no sum can detect.
 - `MAX_WVT_REGIONS` 8 → 12: regenerate with `gen_wvt_tracers.py 12`, `gen_wvt_cuten.py 12`,
-  `gen_wvt_thum.py`; touch the guarded blocks in `solve_em.F` (1), `module_first_rk_step_part2.F` (2),
-  `module_big_step_utilities_em.F` (1), the `select case` in `module_cu_ntiedtke.F` + dummies +
+  `gen_wvt_thum.py 12`; touch the guarded blocks in `solve_em.F` (1), `module_first_rk_step_part2.F` (2),
+  `module_big_step_utilities_em.F` (**3**), the `select case` in `module_cu_ntiedtke.F` + dummies +
   `module_cumulus_driver.F` pass-through, the bound in `module_check_a_mundo.F`, and
   `MAXREG` in `module_diag_wvt_columns.F`. WSM6 is dynamic in `num_wvt_regions`.
-- Masks: `create_trmask.py` gains `mask_type = "boundary"` + `face`; shells are the relaxation-ring
-  cells (1–5) nearest each face, corner ties by a pinned convention; the tier-1 enclosed-water fill
+  ⚠ **Corrections to that list (2026-09-06):** `module_first_rk_step_part1.F:222-228` (the `phy_prep`
+  call site) is missing from it and is a hard build break; `module_big_step_utilities_em.F` is three
+  places (`:4746-4752` dummies, `:4780-4786` declarations, `:4907-4970` call blocks);
+  `module_check_a_mundo.F` carries the bound as **three** literals (`:3108`, `:3110`, `:3111`) and
+  there is no `MAX_WVT_REGIONS` Fortran PARAMETER anywhere; **`MAXREG` must move in the same commit as
+  the bound**, because `module_diag_wvt_columns.F:92` takes `nreg` from the namelist with no clamp and
+  would write out of bounds rather than error; the `select case` needs a **fatal `case default`**, as
+  it currently drops regions above the maximum silently; and `wrf-auto-runs/set_params.py:61-65`
+  carries a Python-side cap of 8.
+- Masks: `create_trmask.py` gains `mask_type = "boundary"` + `face`; shells are the 5 margin cells
+  (1–5, the rows every source mask excludes; WRF's own boundary zone is 1–4, cell 5 is prognostic)
+  nearest each face, corner ties by a pinned convention; the tier-1 enclosed-water fill
   ships in the same change.
 - **Gates before the first multi-shell run:** vapour-sum bound AND shell-composition check (region F
   ≈ 1, others ≈ 0 inside shell F) — the WSM6 cross-region cap would otherwise turn a missing zeroing

@@ -3105,10 +3105,26 @@
             END IF
 
 ! wvt: number of simultaneous tagged source regions must lie within the compiled
-!      member count (6 species x MAX_WVT_REGIONS=8 registered in Registry.EM).
+!      member count (6 species x MAX_WVT_REGIONS=12 registered in Registry.EM).
             IF ( model_config_rec % num_wvt_regions .LT. 1 .OR. &
-                 model_config_rec % num_wvt_regions .GT. 8 ) THEN
-               wrf_err_message = '--- ERROR: tracer_opt=4 (WVT) requires num_wvt_regions in 1..8 (MAX_WVT_REGIONS)'
+                 model_config_rec % num_wvt_regions .GT. 12 ) THEN
+               wrf_err_message = '--- ERROR: tracer_opt=4 (WVT) requires num_wvt_regions in 1..12 (MAX_WVT_REGIONS)'
+               CALL wrf_message ( wrf_err_message )
+               count_fatal_error = count_fatal_error + 1
+            END IF
+
+! wvt: the last num_wvt_bdy_regions regions are lateral-boundary face tags rather than
+!      surface-flux sources. At most one per face, and at least one region must remain a
+!      source, so 0 <= num_wvt_bdy_regions <= MIN(4, num_wvt_regions-1).
+            IF ( model_config_rec % num_wvt_bdy_regions .LT. 0 .OR. &
+                 model_config_rec % num_wvt_bdy_regions .GT. 4 ) THEN
+               wrf_err_message = '--- ERROR: num_wvt_bdy_regions must be in 0..4 (one per lateral face)'
+               CALL wrf_message ( wrf_err_message )
+               count_fatal_error = count_fatal_error + 1
+            END IF
+            IF ( model_config_rec % num_wvt_bdy_regions .GE. &
+                 model_config_rec % num_wvt_regions ) THEN
+               wrf_err_message = '--- ERROR: num_wvt_bdy_regions must be < num_wvt_regions (at least one source region must remain)'
                CALL wrf_message ( wrf_err_message )
                count_fatal_error = count_fatal_error + 1
             END IF

@@ -4750,6 +4750,10 @@ END SUBROUTINE pole_point_bc
                          tr_thum_u_phy_dt_06, tr_thum_v_phy_dt_06, & ! wvt 1d/thum region 06
                          tr_thum_u_phy_dt_07, tr_thum_v_phy_dt_07, & ! wvt 1d/thum region 07
                          tr_thum_u_phy_dt_08, tr_thum_v_phy_dt_08, & ! wvt 1d/thum region 08
+                         tr_thum_u_phy_dt_09, tr_thum_v_phy_dt_09, & ! wvt 1d/thum region 09
+                         tr_thum_u_phy_dt_10, tr_thum_v_phy_dt_10, & ! wvt 1d/thum region 10
+                         tr_thum_u_phy_dt_11, tr_thum_v_phy_dt_11, & ! wvt 1d/thum region 11
+                         tr_thum_u_phy_dt_12, tr_thum_v_phy_dt_12, & ! wvt 1d/thum region 12
                          ids, ide, jds, jde, kds, kde,                &
                          ims, ime, jms, jme, kms, kme,                &
                          its, ite, jts, jte, kts, kte                )
@@ -4784,6 +4788,10 @@ END SUBROUTINE pole_point_bc
    REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_06, tr_thum_v_phy_dt_06 ! wvt
    REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_07, tr_thum_v_phy_dt_07 ! wvt
    REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_08, tr_thum_v_phy_dt_08 ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_09, tr_thum_v_phy_dt_09 ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_10, tr_thum_v_phy_dt_10 ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_11, tr_thum_v_phy_dt_11 ! wvt
+   REAL, DIMENSION( ims:ime, kms:kme , jms:jme ),INTENT(INOUT) :: tr_thum_u_phy_dt_12, tr_thum_v_phy_dt_12 ! wvt
 
 
    REAL , DIMENSION( ims:ime, jms:jme ), INTENT(IN   )   ::     mut, muu, muv
@@ -4963,6 +4971,38 @@ END SUBROUTINE pole_point_bc
  IF (config_flags%num_wvt_regions .ge. 8) THEN
    CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+47, p_qv_tr+42,     &
                              tr_thum_u_phy_dt_08, tr_thum_v_phy_dt_08,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 9) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+53, p_qv_tr+48,     &
+                             tr_thum_u_phy_dt_09, tr_thum_v_phy_dt_09,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 10) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+59, p_qv_tr+54,     &
+                             tr_thum_u_phy_dt_10, tr_thum_v_phy_dt_10,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 11) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+65, p_qv_tr+60,     &
+                             tr_thum_u_phy_dt_11, tr_thum_v_phy_dt_11,     &
+                             t_phy, p_phy, u_phy, v_phy,       &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             its, ite, jts, jte, kts, kte  )
+ ENDIF
+ IF (config_flags%num_wvt_regions .ge. 12) THEN
+   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+71, p_qv_tr+66,     &
+                             tr_thum_u_phy_dt_12, tr_thum_v_phy_dt_12,     &
                              t_phy, p_phy, u_phy, v_phy,       &
                              ids, ide, jds, jde, kds, kde,     &
                              ims, ime, jms, jme, kms, kme,     &

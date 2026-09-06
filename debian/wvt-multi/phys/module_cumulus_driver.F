@@ -1518,6 +1518,10 @@ CONTAINS
                ,rtrqvcuten_06=grid%rtrqvcuten_06,rtrqccuten_06=grid%rtrqccuten_06,rtrqicuten_06=grid%rtrqicuten_06 & ! wvt 1d-b region 06
                ,rtrqvcuten_07=grid%rtrqvcuten_07,rtrqccuten_07=grid%rtrqccuten_07,rtrqicuten_07=grid%rtrqicuten_07 & ! wvt 1d-b region 07
                ,rtrqvcuten_08=grid%rtrqvcuten_08,rtrqccuten_08=grid%rtrqccuten_08,rtrqicuten_08=grid%rtrqicuten_08 & ! wvt 1d-b region 08
+               ,rtrqvcuten_09=grid%rtrqvcuten_09,rtrqccuten_09=grid%rtrqccuten_09,rtrqicuten_09=grid%rtrqicuten_09 & ! wvt 1d-b region 09
+               ,rtrqvcuten_10=grid%rtrqvcuten_10,rtrqccuten_10=grid%rtrqccuten_10,rtrqicuten_10=grid%rtrqicuten_10 & ! wvt 1d-b region 10
+               ,rtrqvcuten_11=grid%rtrqvcuten_11,rtrqccuten_11=grid%rtrqccuten_11,rtrqicuten_11=grid%rtrqicuten_11 & ! wvt 1d-b region 11
+               ,rtrqvcuten_12=grid%rtrqvcuten_12,rtrqccuten_12=grid%rtrqccuten_12,rtrqicuten_12=grid%rtrqicuten_12 & ! wvt 1d-b region 12
                ,f_tr_qv=flag_tr_qv                               & ! wvt
                                                              )
 

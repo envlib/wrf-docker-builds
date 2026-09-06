@@ -46,7 +46,7 @@ MODULE module_diag_wvt_columns
    REAL, PARAMETER :: G_PWAT    = 9.80665
    REAL, PARAMETER :: RD_SLP    = 287.05
    REAL, PARAMETER :: GAMMA_SLP = 0.0065
-   INTEGER, PARAMETER :: MAXREG = 8   ! wvt: MAX_WVT_REGIONS (matches Registry.EM generator)
+   INTEGER, PARAMETER :: MAXREG = 12  ! wvt: MAX_WVT_REGIONS (matches Registry.EM generator)
 
 CONTAINS
 
@@ -90,6 +90,14 @@ CONTAINS
       ! contiguously in Registry.EM and activated as a contiguous block by the
       ! num_wvt_regions-conditional packages, so regions 1..nreg occupy P_qv_tr .. P_qv_tr+6*nreg-1.
       nreg = config_flags%num_wvt_regions
+
+      ! wvt: MAXREG sizes the per-region sum arrays below while nreg comes from the
+      ! namelist, and nothing else couples them -- raising the num_wvt_regions bound in
+      ! module_check_a_mundo.F without raising MAXREG here would write past the end of
+      ! pwat_tr_sum/vimf_tr_*_sum rather than failing. Refuse that explicitly.
+      IF ( nreg > MAXREG ) THEN
+         CALL wrf_error_fatal ( '--- ERROR: num_wvt_regions exceeds MAXREG in module_diag_wvt_columns.F' )
+      END IF
 
       ! Tracer 4D-array dummy-slot guard. When tracer_opt == 0 the array has a
       ! dummy 4th dimension of size 1, so P_qv_tr (if undefined / set to 1)

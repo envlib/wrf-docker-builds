@@ -191,6 +191,10 @@ SUBROUTINE solve_em ( grid , config_flags  &
    REAL    :: spacing
 
    INTEGER :: ii, jj !kk is above after l,kte
+! wvt: lateral-boundary face-tag relabel (see the block after the end-of-step filters)
+   INTEGER :: wvt_n, wvt_s, wvt_m, wvt_itr
+   INTEGER, DIMENSION(6) :: wvt_moist_idx
+   REAL    :: wvt_tr_other
    REAL    :: dclat
    INTEGER :: debug_level
 
@@ -3698,6 +3702,50 @@ BENCH_END(advance_ppt_tim)
          ENDDO
          ENDDO
       ENDIF
+      IF (config_flags%num_wvt_regions >= 9) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_09(i,k,j) = grid%rtrqvcuten_09(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_09(i,k,j) = grid%rtrqccuten_09(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_09(i,k,j) = grid%rtrqicuten_09(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
+      IF (config_flags%num_wvt_regions >= 10) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_10(i,k,j) = grid%rtrqvcuten_10(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_10(i,k,j) = grid%rtrqccuten_10(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_10(i,k,j) = grid%rtrqicuten_10(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
+      IF (config_flags%num_wvt_regions >= 11) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_11(i,k,j) = grid%rtrqvcuten_11(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_11(i,k,j) = grid%rtrqccuten_11(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_11(i,k,j) = grid%rtrqicuten_11(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
+      IF (config_flags%num_wvt_regions >= 12) THEN
+         DO j = jps, MIN(jpe,jde-1)
+         DO k = kps, MIN(kpe,kde-1)
+         DO i = ips, MIN(ipe,ide-1)
+            grid%rtrqvcuten_12(i,k,j) = grid%rtrqvcuten_12(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqccuten_12(i,k,j) = grid%rtrqccuten_12(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+            grid%rtrqicuten_12(i,k,j) = grid%rtrqicuten_12(i,k,j)/(grid%c1h(k)*grid%muts(i,j)+grid%c2h(k))
+         ENDDO
+         ENDDO
+         ENDDO
+      ENDIF
    ENDIF
 
 !<DESCRIPTION>
@@ -4493,6 +4541,67 @@ BENCH_END(moist_phys_end_tim)
              if(grid%trmask3d(ii,kk,jj).gt.0.5)tracer(ii,kk,jj,P_QI_TR)=moist(ii,kk,jj,P_QI)
              if(grid%trmask3d(ii,kk,jj).gt.0.5)tracer(ii,kk,jj,P_QS_TR)=moist(ii,kk,jj,P_QS)
              if(grid%trmask3d(ii,kk,jj).gt.0.5)tracer(ii,kk,jj,P_QG_TR)=moist(ii,kk,jj,P_QG)
+           ENDDO
+         ENDDO
+       ENDDO
+     ENDIF
+
+! wvt: LATERAL-BOUNDARY FACE TAGS.  The last num_wvt_bdy_regions regions are boundary regions.
+! Inside each one's 2-D mask -- the outermost cells of the domain, full column -- it claims the
+! moisture that is NOT already tagged by some other region, every timestep, all six species.
+!
+! RESIDUAL, not overwrite (design record wvt_boundary_tags_design.md sec 4.1, changed after review
+! round wvt-bdytags-1).  At a genuine inflow row flow_dep_bdy has already zeroed every tracer
+! (module_bc.F flow_dep_bdy, inflow branch), so `moist - sum(others)` == `moist` and this is exactly
+! the overwrite it replaces.  For air that merely grazes the margin and returns inland it instead
+! PRESERVES the ocean-region tag that air already carries.  Regions 1..N-B are never written here,
+! so the existing 8-region climatology stays comparable by construction.
+!
+! Runs after all physics and after the end-of-step filters. On the production single-domain
+! configuration nothing writes a domain tracer cell after this, so the next step's advection reads
+! exactly these values. Two exceptions, neither active here: the tracer3dsink block below (refused
+! at num_wvt_regions > 1), and spec_bdy_final, which runs LATER and is gated on config_flags%nested
+! -- so on a NEST it would overwrite these boundary cells. Face tags are d01-only by design; see
+! wvt_boundary_tags_design.md sec 8, and set_params refuses faces on a multi-domain config.
+!
+! The shells are disjoint -- create_trmask validates that they exactly tile the margin -- so at most
+! one boundary region has trmask > 0.5 in any given cell and the wvt_n loop order is immaterial.
+     IF ( config_flags%num_wvt_bdy_regions > 0 .AND. P_QV_TR >= PARAM_FIRST_SCALAR ) THEN
+       wvt_moist_idx(1) = P_QV
+       wvt_moist_idx(2) = P_QC
+       wvt_moist_idx(3) = P_QR
+       wvt_moist_idx(4) = P_QI
+       wvt_moist_idx(5) = P_QS
+       wvt_moist_idx(6) = P_QG
+       DO wvt_n = config_flags%num_wvt_regions - config_flags%num_wvt_bdy_regions + 1, &
+                  config_flags%num_wvt_regions
+         DO jj = jps, MIN(jpe,jde-1)
+           DO kk = kps, MIN(kpe,kde-1)
+             DO ii = ips, MIN(ipe,ide-1)
+               IF ( grid%trmask(ii,wvt_n,jj) .GT. 0.5 ) THEN
+                 DO wvt_s = 1, 6
+                   ! Skip species this microphysics scheme does not carry: an undefined
+                   ! P_Q* is the dummy slot 1, so tagging it would copy an unrelated array.
+                   ! (WSM6, the production scheme, defines all six.)
+                   IF ( wvt_moist_idx(wvt_s) .LT. PARAM_FIRST_SCALAR ) CYCLE
+                   wvt_itr = P_QV_TR + (wvt_n-1)*6 + (wvt_s-1)
+                   ! Sum over the OTHER regions -- including the other faces, whose tags are
+                   ! just as real as a source region's. Summing them directly rather than
+                   ! (total - own) avoids a cancellation when this region dominates the cell,
+                   ! and costs nothing.
+                   wvt_tr_other = 0.
+                   DO wvt_m = 1, config_flags%num_wvt_regions
+                     IF ( wvt_m /= wvt_n ) THEN
+                       wvt_tr_other = wvt_tr_other + tracer(ii,kk,jj,P_QV_TR + (wvt_m-1)*6 + (wvt_s-1))
+                     END IF
+                   ENDDO
+                   ! MAX(0,..) absorbs the case where advection has pushed the region sum
+                   ! marginally above the base between the last microphysics cap and here.
+                   tracer(ii,kk,jj,wvt_itr) = &
+                        MAX( 0., moist(ii,kk,jj,wvt_moist_idx(wvt_s)) - wvt_tr_other )
+                 ENDDO
+               ENDIF
+             ENDDO
            ENDDO
          ENDDO
        ENDDO

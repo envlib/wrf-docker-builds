@@ -226,6 +226,10 @@ BENCH_END(init_zero_tend_tim)
                         grid%tr_thum_u_phy_dt_06, grid%tr_thum_v_phy_dt_06,    & ! wvt 1d/thum region 06
                         grid%tr_thum_u_phy_dt_07, grid%tr_thum_v_phy_dt_07,    & ! wvt 1d/thum region 07
                         grid%tr_thum_u_phy_dt_08, grid%tr_thum_v_phy_dt_08,    & ! wvt 1d/thum region 08
+                        grid%tr_thum_u_phy_dt_09, grid%tr_thum_v_phy_dt_09,    & ! wvt 1d/thum region 09
+                        grid%tr_thum_u_phy_dt_10, grid%tr_thum_v_phy_dt_10,    & ! wvt 1d/thum region 10
+                        grid%tr_thum_u_phy_dt_11, grid%tr_thum_v_phy_dt_11,    & ! wvt 1d/thum region 11
+                        grid%tr_thum_u_phy_dt_12, grid%tr_thum_v_phy_dt_12,    & ! wvt 1d/thum region 12
                         ids, ide, jds, jde, kds, kde,                    &
                         ims, ime, jms, jme, kms, kme,                    &
                         grid%i_start(ij), grid%i_end(ij),                &

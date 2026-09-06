@@ -508,6 +508,50 @@ BENCH_END(cal_phy_tend)
             ENDDO
             ENDDO
          ENDIF
+         IF (config_flags%num_wvt_regions >= 9) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_09(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_09(i,k,j)
+               grid%rtrqccuten_09(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_09(i,k,j)
+               grid%rtrqicuten_09(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_09(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 10) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_10(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_10(i,k,j)
+               grid%rtrqccuten_10(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_10(i,k,j)
+               grid%rtrqicuten_10(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_10(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 11) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_11(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_11(i,k,j)
+               grid%rtrqccuten_11(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_11(i,k,j)
+               grid%rtrqicuten_11(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_11(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 12) THEN
+            DO j = jps, MIN(jpe,jde-1)
+            DO k = kps, MIN(kpe,kde-1)
+            DO i = ips, MIN(ipe,ide-1)
+               grid%rtrqvcuten_12(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqvcuten_12(i,k,j)
+               grid%rtrqccuten_12(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqccuten_12(i,k,j)
+               grid%rtrqicuten_12(i,k,j) = (grid%c1h(k)*grid%mut(i,j)+grid%c2h(k))*grid%rtrqicuten_12(i,k,j)
+            ENDDO
+            ENDDO
+            ENDDO
+         ENDIF
       ENDIF
 
 ! tke diffusion
@@ -980,6 +1024,38 @@ BENCH_END(update_phy_ten_tim)
             IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+42),grid%rtrqccuten_08, &
                  config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
             IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+42),grid%rtrqicuten_08, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 9) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+48),grid%rtrqvcuten_09, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+48),grid%rtrqccuten_09, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+48),grid%rtrqicuten_09, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 10) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+54),grid%rtrqvcuten_10, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+54),grid%rtrqccuten_10, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+54),grid%rtrqicuten_10, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 11) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+60),grid%rtrqvcuten_11, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+60),grid%rtrqccuten_11, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+60),grid%rtrqicuten_11, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+         ENDIF
+         IF (config_flags%num_wvt_regions >= 12) THEN
+            IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QV_TR+66),grid%rtrqvcuten_12, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QC_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QC_TR+66),grid%rtrqccuten_12, &
+                 config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
+            IF (P_QI_TR .ge. PARAM_FIRST_SCALAR) CALL add_a2a(tracer_tend(ims,kms,jms,P_QI_TR+66),grid%rtrqicuten_12, &
                  config_flags, ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, ips,ipe,jps,jpe,kps,kpe)
          ENDIF
       ENDIF
