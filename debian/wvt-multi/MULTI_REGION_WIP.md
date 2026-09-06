@@ -199,6 +199,14 @@ the cap in silence.
 `boundary_faces = []` reproduces the pre-change 8-region build **bit-for-bit** (0 of 1792 variable
 instances, with a determinism control). Shell tagging measured at 0.9955 of vapour.
 
+**Production images built 2026-09-07:** `mullenkamp/wrf-wps-intel-wvt-ubuntu:2.1` (base, full
+Dockerfile — the runtime stage at line 139 is the deployable one, 7.71 GB) and
+`mullenkamp/wrf-auto-runs-intel-wvt:2.3` (8.15 GB). ⚠ **Bump the `FROM` pin in
+`wrf-auto-runs/intel_wvt/Dockerfile` in the SAME change as the base** — otherwise the
+orchestration image silently ships the previous WRF under a new tag. Verify against the
+binary rather than trusting the step: `strings /WRF/main/wrf.exe | grep -E 'num_wvt_regions in|num_wvt_bdy_regions'`.
+Neither image is pushed.
+
 **New in `test/`:** `make_trmask_n12.py` (imports the PRODUCTION mask geometry rather than
 reimplementing it), `namelist.input.n12` (production advection) and `.n12_matchadv` (the gate-3a
 control), `run_n12.sh`, `run_gate0.sh`, `check_bdy_gates.py`, `compare_gate0.py`.

@@ -46,5 +46,10 @@ echo -n "  qv_tr members: "
 ncdump -h "$last" | grep -oE '\bqv_tr(_[0-9]+)?\b' | sort -u | wc -l
 
 for f in wrfout_d01_*; do cp "$f" "/work/out/$f"; done
-echo "copied $(ls -1 wrfout_d01_* | wc -l) wrfout file(s) to /work/out/"
+# Keep the namelist and mask that ACTUALLY ran beside the output: check_bdy_gates.py asserts
+# the mask artefact against the namelist, and the copies in the run directory are the ones
+# WRF read. Without these the gate has to trust that /work/namelist.input.n12 is what ran.
+cp namelist.input /work/out/namelist.input
+cp trmask_d01 /work/out/trmask_d01
+echo "copied $(ls -1 wrfout_d01_* | wc -l) wrfout file(s) + namelist.input + trmask_d01 to /work/out/"
 echo "ALL DONE"

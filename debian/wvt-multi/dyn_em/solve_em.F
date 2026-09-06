@@ -4554,8 +4554,17 @@ BENCH_END(moist_phys_end_tim)
 ! round wvt-bdytags-1).  At a genuine inflow row flow_dep_bdy has already zeroed every tracer
 ! (module_bc.F flow_dep_bdy, inflow branch), so `moist - sum(others)` == `moist` and this is exactly
 ! the overwrite it replaces.  For air that merely grazes the margin and returns inland it instead
-! PRESERVES the ocean-region tag that air already carries.  Regions 1..N-B are never written here,
-! so the existing 8-region climatology stays comparable by construction.
+! PRESERVES the ocean-region tag that air already carries.  Regions 1..N-B are never written HERE
+! -- but they ARE rescaled by the WSM6 cross-region caps in mp_wsm6_run (three vapour cap sites,
+! `tr_q = q*(tr_q/tr_sum)`, in the main path and both sedimentation paths; the hydrometeor caps
+! above them feed their excess into tr_q as well).  Those caps fire whenever the tagged sum
+! exceeds the base.  At 8 regions the untagged remainder kept tr_sum well below q and they
+! essentially never fired (measured on the 3 h test: 0 wet cells); once the faces claim that
+! remainder, tr_sum ~ q and any excursion fires them (8.6% of wet cells at 3 h, almost all in the
+! margin), rescaling the SOURCE tags too.  So the 12-region source fraction is biased LOW relative
+! to the 8-region one -- under the assumption that the source tags are otherwise unchanged -- by
+! an amount that only a long run can measure (design record, gate 6).  Comparability with the
+! 8-region climatology is therefore an EMPIRICAL question, not a property of this block.
 !
 ! Runs after all physics and after the end-of-step filters. On the production single-domain
 ! configuration nothing writes a domain tracer cell after this, so the next step's advection reads

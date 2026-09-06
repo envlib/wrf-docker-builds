@@ -3,6 +3,13 @@
 # The namelist deliberately omits num_wvt_bdy_regions -- the pre-change binary does not know
 # that variable, and the post-change binary defaults it to 0, which IS the boundary_faces=[]
 # condition. Same namelist, same mask, same ranks in both.
+#
+# The baseline mask /work/base/trmask_d01 is produced on the host by the SAME generator as the
+# 12-region mask, pointed at this namelist:
+#     WVT_TEST_NAMELIST=namelist.input.n8 WVT_TEST_WORK=<work>/base python make_trmask_n12.py
+# (namelist.input.n8 omits num_wvt_bdy_regions, which the generator reads as 0 -> no shells;
+# the eight source strips come out byte-identical to the 12-region mask's, which is what gate 0
+# asserts: the two runs differ ONLY by the presence of the shells.)
 set -uo pipefail
 OUT="${GATE0_OUT:?set GATE0_OUT}"
 mkdir -p "/work/$OUT"
