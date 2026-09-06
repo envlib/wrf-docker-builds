@@ -182,3 +182,32 @@ machinery); **(D)** rejected — single reused storage breaks between-step reuse
 ## Cadence
 Each stage is implemented, compiled, runtime-checked and independently reviewed before the next
 stage begins.
+
+## Next stage — LATERAL-BOUNDARY TAGS (design settled 2026-09-06, not started)
+
+**Specification: `wrf-model-eval/docs/wvt_boundary_tags_design.md`** — read it before touching the
+code; this section is a pointer plus the invariants that bind the implementation.
+
+- Regions `N−B+1..N` (B = 4 faces) are **column-relabel** regions driven by the existing
+  region-dimensioned 2-D `grid%trmask(i,n,j)` over all `k`. **No 3-D mask, no `TRMASK3D_0N`
+  members** — the Registry cannot region-dimension an `ikj` field, and a full-column shell does not
+  need it. The legacy `tracer3dsource`/`tracer3dsink`/`TRMASK3D` path stays single-region and
+  guarded off in `module_check_a_mundo.F` exactly as today.
+- The relabel loop goes beside the existing region-1 block in `solve_em.F` (after the end-of-step
+  filters); it must set region `n`'s six species to `moist` **and zero the other regions' six species**
+  in the shell. Template: the flux loop in `module_first_rk_step_part1.F` (`iqvtr = P_QV_TR + (n-1)*6`).
+- New namelist scalar (working name `num_wvt_bdy_regions`, 0..4). Boundary regions skipped in the
+  surface-flux loop (`trqfx = 0`).
+- `MAX_WVT_REGIONS` 8 → 12: regenerate with `gen_wvt_tracers.py 12`, `gen_wvt_cuten.py 12`,
+  `gen_wvt_thum.py`; touch the guarded blocks in `solve_em.F` (1), `module_first_rk_step_part2.F` (2),
+  `module_big_step_utilities_em.F` (1), the `select case` in `module_cu_ntiedtke.F` + dummies +
+  `module_cumulus_driver.F` pass-through, the bound in `module_check_a_mundo.F`, and
+  `MAXREG` in `module_diag_wvt_columns.F`. WSM6 is dynamic in `num_wvt_regions`.
+- Masks: `create_trmask.py` gains `mask_type = "boundary"` + `face`; shells are the relaxation-ring
+  cells (1–5) nearest each face, corner ties by a pinned convention; the tier-1 enclosed-water fill
+  ships in the same change.
+- **Gates before the first multi-shell run:** vapour-sum bound AND shell-composition check (region F
+  ≈ 1, others ≈ 0 inside shell F) — the WSM6 cross-region cap would otherwise turn a missing zeroing
+  into a composition error no sum can see. Validation run: the 12-region CS1 rerun. Code review
+  (dual-blind) before that run is believed.
+- Same cadence as every stage above: implement → compile → runtime check → independent review.
