@@ -199,6 +199,12 @@ the cap in silence.
 `boundary_faces = []` reproduces the pre-change 8-region build **bit-for-bit** (0 of 1792 variable
 instances, with a determinism control). Shell tagging measured at 0.9955 of vapour.
 
+**SUPERSEDED 2026-09-09** — the current production images are
+`wrf-wps-intel-wvt-ubuntu:2.2` and `wrf-auto-runs-intel-wvt:2.5`, which add the nine New Tiedtke
+tag mirrors and the `TR_CAPCRE`/`TR_CAPDES` diagnostics
+(`wrf-model-eval/docs/wvt_cumulus_tagging.md`). Neither is pushed. The 2.1/2.3 pair below is kept
+as provenance for the 12-region CS1 run that exposed the defects.
+
 **Production images built 2026-09-07:** `mullenkamp/wrf-wps-intel-wvt-ubuntu:2.1` (base, full
 Dockerfile — the runtime stage at line 139 is the deployable one, 7.71 GB) and
 `mullenkamp/wrf-auto-runs-intel-wvt:2.3` (8.15 GB). ⚠ **Bump the `FROM` pin in

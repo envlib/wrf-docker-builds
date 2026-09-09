@@ -46,12 +46,17 @@ state    real  RTRQCCUTEN_12     ikj      misc        1         -      rh       
 state    real  RTRQICUTEN_12     ikj      misc        1         -      rh       "RTRQICUTEN_12"     "COUPLED TRACER Q_I TENDENCY DUE TO CUMULUS SCHEME, region 12"   "Pa kg kg-1 s-1"
 
 state    real  TRQFX              i{wvtreg}j  misc    1         -      rh       "TRQFX"                   "UPWARD MOISTURE TRACER FLUX AT THE SURFACE, per WVT region"  "kg m-2 s-1"
-# wvt: tag mass the one-sided caps CREATE and DESTROY, per region, column-integrated and
+# wvt: tag mass the CUMULUS one-sided caps CREATE and DESTROY, per region, column-integrated
+# wvt: and accumulated like TR_RAINC. ⚠ CUMULUS ONLY -- WSM6 has its own cross-region cap
+# wvt: (mp_wsm6.F90 opening block) which fires ~2000x more often at 12 regions than at 8 and
+# wvt: contributes NOTHING to these fields. Total cap activity is therefore UNDER-reported;
+# wvt: see the OPEN_WORK item on extending them to microphysics before reading a sum as total.
+# wvt: (the line below continues the original note)
 # accumulated like TR_RAINC. These make the structural redistribution (docs/wvt_cumulus_tagging.md)
 # a reported quantity per run rather than an assumed-small one. Bucketed so cfdb-ingest's
 # automatic "total = var + bucket*I_var" reconstruction applies with no downstream work.
-state    real  TR_CAPCRE          i{wvtreg}j  misc    1         -      rhdu     "TR_CAPCRE"               "ACCUMULATED TAG MASS CREATED BY THE ONE-SIDED CAP, per WVT region"     "kg m-2"
-state    real  TR_CAPDES          i{wvtreg}j  misc    1         -      rhdu     "TR_CAPDES"               "ACCUMULATED TAG MASS DESTROYED BY THE ONE-SIDED CAP, per WVT region"   "kg m-2"
+state    real  TR_CAPCRE          i{wvtreg}j  misc    1         -      rhdu     "TR_CAPCRE"               "ACCUMULATED TAG MASS CREATED BY THE CUMULUS ONE-SIDED CAP, per WVT region"   "kg m-2"
+state    real  TR_CAPDES          i{wvtreg}j  misc    1         -      rhdu     "TR_CAPDES"               "ACCUMULATED TAG MASS DESTROYED BY THE CUMULUS ONE-SIDED CAP, per WVT region" "kg m-2"
 state    integer  I_TR_CAPCRE     i{wvtreg}j  misc    1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_CAPCRE"     "BUCKET FOR TR_CAPCRE, per WVT region"     ""
 state    integer  I_TR_CAPDES     i{wvtreg}j  misc    1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_CAPDES"     "BUCKET FOR TR_CAPDES, per WVT region"     ""
 state    real  TRMASK             i{wvtreg}j  misc    1         -      i8rh     "TRMASK"                  "2D SOURCE MASK FOR MOISTURE TRACERS, per WVT region"          ""

@@ -65,7 +65,7 @@ single-region images are kept as a **frozen, independent** reference. WVT source
 | single-region | gfortran | `wrf-wps-wvt-debian:1.3` | `debian/wrf-wps-wvt/` | `wrf-auto-runs-wvt` | `gfortran_wvt/` |
 | single-region | Intel | `wrf-wps-intel-wvt-sr-ubuntu:1.0` ✦ | `debian/wrf-wps-intel-wvt-sr/` | `wrf-auto-runs-intel-wvt-sr` ✦ | `intel_wvt_sr/` ✦ |
 | multi-region | gfortran | `wrf-wps-wvt-mr-debian:1.0` ✦ | `debian/wrf-wps-wvt-mr/` | `wrf-auto-runs-wvt-mr` ✦ | `gfortran_wvt_mr/` ✦ |
-| multi-region | Intel | `wrf-wps-intel-wvt-ubuntu:2.2` | `debian/wrf-wps-intel-wvt/` | `wrf-auto-runs-intel-wvt:2.4` | `intel_wvt/` |
+| multi-region | Intel | `wrf-wps-intel-wvt-ubuntu:2.2` | `debian/wrf-wps-intel-wvt/` | `wrf-auto-runs-intel-wvt:2.5` | `intel_wvt/` |
 | reference (4.3.3) | gfortran | `wrf-wps-wvt-ref-debian:1.0` | `debian/wrf-wps-wvt-ref/` | `wrf-auto-runs-wvt-ref` | `gfortran_wvt_ref/` |
 
 ✦ = **new scaffolding — build + validate on demand**. The gfortran multi-region build is the higher-risk
