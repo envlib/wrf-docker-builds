@@ -20,6 +20,7 @@ CONTAINS
                      ,ccldfra,convcld,qcconv,qiconv                   &
                      ,bmj_rad_feedback                                & 
                      ,rainc,tr_rainc,raincv,pratec,tr_pratec,nca      & ! wvt
+                     ,tr_capcre,tr_capdes                             & ! wvt
                      ,cldfra_dp,cldfra_sh                             &
                      ,udr_kf,ddr_kf,uer_kf,der_kf,timec_kf,kf_edrates & !kf_edrates
                      ,QC_CU,QI_CU                                     &
@@ -504,6 +505,8 @@ CONTAINS
    INTEGER, INTENT(IN) :: num_wvt_regions                            ! wvt
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme, * ), OPTIONAL, INTENT(IN) :: tr_block  ! wvt: contiguous tracer block (cu_ntiedtke)
    REAL, DIMENSION( ims:ime, num_wvt_regions, jms:jme ), INTENT(INOUT) :: TR_RAINC    ! wvt: per-region (i,n,j)
+!--- wvt: accumulated tag mass created/destroyed by the one-sided caps, per region (kg m-2)
+   REAL, DIMENSION( ims:ime, num_wvt_regions, jms:jme ), INTENT(INOUT) :: TR_CAPCRE, TR_CAPDES ! wvt
    REAL, DIMENSION( ims:ime , jms:jme ),                         &
           INTENT(INOUT) ::                                RAINC  &
                                                     ,    RAINCV  &
@@ -1508,6 +1511,7 @@ CONTAINS
                ,tr_block=tr_block,num_wvt_regions=num_wvt_regions & ! wvt
                ,tr_pratec=tr_tmppratec                           & ! wvt
                ,tr_rainc=tr_rainc                                & ! wvt
+               ,tr_capcre=tr_capcre, tr_capdes=tr_capdes         & ! wvt
                ,rtrqvcuten=rtrqvcuten                            & ! wvt
                ,rtrqccuten=rtrqccuten                            & ! wvt
                ,rtrqicuten=rtrqicuten                            & ! wvt

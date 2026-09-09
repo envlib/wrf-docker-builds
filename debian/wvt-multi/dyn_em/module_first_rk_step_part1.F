@@ -1440,6 +1440,7 @@ BENCH_START(cu_driver_tim)
      &             ,CUDTACTTIME=grid%cudtacttime                                       & 
      &             ,RAINC=grid%rainc   ,RAINCV=grid%raincv   ,PRATEC=grid%pratec       &
      &             ,TR_RAINC=grid%tr_rainc  ,TR_PRATEC=grid%tr_pratec                  & ! wvt
+     &             ,TR_CAPCRE=grid%tr_capcre ,TR_CAPDES=grid%tr_capdes                 & ! wvt
      &             ,NCA=grid%nca                                                       &
      &             ,CLDFRA_DP=grid%cldfra_dp  ,CLDFRA_SH=grid%cldfra_sh                &
      &             ,QC_CU=grid%QC_CU, QI_CU=grid%QI_CU, QR_CU=grid%QR_CU, QS_CU=grid%QS_CU &

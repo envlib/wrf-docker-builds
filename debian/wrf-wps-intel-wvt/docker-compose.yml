@@ -1,6 +1,6 @@
 services:
   wrf:
-    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:2.0
+    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:2.2
     build:
       context: ../
       dockerfile: wrf-wps-intel-wvt/Dockerfile

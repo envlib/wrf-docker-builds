@@ -1,0 +1,4 @@
+v0_export.txt
+*.o
+*.mod
+.pytest_cache/

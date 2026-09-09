@@ -46,7 +46,7 @@ wrf-base (Debian 13 + gfortran + mpich + HDF5 + NetCDF + tools)
 intel/oneapi-hpckit (multi-stage — builder + runtime)
 ├── wrf-wps-intel-ubuntu:1.0         — WRF 4.7.1 + WPS 4.6.0 (Intel oneAPI)                 [no-WVT]
 ├── wrf-wps-intel-wvt-sr-ubuntu:1.0  — + single-region WVT  (overlay debian/wvt-single/)    [SR] NEW
-└── wrf-wps-intel-wvt-ubuntu:2.0     — + multi-region WVT   (overlay debian/wvt-multi/)      [MR]
+└── wrf-wps-intel-wvt-ubuntu:2.2     — + multi-region WVT   (overlay debian/wvt-multi/)      [MR]
 
 wps-geog-nz (separate, no base dependency) — WPS geographical static data
 ```
@@ -65,7 +65,7 @@ single-region images are kept as a **frozen, independent** reference. WVT source
 | single-region | gfortran | `wrf-wps-wvt-debian:1.3` | `debian/wrf-wps-wvt/` | `wrf-auto-runs-wvt` | `gfortran_wvt/` |
 | single-region | Intel | `wrf-wps-intel-wvt-sr-ubuntu:1.0` ✦ | `debian/wrf-wps-intel-wvt-sr/` | `wrf-auto-runs-intel-wvt-sr` ✦ | `intel_wvt_sr/` ✦ |
 | multi-region | gfortran | `wrf-wps-wvt-mr-debian:1.0` ✦ | `debian/wrf-wps-wvt-mr/` | `wrf-auto-runs-wvt-mr` ✦ | `gfortran_wvt_mr/` ✦ |
-| multi-region | Intel | `wrf-wps-intel-wvt-ubuntu:2.0` | `debian/wrf-wps-intel-wvt/` | `wrf-auto-runs-intel-wvt:2.0` | `intel_wvt/` |
+| multi-region | Intel | `wrf-wps-intel-wvt-ubuntu:2.2` | `debian/wrf-wps-intel-wvt/` | `wrf-auto-runs-intel-wvt:2.4` | `intel_wvt/` |
 | reference (4.3.3) | gfortran | `wrf-wps-wvt-ref-debian:1.0` | `debian/wrf-wps-wvt-ref/` | `wrf-auto-runs-wvt-ref` | `gfortran_wvt_ref/` |
 
 ✦ = **new scaffolding — build + validate on demand**. The gfortran multi-region build is the higher-risk
@@ -79,7 +79,7 @@ cross-compile (the MR overlay was developed/validated on Intel `ifx`). The legac
 - `tracer_opt = 4`, multiple `[[wvt.regions]]` → **multi-region**.
 - Compiler: **Intel** for production throughput, **gfortran** for portability/backup.
 
-## Multi-region WVT (`wrf-wps-intel-wvt-ubuntu:2.0`)
+## Multi-region WVT (`wrf-wps-intel-wvt-ubuntu:2.2`)
 
 The WVT (water-vapour-tracer) image tags evaporative-source moisture and follows it through the full
 hydrological cycle to attribute precipitation by source. **v2.0 generalises this to N disjoint source
@@ -159,7 +159,7 @@ When upgrading WPS or modifying these Dockerfiles, **preserve the heap-arrays in
 
 - `wrf-wps-debian:1.3` and `wrf-wps-wvt-debian:1.3`: WPS option **2** (`Linux x86_64, gfortran (dmpar)`). Enables `mpirun -n N metgrid.exe` for parallel preprocessing. Selected via `echo 2 | ./configure --build-grib2-libs`.
 - `wrf-wps-intel-ubuntu:1.0`: WPS option **9** (`Linux x86_64, Intel oneAPI (serial)`). Selected via `echo 9 | ./configure --build-grib2-libs`.
-- `wrf-wps-intel-wvt-ubuntu:2.0`: WPS option **10** (`Linux x86_64, Intel oneAPI compilers (dmpar)`). Selected via `echo 10 | ./configure --build-grib2-libs`. dmpar is required for the Phase 3 unified per-chunk pipeline where the same image runs both preprocess (parallel `metgrid.exe` / `real.exe` / `ndown.exe`) and WRF.
+- `wrf-wps-intel-wvt-ubuntu:2.2`: WPS option **10** (`Linux x86_64, Intel oneAPI compilers (dmpar)`). Selected via `echo 10 | ./configure --build-grib2-libs`. dmpar is required for the Phase 3 unified per-chunk pipeline where the same image runs both preprocess (parallel `metgrid.exe` / `real.exe` / `ndown.exe`) and WRF.
 
 ## Architecture
 
@@ -195,7 +195,7 @@ docker run --rm mullenkamp/wrf-wps-wvt-debian:1.3 \
 # Expect: libmpich + libmpichfort, FFLAGS containing -fno-stack-arrays
 
 # Intel (serial metgrid):
-docker run --rm mullenkamp/wrf-wps-intel-wvt-ubuntu:2.0 \
+docker run --rm mullenkamp/wrf-wps-intel-wvt-ubuntu:2.2 \
     bash -c "grep -E '^(FFLAGS|F77FLAGS) *=' /WPS/configure.wps"
 # Expect: FFLAGS containing -heap-arrays
 ```

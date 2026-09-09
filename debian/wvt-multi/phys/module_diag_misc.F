@@ -47,7 +47,9 @@ CONTAINS
                      ,itimestep                                       &
                      ,cu_used, shcu_used, acc_phy_tend                &
                      ,TR_RAINC,TR_RAINNC                               & ! Optional (WVT)
+                     ,TR_CAPCRE,TR_CAPDES                              & ! Optional (WVT)
                      ,I_TR_RAINC,I_TR_RAINNC                           & ! Optional (WVT)
+                     ,I_TR_CAPCRE,I_TR_CAPDES                          & ! Optional (WVT)
                                                                       )
 !----------------------------------------------------------------------
 
@@ -203,8 +205,10 @@ CONTAINS
 
    ! WVT tracer bucketed accumulators (optional, engaged when BUCKET_MM > 0)
    REAL, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: TR_RAINC          ! wvt: per-region (i,n,j)
+   REAL, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: TR_CAPCRE, TR_CAPDES ! wvt
    REAL, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: TR_RAINNC          ! wvt: per-region (i,n,j)
    INTEGER, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: I_TR_RAINC      ! wvt: per-region (i,n,j)
+   INTEGER, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: I_TR_CAPCRE, I_TR_CAPDES ! wvt
    INTEGER, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: I_TR_RAINNC      ! wvt: per-region (i,n,j)
 
    REAL, OPTIONAL, INTENT(IN)::  PREC_ACC_DT, CURR_SECS2
@@ -345,6 +349,37 @@ CONTAINS
           IF (tr_rainnc(i,n_tr,j) .gt. bucket_mm) THEN
             tr_rainnc(i,n_tr,j)   = tr_rainnc(i,n_tr,j) - bucket_mm
             i_tr_rainnc(i,n_tr,j) = i_tr_rainnc(i,n_tr,j) + 1
+          ENDIF
+        ENDDO
+        ENDDO
+        ENDDO
+      ENDIF
+
+!--- wvt: same bucket treatment for the cap accumulators, so cfdb-ingest's automatic
+!--- wvt: "total = var + bucket_mm*I_var" reconstruction applies with no downstream change.
+!--- wvt: The counter MUST be present from the first archived frame: cfdb-ingest probes for
+!--- wvt: I_<var> in the FIRST file only and silently drops the bucket term if it is absent.
+      IF (PRESENT(TR_CAPCRE) .AND. PRESENT(I_TR_CAPCRE)) THEN
+        IF (xtime .eq. 0.0) THEN
+          DO n_tr=1,SIZE(tr_capcre,2)
+          DO j=j_start(ij),j_end(ij)
+          DO i=i_start(ij),i_end(ij)
+            i_tr_capcre(i,n_tr,j) = 0
+            i_tr_capdes(i,n_tr,j) = 0
+          ENDDO
+          ENDDO
+          ENDDO
+        ENDIF
+        DO n_tr=1,SIZE(tr_capcre,2)
+        DO j=j_start(ij),j_end(ij)
+        DO i=i_start(ij),i_end(ij)
+          IF (tr_capcre(i,n_tr,j) .gt. bucket_mm) THEN
+            tr_capcre(i,n_tr,j)   = tr_capcre(i,n_tr,j) - bucket_mm
+            i_tr_capcre(i,n_tr,j) = i_tr_capcre(i,n_tr,j) + 1
+          ENDIF
+          IF (tr_capdes(i,n_tr,j) .gt. bucket_mm) THEN
+            tr_capdes(i,n_tr,j)   = tr_capdes(i,n_tr,j) - bucket_mm
+            i_tr_capdes(i,n_tr,j) = i_tr_capdes(i,n_tr,j) + 1
           ENDIF
         ENDDO
         ENDDO

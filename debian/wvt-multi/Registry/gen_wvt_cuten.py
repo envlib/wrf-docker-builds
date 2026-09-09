@@ -44,7 +44,9 @@ def main():
     for n in regions:
         for sp, q, _off, _p in SPECIES:
             name = f"RTRQ{sp.upper()}CUTEN_{n:02d}"
-            print(f'state    real  {name:17s} ikj      misc        1         -      r        '
+            # rh, not r: the per-region tendencies go to HISTORY so that
+            # sum_n RTRQVCUTEN_n == RQVCUTEN is checkable on real output, not just at restart.
+            print(f'state    real  {name:17s} ikj      misc        1         -      rh       '
                   f'"{name}"     "COUPLED TRACER {q} TENDENCY DUE TO CUMULUS SCHEME, region {n:02d}"   "Pa kg kg-1 s-1"')
     print()
 

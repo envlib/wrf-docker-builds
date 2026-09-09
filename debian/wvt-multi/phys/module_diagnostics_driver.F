@@ -397,7 +397,9 @@ CONTAINS
                 ,acc_phy_tend=grid%acc_phy_tend                      &
       ! WVT tracer bucketed accumulators
                 ,TR_RAINC=grid%tr_rainc, TR_RAINNC=grid%tr_rainnc    &
+                ,TR_CAPCRE=grid%tr_capcre, TR_CAPDES=grid%tr_capdes  &
                 ,I_TR_RAINC=grid%i_tr_rainc, I_TR_RAINNC=grid%i_tr_rainnc &
+                ,I_TR_CAPCRE=grid%i_tr_capcre, I_TR_CAPDES=grid%i_tr_capdes &
       ! Dimension arguments
                 ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde   &
                 ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme   &

@@ -32,6 +32,7 @@
                 ,errmsg,errflg                           &
                 ,tr_block,num_wvt_regions                  & ! wvt
                 ,tr_pratec,tr_rainc                        & ! wvt
+                ,tr_capcre,tr_capdes                       & ! wvt
                 ,rtrqvcuten,rtrqccuten,rtrqicuten          & ! wvt
                 ,rtrqvcuten_02,rtrqccuten_02,rtrqicuten_02  & ! wvt 1d-b region 02
                 ,rtrqvcuten_03,rtrqccuten_03,rtrqicuten_03  & ! wvt 1d-b region 03
@@ -169,7 +170,11 @@
     rtrqvcuten_12, rtrqccuten_12, rtrqicuten_12
  real(kind=kind_phys),intent(inout),dimension(ims:ime,num_wvt_regions,jms:jme),optional:: & ! wvt: per-region
     tr_pratec,   &                                                                        ! wvt
-    tr_rainc                                                                               ! wvt
+    tr_rainc,    &                                                                        ! wvt
+!--- wvt: column-integrated tag mass the one-sided caps create/destroy, per region. Makes the
+!--- wvt: structural redistribution a REPORTED quantity per run rather than an assumed one.
+    tr_capcre,   &                                                                        ! wvt
+    tr_capdes                                                                              ! wvt
  logical,intent(in),optional:: f_tr_qv                                                     ! wvt
 
 !--- local variables and arrays:
@@ -198,6 +203,7 @@
  real(kind=kind_phys),dimension(its:ite,kts:kte):: tr_qv_hv                                ! wvt
  real(kind=kind_phys),dimension(its:ite,kts:kte):: tr_qc_hv, tr_qi_hv                     ! wvt
  real(kind=kind_phys),dimension(its:ite):: tr_pratec_hv                                    ! wvt
+ real(kind=kind_phys),dimension(its:ite,kts:kte):: tr_capcre_hv, tr_capdes_hv              ! wvt
 
 !-----------------------------------------------------------------------------------------------------------------
 
@@ -272,7 +278,13 @@
           enddo                                                                             ! wvt
        enddo                                                                                ! wvt
        do i = its,ite                                                                       ! wvt
-          tr_pratec_hv(i) = 0.0                                                             ! wvt - zero before call, not accumulated
+          tr_pratec_hv(i) = 0.0                                                             ! wvt
+       enddo                                                                                ! wvt
+       do k = kts,kte                                                                       ! wvt
+          do i = its,ite                                                                    ! wvt
+             tr_capcre_hv(i,k) = 0.0                                                        ! wvt
+             tr_capdes_hv(i,k) = 0.0                                                        ! wvt
+          enddo                                                                             ! wvt - zero before call, not accumulated
        enddo                                                                                ! wvt
     endif                                                                                   ! wvt
 
@@ -299,6 +311,7 @@
                      dt   = delt   , dx   = dx_hv  , errmsg = errmsg  , errflg = errflg  , & ! wvt
                      tr_qv = tr_qv_hv , tr_qc = tr_qc_hv , tr_qi = tr_qi_hv ,              & ! wvt
                      tr_pratec = tr_pratec_hv ,                                             & ! wvt
+                     tr_cap_cre = tr_capcre_hv , tr_cap_des = tr_capdes_hv ,                & ! wvt
                      do_tracers = l_do_tracers                                               & ! wvt
                         )
 
@@ -486,6 +499,12 @@
     if (l_do_tracers) then                                                                 ! wvt
        do i = its,ite                                                                      ! wvt
           tr_pratec(i,n_wvt,j) = tr_pratec_hv(i)                                           ! wvt
+          do k = kts,kte                                                                    ! wvt
+             tr_capcre(i,n_wvt,j) = tr_capcre(i,n_wvt,j)                                  & ! wvt
+     &          + tr_capcre_hv(i,k)*rho3d(i,k,j)*dz8w(i,k,j)                                ! wvt
+             tr_capdes(i,n_wvt,j) = tr_capdes(i,n_wvt,j)                                  & ! wvt
+     &          + tr_capdes_hv(i,k)*rho3d(i,k,j)*dz8w(i,k,j)                                ! wvt
+          enddo                                                                             ! wvt
        enddo                                                                               ! wvt
     endif                                                                                  ! wvt
 

@@ -48,6 +48,40 @@
  real(kind=kind_phys):: zrg
 
  logical,parameter:: nonequil = .true.
+
+#ifdef WVT_CLAMP_DIAG
+!--- wvt: firing counters for the internal one-sided tag clamps. DIAGNOSTIC BUILDS ONLY -
+!--- wvt: never compiled into production, so no cost and no OpenMP race there. For a valid
+!--- wvt: partition every one of these is inactive by construction; this array is what turns
+!--- wvt: that CLAIM into a measurement, and it names the site rather than only the level.
+!--- wvt:  1 plude_tr :1072   2 pqenh_tr :1352   3 pqu_tr :2320   4 plu_tr :2321
+!--- wvt:  5 pqu_tr :2373     6 plu_tr :2374     7 plu_tr :2512    8 plu_tr :2514
+!--- wvt:  9 pqd_tr :2797    10 pqd_tr :3019    11 pdmfup_tr :3439
+ integer,dimension(11):: wvt_clamp_count = 0
+ real(kind=kind_phys),dimension(11):: wvt_clamp_amt = 0.0
+!--- wvt: [max |pmflx_tr - (pmflxr+pmflxs)|, level where it occurred]. For a full tag these
+!--- wvt: two fluxes must be identical; any gap localises a missing precipitation-chain mirror.
+ real(kind=kind_phys),dimension(2):: wvt_flux_err = 0.0
+!--- wvt: [max |pdmfup_tr-pdmfup|, max |pdmfdp_tr-pdmfdp|] on entry to cuflxn, i.e. as the
+!--- wvt: updraft and downdraft left them. Splits a precipitation-chain gap by origin.
+ real(kind=kind_phys),dimension(2):: wvt_src_err = 0.0
+!--- wvt: how many times the mid-level base parcel (cubasmcn) actually fired. A mirror that is
+!--- wvt: never exercised is an unverified mirror, so the harness must be able to say so.
+ integer:: wvt_midlev_hits = 0
+!--- wvt: how many times the BASE plude negative-humidity repair actually fires. Distinguishes
+!--- wvt: "the mirror is wrong but untested" from "the branch is never taken".
+ integer:: wvt_plude_hits = 0
+!--- wvt: V0 composition export. Per (column, level): the BASE plume quantities a reference
+!--- wvt: needs, plus the model's tagged plume water. The reference is computed OUTSIDE this
+!--- wvt: file from the base numbers alone, so it shares none of the tagged code's logic.
+!--- wvt:  1 pmfu   2 base plume water flux (pmfuq+pmful)   3 entrained water this level
+!--- wvt:  4 detrained fraction   5 tagged plume water flux   6 pdmfup
+ integer,parameter:: wvt_v0_mx = 64
+ real(kind=kind_phys),dimension(wvt_v0_mx,64,12):: wvt_v0 = 0.0
+!--- wvt: V0 slots, ALL base quantities except 5/9 (the model's tagged answer, the thing under
+!--- wvt: test):  1 pmfu  2 pmfuq+pmful  3 entrained water  4 zdmfde  5 tagged plume water
+!--- wvt:  6 pdmfup  7 kcbot  8 pmful  9 pmful_tr  10 zqold  11 zprecip  12 pmfuq
+#endif
  logical,parameter:: lmfpen   = .true.
  logical,parameter:: lmfmid   = .true.
  logical,parameter:: lmfscv   = .true.
@@ -147,7 +181,8 @@
 !     level 1 subroutine 'cu_ntiedkte_run'
       subroutine cu_ntiedtke_run(pu,pv,pt,pqv,pqc,pqi,pqvf,ptf,poz,pzz,pomg, &
      &         pap,paph,evap,hfx,zprecc,lndj,lq,km,km1,dt,dx,errmsg,errflg, & ! wvt
-     &         tr_qv,tr_qc,tr_qi,tr_pratec,do_tracers)                            ! wvt
+     &         tr_qv,tr_qc,tr_qi,tr_pratec,do_tracers,                       & ! wvt
+     &         tr_cap_cre,tr_cap_des)                                          ! wvt
 !=================================================================================================================
 !     this is the interface between the model and the mass flux convection module
 !     m.tiedtke      e.c.m.w.f.      1989
@@ -211,6 +246,11 @@
       real(kind=kind_phys),intent(inout),dimension(:,:),optional:: tr_qi ! wvt - tracer cloud ice
       real(kind=kind_phys),intent(inout),dimension(:),optional:: tr_pratec ! wvt
       logical,intent(in),optional:: do_tracers                           ! wvt
+!--- wvt: per-level cap diagnostics (mixing-ratio units, this step). tr_cap_cre is tag mass
+!--- wvt: CREATED by the max(0,.) floor; tr_cap_des is tag mass DESTROYED by the min(.,pqv) cap.
+!--- wvt: Both must be identically zero when the tags sum to the vapour and every mirror is exact.
+      real(kind=kind_phys),intent(out),dimension(:,:),optional:: tr_cap_cre ! wvt
+      real(kind=kind_phys),intent(out),dimension(:,:),optional:: tr_cap_des ! wvt
 
 !--- local variables and arrays:
       logical:: l_tracers                                                ! wvt
@@ -235,6 +275,8 @@
       real(kind=kind_phys),dimension(lq,km):: ztr_pcte                   ! wvt - tracer cloud detrainment tendency
       real(kind=kind_phys):: ztr_rain_frac                               ! wvt - tracer fraction of total precip
       real(kind=kind_phys):: ztr_qv_new                                  ! wvt
+      real(kind=kind_phys):: ztr_pre, ztr_cap                            ! wvt
+      real(kind=kind_phys),dimension(lq):: ztr_prsfc                     ! wvt
 
 !-----------------------------------------------------------------------------------------------------------------
 !
@@ -252,6 +294,8 @@
             ztr_qv_sp(j,k) = 0.0                                        ! wvt
             ztr_tenq(j,k) = 0.0                                         ! wvt
             ztr_pcte(j,k) = 0.0                                         ! wvt
+            if (present(tr_cap_cre)) tr_cap_cre(j,k) = 0.0              ! wvt
+            if (present(tr_cap_des)) tr_cap_des(j,k) = 0.0              ! wvt
           end do                                                         ! wvt
         end do                                                           ! wvt
       endif                                                              ! wvt
@@ -326,7 +370,7 @@
      &     zlu,      zlude,    zmfu,     zmfd,    zrain, &
      &     pcte,     phhfl,    lndj,     pgeoh,   dx,    &
      &     scale_fac, scale_fac2,                        &              ! wvt
-     &     l_tracers, ztr_qv_sp, ztr_tenq, ztr_pcte)                     ! wvt
+     &     l_tracers, ztr_qv_sp, ztr_tenq, ztr_pcte, ztr_prsfc)          ! wvt
 !
 !     to include the cloud water and cloud ice detrained from convection
 !
@@ -363,38 +407,30 @@
         do k=1,km                                                        ! wvt
           do j=1,lq                                                      ! wvt
 !--- wvt: apply tracer tendency (in specific humidity space)
-            ztr_qv_sp(j,k) = ztr_qv_sp(j,k) + ztr_tenq(j,k)*ztmst      ! wvt
-            ztr_qv_sp(j,k) = max(0.0, ztr_qv_sp(j,k))                   ! wvt
+            ztr_pre = ztr_qv_sp(j,k) + ztr_tenq(j,k)*ztmst              ! wvt
+            ztr_qv_sp(j,k) = max(0.0, ztr_pre)                          ! wvt
 !--- wvt: convert tracer back to mixing ratio space
             ztr_qv_new = ztr_qv_sp(j,k)/(1.0-zqp1(j,k))                 ! wvt
 !--- wvt: cap tracer to not exceed base moisture
-            tr_qv(j,k) = max(0.0, min(ztr_qv_new, pqv(j,k)))            ! wvt
+            ztr_cap = min(ztr_qv_new, pqv(j,k))                         ! wvt
+            tr_qv(j,k) = max(0.0, ztr_cap)                              ! wvt
+!--- wvt: record what the floor created and what the cap destroyed (both >= 0)
+            if (present(tr_cap_cre)) tr_cap_cre(j,k) =                & ! wvt
+     &        (ztr_qv_sp(j,k)-ztr_pre)/(1.0-zqp1(j,k))                  ! wvt
+            if (present(tr_cap_des)) tr_cap_des(j,k) =                & ! wvt
+     &        ztr_qv_new - ztr_cap                                       ! wvt
           end do                                                         ! wvt
         end do                                                           ! wvt
-!--- wvt: compute tracer precipitation rate (proportional to moisture precip)
+!--- wvt: DELETED - the old surface share weighted each region's vapour ratio by its OWN
+!--- wvt: tendency, giving <r^2>/<r> >= <r> (Jensen), so every region was over-credited and
+!--- wvt: the shares summed to more than one. tr_pratec now comes from the tagged precipitation
+!--- wvt: flux, which carries the composition of the water that actually fell and sums to the
+!--- wvt: base by construction.
         do j=1,lq                                                        ! wvt
-          if (zprecc(j) .gt. 0.0) then                                   ! wvt
-!--- wvt: tracer fraction = column-mean tracer/moisture ratio
-!--- wvt: use the ratio of column tracer to column moisture near cloud base
-            ztr_rain_frac = 0.0                                          ! wvt
-            do k=1,km                                                    ! wvt
-              ztr_rain_frac = ztr_rain_frac +                          & ! wvt
-     &          ztr_qv_sp(j,k) / max(zqp1(j,k), 1.0e-10)             & ! wvt
-     &          * abs(ztr_tenq(j,k))                                     ! wvt
-            end do                                                       ! wvt
-            if (abs(ztr_rain_frac) .gt. 0.0) then                        ! wvt
-              ztr_rain_frac = ztr_rain_frac /                          & ! wvt
-     &          max(sum(abs(ztr_tenq(j,:))), 1.0e-20)                    ! wvt
-            else                                                         ! wvt
-!--- wvt: fallback: use surface level ratio
-              ztr_rain_frac = ztr_qv_sp(j,km) /                       & ! wvt
-     &          max(zqp1(j,km), 1.0e-10)                                 ! wvt
-            endif                                                        ! wvt
-            ztr_rain_frac = max(0.0, min(ztr_rain_frac, 1.0))           ! wvt
-            tr_pratec(j) = zprecc(j)*ztr_rain_frac/ztmst                 ! wvt - rate (mm/s), not depth
-          endif                                                          ! wvt
+          tr_pratec(j) = max(0.0, ztr_prsfc(j))                          ! wvt - rate (mm/s)
         end do                                                           ! wvt
       endif                                                              ! wvt
+!
 
       if (lmfdudv) then
         do k=1,km
@@ -429,7 +465,7 @@
      &     plu,      plude,    pmfu,     pmfd,     prain, &
      &     pcte,     phhfl,    lndj,     zgeoh,    dx,    &
      &     scale_fac,  scale_fac2,                        &              ! wvt
-     &     l_tracers, pqv_tr, ptenq_tr, pcte_tr)                          ! wvt
+     &     l_tracers, pqv_tr, ptenq_tr, pcte_tr, prsfc_tr)                ! wvt
       implicit none
 !
 !***cumastrn*  master routine for cumulus massflux-scheme
@@ -516,6 +552,7 @@
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqv_tr   ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: ptenq_tr ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pcte_tr  ! wvt - tracer cloud detrainment
+      real(kind=kind_phys),intent(out),dimension(klon):: prsfc_tr        ! wvt - tagged surface precip flux
 
 !--- local variables and arrays:
       logical:: llo1
@@ -559,6 +596,11 @@
       real(kind=kind_phys),dimension(klon,klev):: plude_tr               ! wvt - tracer liquid detrainment
       real(kind=kind_phys),dimension(klon,klev):: zdmfup_tr              ! wvt - tracer updraft precip
       real(kind=kind_phys),dimension(klon,klev):: zdmfdp_tr              ! wvt - tracer downdraft precip
+      real(kind=kind_phys),dimension(klon,klevp1):: zmflx_tr           ! wvt - tagged precip flux
+      real(kind=kind_phys),dimension(klon):: zmfuub_tr                 ! wvt
+      real(kind=kind_phys),dimension(klon):: zrfl_tr                   ! wvt - tagged rain flux
+      real(kind=kind_phys):: zplude_old                                 ! wvt
+      real(kind=kind_phys):: ztr_clp                                     ! wvt
 
 !-------------------------------------------
 !     1.    specify constants and parameters
@@ -673,7 +715,7 @@
      &     kcbot,    kctop,    ictop0,   icum,     ztmst,   &
      &     zqsenh,   zlglac,   lndj,     wup,      wbase,   &
      &     kdpl,     pmfude_rate,                            &           ! wvt
-     &     l_tracers, pqenh_tr, pqu_tr, zmfuq_tr,           &           ! wvt
+     &     l_tracers, pqenh_tr, pqv_tr, pqu_tr, zmfuq_tr,           &           ! wvt
      &     zmful_tr, plude_tr, zdmfup_tr)                                ! wvt
 
 !*     (b) check cloud depth and change entrainment rate accordingly
@@ -689,11 +731,13 @@
           ictop0(jl) = kctop(jl)
         end if
         zrfl(jl)=zdmfup(jl,1)
+        if (l_tracers) zrfl_tr(jl)=zdmfup_tr(jl,1)                      ! wvt
       end do
 
       do jk=2,klev
         do jl=1,klon
           zrfl(jl)=zrfl(jl)+zdmfup(jl,jk)
+          if (l_tracers) zrfl_tr(jl)=zrfl_tr(jl)+zdmfup_tr(jl,jk)         ! wvt
         end do
       end do
 
@@ -728,7 +772,7 @@
      &     pmfd,     zmfds,    zmfdq,  zdmfdp, &
      &     idtop,    loddraf,                   &                        ! wvt
      &     l_tracers, pqenh_tr, pqu_tr, pqd_tr, &                       ! wvt
-     &     zmfdq_tr)                                                     ! wvt
+     &     zmfdq_tr, zdmfdp_tr, zrfl_tr)                                 ! wvt
 !*     (b)  determine downdraft t,q and fluxes in 'cuddrafn'
 !------------------------------------------------------------
         call cuddrafn &
@@ -737,7 +781,7 @@
      &     pgeo,     zgeoh,    paph,     zrfl,           &
      &     ztd,      zqd,      zud,      zvd,      pmfu, &
      &     pmfd,     zmfds,    zmfdq,    zdmfdp,   pmfdde_rate, &        ! wvt
-     &     l_tracers, pqenh_tr, pqd_tr, zmfdq_tr)                       ! wvt
+     &     l_tracers, pqenh_tr, pqd_tr, zmfdq_tr, zdmfdp_tr, zrfl_tr)   ! wvt
 !-----------------------------------------------------------
       end if
 !
@@ -971,12 +1015,26 @@
      &  ,  zdmfup,   zdmfdp,   zdpmel,   zlglac         &
      &  ,  prain,    pmfdde_rate, pmflxr, pmflxs         &               ! wvt
      &  ,  l_tracers, pqenh_tr, zmfuq_tr, zmfdq_tr      &              ! wvt
-     &  ,  zmful_tr, plude_tr, zdmfup_tr, zdmfdp_tr )                   ! wvt
+     &  ,  zmful_tr, plude_tr, zdmfup_tr, zdmfdp_tr, zmflx_tr )         ! wvt
 
+#ifdef WVT_CLAMP_DIAG
+    if (l_tracers) then
+      do jk = 1, klevp1
+        do jl = 1, klon
+          if (abs(zmflx_tr(jl,jk)-(pmflxr(jl,jk)+pmflxs(jl,jk))) > wvt_flux_err(1)) then
+            wvt_flux_err(1) = abs(zmflx_tr(jl,jk)-(pmflxr(jl,jk)+pmflxs(jl,jk)))
+            wvt_flux_err(2) = real(jk,kind_phys)
+          end if
+        end do
+      end do
+    end if
+#endif
 ! some adjustments needed
     do jl=1,klon
       zmfs(jl) = 1.
       zmfuub(jl)=0.
+      if (l_tracers) zmfuub_tr(jl)=0.                                    ! wvt
+      if (l_tracers) zmflx_tr(jl,1)=0.                                   ! wvt
     end do
     do jk = 2 , klev
       do jl = 1,klon
@@ -998,6 +1056,12 @@
           pmfdde_rate(jl,jk) = pmfdde_rate(jl,jk)*zmfs(jl)
           zmfuub(jl) = zmfuub(jl) - (1.-zmfs(jl))*zdmfdp(jl,jk)
           pmflxr(jl,jk+1) = pmflxr(jl,jk+1) + zmfuub(jl)
+!--- wvt: MIRROR - the same correction on the tagged flux
+          if (l_tracers) then                                            ! wvt
+            zmfuub_tr(jl) = zmfuub_tr(jl)                             & ! wvt
+     &        - (1.-zmfs(jl))*zdmfdp_tr(jl,jk)                          ! wvt
+            zmflx_tr(jl,jk+1) = zmflx_tr(jl,jk+1) + zmfuub_tr(jl)      ! wvt
+          endif                                                          ! wvt
           zdmfdp(jl,jk) = zdmfdp(jl,jk)*zmfs(jl)
           if (l_tracers) then                                            ! wvt
             zmfdq_tr(jl,jk) = zmfdq_tr(jl,jk)*zmfs(jl)                  ! wvt
@@ -1023,6 +1087,13 @@
           zdmfup(jl,jk) = pmflxr(jl,jk+1) + pmflxs(jl,jk+1) - &
                           pmflxr(jl,jk) - pmflxs(jl,jk)
           zdmfdp(jl,jk) = 0.
+!--- wvt: MIRROR - the base re-derives its precipitation sink as the flux divergence and zeroes
+!--- wvt: zdmfdp. Without this the tag carries GROSS production while the base carries
+!--- wvt: production minus evaporation, and every evaporated drop re-enters untagged.
+          if (l_tracers) then                                            ! wvt
+            zdmfup_tr(jl,jk) = zmflx_tr(jl,jk+1) - zmflx_tr(jl,jk)      ! wvt
+            zdmfdp_tr(jl,jk) = 0.                                        ! wvt
+          endif                                                          ! wvt
         end if
       end do
     end do
@@ -1034,6 +1105,9 @@
         ik = min(jk+1,klev)
         if ( zmfdq(jl,jk) < 0.3*zmfdq(jl,ik) ) then
             zmfdq(jl,jk) = 0.3*zmfdq(jl,ik)
+!--- wvt: MIRROR - zmfdq is a sign-indefinite RELATIVE flux and the clamp REPLACES it with a
+!--- wvt: fraction of the level below, so there is no ratio to reuse: apply the same operation.
+            if (l_tracers) zmfdq_tr(jl,jk) = 0.3*zmfdq_tr(jl,ik)        ! wvt
         end if
       end if
     end do
@@ -1048,13 +1122,22 @@
                  zmfuq(jl,jk) - zmfdq(jl,jk) + &
                  zmful(jl,jk+1) - zmful(jl,jk) + zdmfup(jl,jk)
           zmfa = (zmfa-plude(jl,jk))*zdz
+          zplude_old = plude(jl,jk)                                      ! wvt
           if ( pqen(jl,jk)+zmfa < 0. ) then
             plude(jl,jk) = plude(jl,jk) + 2.*(pqen(jl,jk)+zmfa)/zdz
+#ifdef WVT_CLAMP_DIAG
+            wvt_plude_hits = wvt_plude_hits + 1
+#endif
           end if
           if ( plude(jl,jk) < 0. ) plude(jl,jk) = 0.
-!--- wvt: cap tracer detrainment to not exceed moisture detrainment
+!--- wvt: MIRROR - the base repair ADDS to plude to avoid a negative humidity; scale the
+!--- wvt: tagged twin by the same repaired/original ratio instead of capping it with min().
           if (l_tracers) then                                            ! wvt
-            plude_tr(jl,jk) = min(plude_tr(jl,jk), plude(jl,jk))       ! wvt
+            if (zplude_old > 1.0e-20) then                               ! wvt
+              plude_tr(jl,jk) = plude_tr(jl,jk)*(plude(jl,jk)/zplude_old)! wvt
+            else                                                         ! wvt
+              plude_tr(jl,jk) = 0.0                                      ! wvt
+            endif                                                        ! wvt
             if (plude_tr(jl,jk) < 0.0) plude_tr(jl,jk) = 0.0          ! wvt
           endif                                                          ! wvt
         end if
@@ -1066,6 +1149,10 @@
     do jl=1,klon
       prsfc(jl) = pmflxr(jl,klev+1)
       pssfc(jl) = pmflxs(jl,klev+1)
+!--- wvt: the tagged surface precipitation is the tagged flux at the surface - exact, and it
+!--- wvt: replaces the ratio-of-ratios diagnostic that used to guess it in cu_ntiedtke_run.
+      prsfc_tr(jl) = 0.0                                                 ! wvt
+      if (l_tracers) prsfc_tr(jl) = zmflx_tr(jl,klev+1)                  ! wvt
     end do
 
 !----------------------------------------------------------------
@@ -1299,6 +1386,7 @@
       integer::  jl,jk
       integer::  icall,ik
       real(kind=kind_phys):: zzs
+      real(kind=kind_phys):: ztr_clp                                     ! wvt
       real(kind=kind_phys),dimension(klon):: zph,zwmax
 
 !------------------------------------------------------------
@@ -1334,8 +1422,13 @@
             pqenh_tr(jl,jk) = pqenh_tr(jl,jk) *                       & ! wvt
      &        pqenh(jl,jk) / pqen(jl,jk-1)                              ! wvt
           endif                                                          ! wvt
-          pqenh_tr(jl,jk) = max(0.0, min(pqenh_tr(jl,jk),              & ! wvt
-     &                      pqenh(jl,jk)))                               ! wvt
+          ztr_clp = max(0.0, min(pqenh_tr(jl,jk), pqenh(jl,jk)))       ! wvt
+#ifdef WVT_CLAMP_DIAG
+          wvt_clamp_amt(2) = wvt_clamp_amt(2) + abs(ztr_clp-pqenh_tr(jl,jk))
+          if (abs(ztr_clp-pqenh_tr(jl,jk)) > 1.0e-10*max(abs(pqenh_tr(jl,jk)),1.0e-30)) &
+            wvt_clamp_count(2) = wvt_clamp_count(2)+1
+#endif
+          pqenh_tr(jl,jk) = ztr_clp                                      ! wvt
         endif                                                            ! wvt
       end do
       end do
@@ -1941,7 +2034,7 @@
      &     kcbot,    kctop,    kctop0,   kcum,     ztmst,   &
      &     pqsenh,   plglac,   lndj,     wup,      wbase,   &
      &     kdpl,     pmfude_rate,                            &           ! wvt
-     &     l_tracers, pqenh_tr, pqu_tr, pmfuq_tr,           &           ! wvt
+     &     l_tracers, pqenh_tr, pqv_tr, pqu_tr, pmfuq_tr,           &           ! wvt
      &     pmful_tr, plude_tr, pdmfup_tr)                                ! wvt
 
       implicit none
@@ -2048,7 +2141,8 @@
 
 !--- tracer arguments:                                                   ! wvt
       logical,intent(in):: l_tracers                                     ! wvt
-      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqenh_tr    ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqenh_tr    ! wvt
+      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqv_tr      ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqu_tr   ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfuq_tr ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmful_tr ! wvt
@@ -2080,6 +2174,9 @@
       real(kind=kind_phys):: zqeen_tr, zqude_tr                         ! wvt
       real(kind=kind_phys):: zmfuqk_tr, zmfulk_tr                       ! wvt
       real(kind=kind_phys):: zplu_tr, ztr_frac                          ! wvt
+      real(kind=kind_phys):: ztrw_num, ztrw_den, zdpw, ztr_rsub         ! wvt
+      real(kind=kind_phys):: ztr_clp                                     ! wvt
+      integer:: jkk                                                      ! wvt
       real(kind=kind_phys),dimension(klon):: zluold_tr                   ! wvt
       real(kind=kind_phys),dimension(klon,klev):: plu_tr                 ! wvt - updraft liquid tracer
 
@@ -2156,13 +2253,33 @@
           pmfus(jl,ikb) = pmfub(jl)*(cpd*ptu(jl,ikb)+pgeoh(jl,ikb))
           pmfuq(jl,ikb) = pmfub(jl)*pqu(jl,ikb)
           pmful(jl,ikb) = pmfub(jl)*plu(jl,ikb)
-!--- wvt: initialize tracer at cloud base
+!--- wvt: MIRROR 1 - initialize the tracer parcel at cloud base.
+!--- wvt: The base parcel from cutypen is an ENTRAINING lift of the sub-cloud layer and is
+!--- wvt: moister than the half-level environment, so the old form min(pqenh_tr,pqu) gave a
+!--- wvt: zero-or-negative tag excess: the sub-cloud tag was never depleted while the base was,
+!--- wvt: and the parcel liquid started untagged. Carry the pressure-weighted sub-cloud tag
+!--- wvt: RATIO into both parcel vapour and parcel liquid instead - exact for a uniform
+!--- wvt: sub-cloud tag, and the dominant term by a wide margin.
           if (l_tracers) then                                            ! wvt
-            pqu_tr(jl,ikb) = min(pqenh_tr(jl,ikb), pqu(jl,ikb))         ! wvt
-            pqu_tr(jl,ikb) = max(0.0, pqu_tr(jl,ikb))                   ! wvt
+            ztrw_num = 0.0                                               ! wvt
+            ztrw_den = 0.0                                               ! wvt
+            do jkk = ikb,klev                                            ! wvt
+              zdpw = paph(jl,jkk+1)-paph(jl,jkk)                        ! wvt
+!--- wvt: FULL-level values, not the half-level pqenh arrays. cuinin sets
+!--- wvt: pqenh_tr(jk) = pqv_tr(jk-1), so summing the half-level array over ikb..klev covers
+!--- wvt: layers ikb-1..klev-2 plus klev: it includes the layer ABOVE cloud base and skips
+!--- wvt: klev-1. Measured cost of that off-by-one: a sub-cloud-confined tag entered the
+!--- wvt: parcel at ratio 0.77 instead of 1.00. Neither V-id nor V0 can see it.
+              ztrw_num = ztrw_num + pqv_tr(jl,jkk)*zdpw                 ! wvt
+              ztrw_den = ztrw_den + pqen(jl,jkk)*zdpw                   ! wvt
+            end do                                                       ! wvt
+            ztr_rsub = 0.0                                               ! wvt
+            if (ztrw_den > 1.0e-20) ztr_rsub = ztrw_num/ztrw_den        ! wvt
+            ztr_rsub = max(0.0, min(ztr_rsub, 1.0))                      ! wvt
+            pqu_tr(jl,ikb) = ztr_rsub*pqu(jl,ikb)                       ! wvt
+            plu_tr(jl,ikb) = ztr_rsub*plu(jl,ikb)                       ! wvt
             pmfuq_tr(jl,ikb) = pmfub(jl)*pqu_tr(jl,ikb)                 ! wvt
-            plu_tr(jl,ikb) = 0.0                                         ! wvt
-            pmful_tr(jl,ikb) = 0.0                                       ! wvt
+            pmful_tr(jl,ikb) = pmfub(jl)*plu_tr(jl,ikb)                 ! wvt
           endif                                                          ! wvt
         end if
       end do
@@ -2185,7 +2302,9 @@
      &     pgeo,     pgeoh,    ldcum,    ktype,   klab,  zlrain, &
      &     pmfu,     pmfub,    kcbot,    ptu,                    &
      &     pqu,      plu,      puu,      pvu,      pmfus,        &
-     &     pmfuq,    pmful,    pdmfup)
+     &     pmfuq,    pmful,    pdmfup,                             & ! wvt
+     &     l_tracers, pqv_tr, pqu_tr, plu_tr, pmfuq_tr, pmful_tr,  & ! wvt
+     &     pdmfup_tr)                                                ! wvt
       is = 0
       jlm = 0
       do jl = 1,klon
@@ -2273,10 +2392,19 @@
           ptu(jl,jk) = max(100.,ptu(jl,jk))
           ptu(jl,jk) = min(400.,ptu(jl,jk))
           zqold(jl) = pqu(jl,jk)
+#ifdef WVT_CLAMP_DIAG
+          if (jl <= wvt_v0_mx .and. jk <= 64) wvt_v0(jl,jk,10) = zqold(jl)
+#endif
           zlrain(jl,jk) = zlrain(jl,jk+1)*(pmfu(jl,jk+1)-zdmfde(jl)) * &
                           (1./max(cmfcmin,pmfu(jl,jk)))
           zluold(jl) = plu(jl,jk)
 !--- wvt: tracer entrainment/detrainment in updraft
+#ifdef WVT_CLAMP_DIAG
+          if (l_tracers .and. jl <= wvt_v0_mx .and. jk <= 64) then
+            wvt_v0(jl,jk,3) = pqenh(jl,jk+1)*zdmfen(jl)
+            wvt_v0(jl,jk,4) = zdmfde(jl)
+          end if
+#endif
           if (l_tracers) then                                            ! wvt
             zqeen_tr = pqenh_tr(jl,jk+1)*zdmfen(jl)                     ! wvt
             zqude_tr = pqu_tr(jl,jk+1)*zdmfde(jl)                       ! wvt
@@ -2285,8 +2413,20 @@
             zmfulk_tr = pmful_tr(jl,jk+1) - plude_tr(jl,jk)             ! wvt
             plu_tr(jl,jk) = zmfulk_tr*(1./max(cmfcmin,pmfu(jl,jk)))     ! wvt
             pqu_tr(jl,jk) = zmfuqk_tr*(1./max(cmfcmin,pmfu(jl,jk)))     ! wvt
-            pqu_tr(jl,jk) = max(0.0, min(pqu_tr(jl,jk), pqu(jl,jk)))   ! wvt
-            plu_tr(jl,jk) = max(0.0, min(plu_tr(jl,jk), plu(jl,jk)))   ! wvt
+            ztr_clp = max(0.0, min(pqu_tr(jl,jk), pqu(jl,jk)))   ! wvt
+#ifdef WVT_CLAMP_DIAG
+            wvt_clamp_amt(3) = wvt_clamp_amt(3) + abs(ztr_clp-pqu_tr(jl,jk))
+            if (abs(ztr_clp-pqu_tr(jl,jk)) > 1.0e-10*max(abs(pqu_tr(jl,jk)),1.0e-30)) &
+              wvt_clamp_count(3) = wvt_clamp_count(3)+1
+#endif
+            pqu_tr(jl,jk) = ztr_clp   ! wvt
+            ztr_clp = max(0.0, min(plu_tr(jl,jk), plu(jl,jk)))   ! wvt
+#ifdef WVT_CLAMP_DIAG
+            wvt_clamp_amt(4) = wvt_clamp_amt(4) + abs(ztr_clp-plu_tr(jl,jk))
+            if (abs(ztr_clp-plu_tr(jl,jk)) > 1.0e-10*max(abs(plu_tr(jl,jk)),1.0e-30)) &
+              wvt_clamp_count(4) = wvt_clamp_count(4)+1
+#endif
+            plu_tr(jl,jk) = ztr_clp   ! wvt
             zluold_tr(jl) = plu_tr(jl,jk)                               ! wvt
           endif                                                          ! wvt
         end do
@@ -2338,8 +2478,20 @@
               plu_tr(jl,jk) = plu_tr(jl,jk) + zplu_tr                   ! wvt
 !--- wvt: reduce tracer vapor by condensation amount
               pqu_tr(jl,jk) = pqu_tr(jl,jk) - zplu_tr                   ! wvt
-              pqu_tr(jl,jk) = max(0.0, min(pqu_tr(jl,jk), pqu(jl,jk))) ! wvt
-              plu_tr(jl,jk) = max(0.0, min(plu_tr(jl,jk), plu(jl,jk))) ! wvt
+              ztr_clp = max(0.0, min(pqu_tr(jl,jk), pqu(jl,jk)))   ! wvt
+#ifdef WVT_CLAMP_DIAG
+              wvt_clamp_amt(5) = wvt_clamp_amt(5) + abs(ztr_clp-pqu_tr(jl,jk))
+              if (abs(ztr_clp-pqu_tr(jl,jk)) > 1.0e-10*max(abs(pqu_tr(jl,jk)),1.0e-30)) &
+                wvt_clamp_count(5) = wvt_clamp_count(5)+1
+#endif
+              pqu_tr(jl,jk) = ztr_clp   ! wvt
+              ztr_clp = max(0.0, min(plu_tr(jl,jk), plu(jl,jk)))   ! wvt
+#ifdef WVT_CLAMP_DIAG
+              wvt_clamp_amt(6) = wvt_clamp_amt(6) + abs(ztr_clp-plu_tr(jl,jk))
+              if (abs(ztr_clp-plu_tr(jl,jk)) > 1.0e-10*max(abs(plu_tr(jl,jk)),1.0e-30)) &
+                wvt_clamp_count(6) = wvt_clamp_count(6)+1
+#endif
+              plu_tr(jl,jk) = ztr_clp   ! wvt
               zluold_tr(jl) = plu_tr(jl,jk)                             ! wvt
             endif                                                        ! wvt
             zbc = ptu(jl,jk)*(1.+vtmpc1*pqu(jl,jk)-plu(jl,jk+1) - &
@@ -2363,6 +2515,11 @@
               if ( zbuo(jl,jk) < 0. ) then
                 ptenh(jl,jk) = 0.5*(pten(jl,jk)+pten(jl,jk-1))
                 pqenh(jl,jk) = 0.5*(pqen(jl,jk)+pqen(jl,jk-1))
+!--- wvt: MIRROR - this rewrites the ENVIRONMENT half-level mid-ascent. Without the same
+!--- wvt: rewrite on the tagged side, pqenh_tr stops being the tagged part of pqenh and every
+!--- wvt: subsequent entrainment at this level draws the wrong composition.
+                if (l_tracers) pqenh_tr(jl,jk) =                       & ! wvt
+     &            0.5*(pqv_tr(jl,jk)+pqv_tr(jl,jk-1))                    ! wvt
                 zbuo(jl,jk) = zbc - ptenh(jl,jk)*(1.+vtmpc1*pqenh(jl,jk))
               end if
               zbuoc = (zbuo(jl,jk) / &
@@ -2468,6 +2625,9 @@
               zlnew = max(0.,min(plu(jl,jk),zlnew))
               zlnew = min(z_cldmax,zlnew)
               zprecip(jl) = max(0.,zluold(jl)+zc-zlnew)
+#ifdef WVT_CLAMP_DIAG
+              if (jl <= wvt_v0_mx .and. jk <= 64) wvt_v0(jl,jk,11) = zprecip(jl)
+#endif
               pdmfup(jl,jk) = zprecip(jl)*pmfu(jl,jk)
               zlrain(jl,jk) = zlrain(jl,jk) + zprecip(jl)
               plu(jl,jk) = zlnew
@@ -2477,9 +2637,22 @@
      &                     1.0e-10)                                      ! wvt
                 ztr_frac = max(0.0, min(ztr_frac, 1.0))                  ! wvt
                 pdmfup_tr(jl,jk) = zprecip(jl)*ztr_frac*pmfu(jl,jk)     ! wvt
-                plu_tr(jl,jk) = max(0.0, plu_tr(jl,jk) -               & ! wvt
-     &            zprecip(jl)*ztr_frac)                                  ! wvt
-                plu_tr(jl,jk) = min(plu_tr(jl,jk), plu(jl,jk))         ! wvt
+                ztr_clp = max(0.0, plu_tr(jl,jk)-zprecip(jl)*ztr_frac) ! wvt
+#ifdef WVT_CLAMP_DIAG
+                wvt_clamp_amt(7) = wvt_clamp_amt(7)                    &
+     &            + abs(ztr_clp-(plu_tr(jl,jk)-zprecip(jl)*ztr_frac))
+                if (abs(ztr_clp-(plu_tr(jl,jk)-zprecip(jl)*ztr_frac)) >    &
+     &              1.0e-10*max(abs(plu_tr(jl,jk)),1.0e-30))               &
+     &            wvt_clamp_count(7) = wvt_clamp_count(7)+1
+#endif
+                plu_tr(jl,jk) = ztr_clp                                  ! wvt
+                ztr_clp = min(plu_tr(jl,jk), plu(jl,jk))   ! wvt
+#ifdef WVT_CLAMP_DIAG
+                wvt_clamp_amt(8) = wvt_clamp_amt(8) + abs(ztr_clp-plu_tr(jl,jk))
+                if (abs(ztr_clp-plu_tr(jl,jk)) > 1.0e-10*max(abs(plu_tr(jl,jk)),1.0e-30)) &
+                  wvt_clamp_count(8) = wvt_clamp_count(8)+1
+#endif
+                plu_tr(jl,jk) = ztr_clp   ! wvt
               endif                                                      ! wvt
             end if
           end if
@@ -2511,6 +2684,18 @@
           if (l_tracers) then                                            ! wvt
             pmfuq_tr(jl,jk) = pqu_tr(jl,jk)*pmfu(jl,jk)                 ! wvt
             pmful_tr(jl,jk) = plu_tr(jl,jk)*pmfu(jl,jk)                 ! wvt
+#ifdef WVT_CLAMP_DIAG
+            if (jl <= wvt_v0_mx .and. jk <= 64) then
+              wvt_v0(jl,jk,1) = pmfu(jl,jk)
+              wvt_v0(jl,jk,2) = pmfuq(jl,jk)+pmful(jl,jk)
+              wvt_v0(jl,jk,5) = pmfuq_tr(jl,jk)+pmful_tr(jl,jk)
+              wvt_v0(jl,jk,6) = pdmfup(jl,jk)
+              wvt_v0(jl,jk,7) = real(kcbot(jl),kind_phys)
+              wvt_v0(jl,jk,8) = pmful(jl,jk)
+              wvt_v0(jl,jk,9) = pmful_tr(jl,jk)
+              wvt_v0(jl,jk,12) = pmfuq(jl,jk)
+            end if
+#endif
           endif                                                          ! wvt
         end do
       end if
@@ -2543,7 +2728,7 @@
      &     pmfd,     pmfds,    pmfdq,    pdmfdp,        &
      &     kdtop,    lddraf,                             &               ! wvt
      &     l_tracers, pqenh_tr, pqu_tr, pqd_tr,         &               ! wvt
-     &     pmfdq_tr)                                                     ! wvt
+     &     pmfdq_tr, pdmfdp_tr, prfl_tr)                                 ! wvt
 
 !          this routine calculates level of free sinking for
 !          cumulus downdrafts and specifies t,q,u and v values
@@ -2659,6 +2844,8 @@
       real(kind=kind_phys),intent(in),dimension(klon,klev):: pqu_tr      ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqd_tr   ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfdq_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfdp_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon):: prfl_tr       ! wvt
 
 !--- local variables and arrays:
       logical,dimension(klon):: llo2
@@ -2667,6 +2854,7 @@
       integer,dimension(klon):: ikhsmin
 
       real(kind=kind_phys):: zhsk,zttest,zqtest,zbuo,zmftop
+       real(kind=kind_phys):: ztr_clp, ztr_r                              ! wvt
       real(kind=kind_phys),dimension(klon):: zcond,zph,zhsmin
       real(kind=kind_phys),dimension(klon,klev):: ztenwb,zqenwb
 
@@ -2761,9 +2949,27 @@
               prfl(jl)=prfl(jl)+pdmfdp(jl,jk-1)
 !--- wvt: set downdraft tracer at LFS (mix of updraft and environment)
               if (l_tracers) then                                        ! wvt
-                pqd_tr(jl,jk) = 0.5*(pqu_tr(jl,jk) + pqenh_tr(jl,jk))  ! wvt
-                pqd_tr(jl,jk) = max(0.0, min(pqd_tr(jl,jk),            & ! wvt
-     &                          pqd(jl,jk)))                             ! wvt
+!--- wvt: MIRROR - the LFS parcel is a wet-bulb mix, i.e. it already contains rain that has
+!--- wvt: evaporated into it. That water carries the FALLING FLUX composition, not the
+!--- wvt: environment's; without this term it arrives untagged.
+!--- wvt: the ratio must be taken on the flux BEFORE the base added pdmfdp to it, which the
+!--- wvt: line above has already done - otherwise the evaporated water is credited against a
+!--- wvt: flux that already excludes it.
+                ztr_r = 0.0                                              ! wvt
+                if (prfl(jl)-pdmfdp(jl,jk-1) > 1.0e-20)               & ! wvt
+     &            ztr_r = prfl_tr(jl)/(prfl(jl)-pdmfdp(jl,jk-1))         ! wvt
+                ztr_r = max(0.0, min(ztr_r, 1.0))                        ! wvt
+                pqd_tr(jl,jk) = 0.5*(pqu_tr(jl,jk) + pqenh_tr(jl,jk))  & ! wvt
+     &                          - 0.5*zcond(jl)*ztr_r                    ! wvt
+                pdmfdp_tr(jl,jk-1) = pdmfdp(jl,jk-1)*ztr_r               ! wvt
+                prfl_tr(jl) = prfl_tr(jl) + pdmfdp_tr(jl,jk-1)           ! wvt
+                ztr_clp = max(0.0, min(pqd_tr(jl,jk), pqd(jl,jk)))     ! wvt
+#ifdef WVT_CLAMP_DIAG
+                wvt_clamp_amt(9) = wvt_clamp_amt(9) + abs(ztr_clp-pqd_tr(jl,jk))
+                if (abs(ztr_clp-pqd_tr(jl,jk)) > 1.0e-10*max(abs(pqd_tr(jl,jk)),1.0e-30)) &
+                  wvt_clamp_count(9) = wvt_clamp_count(9)+1
+#endif
+                pqd_tr(jl,jk) = ztr_clp                                  ! wvt
                 pmfdq_tr(jl,jk) = pmfd(jl,jk)*pqd_tr(jl,jk)             ! wvt
               endif                                                      ! wvt
             endif
@@ -2787,7 +2993,7 @@
      &   , pgeo,     pgeoh,    paph,     prfl            &
      &   , ptd,      pqd,      pud,      pvd,      pmfu  &
      &   , pmfd,     pmfds,    pmfdq,    pdmfdp,   pmfdde_rate &         ! wvt
-     &   , l_tracers, pqenh_tr, pqd_tr,  pmfdq_tr )                     ! wvt
+     &   , l_tracers, pqenh_tr, pqd_tr,  pmfdq_tr, pdmfdp_tr, prfl_tr ) ! wvt
 
 !          this routine calculates cumulus downdraft descent
 
@@ -2878,6 +3084,9 @@
       real(kind=kind_phys),intent(in),dimension(klon,klev):: pqenh_tr    ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqd_tr   ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfdq_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfdp_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon):: prfl_tr       ! wvt
+      real(kind=kind_phys):: ztr_r                                      ! wvt
 
 !--- local variables and arrays:
       logical:: llo1
@@ -2893,6 +3102,7 @@
 
 !--- wvt: local tracer variables
       real(kind=kind_phys):: zqeen_tr, zqdde_tr, zmfdqk_tr              ! wvt
+      real(kind=kind_phys):: ztr_clp                                     ! wvt
 
 !----------------------------------------------------------------------
 !     1.           calculate moist descent for cumulus downdraft by
@@ -2984,7 +3194,13 @@
               zqdde_tr = pqd_tr(jl,jk-1)*zdmfde(jl)                     ! wvt
               zmfdqk_tr = pmfdq_tr(jl,jk-1) + zqeen_tr - zqdde_tr       ! wvt
               pqd_tr(jl,jk) = zmfdqk_tr*(1./min(-cmfcmin,pmfd(jl,jk)))  ! wvt
-              pqd_tr(jl,jk) = max(0.0, min(pqd_tr(jl,jk), pqd(jl,jk))) ! wvt
+              ztr_clp = max(0.0, min(pqd_tr(jl,jk), pqd(jl,jk)))   ! wvt
+#ifdef WVT_CLAMP_DIAG
+              wvt_clamp_amt(10) = wvt_clamp_amt(10) + abs(ztr_clp-pqd_tr(jl,jk))
+              if (abs(ztr_clp-pqd_tr(jl,jk)) > 1.0e-10*max(abs(pqd_tr(jl,jk)),1.0e-30)) &
+                wvt_clamp_count(10) = wvt_clamp_count(10)+1
+#endif
+              pqd_tr(jl,jk) = ztr_clp   ! wvt
             endif                                                        ! wvt
           endif
         enddo
@@ -3015,8 +3231,24 @@
             zdmfdp=-pmfd(jl,jk)*zcond(jl)
             pdmfdp(jl,jk-1)=zdmfdp
             prfl(jl)=prfl(jl)+zdmfdp
-!--- wvt: compute tracer downdraft flux
+!--- wvt: MIRROR - cuadjtqn(icall=2) EVAPORATES falling rain into the downdraft, so zcond is
+!--- wvt: systematically negative. The base gets that moisture back; without this term the tag
+!--- wvt: never does, which is a one-way drain. The evaporated water carries the FALLING FLUX
+!--- wvt: composition; condensation (zcond>0) instead removes tag at the downdraft's own.
             if (l_tracers) then                                          ! wvt
+              if (zcond(jl) < 0.0) then                                  ! wvt
+                ztr_r = 0.0                                              ! wvt
+                if (prfl(jl)-zdmfdp > 1.0e-20)                         & ! wvt
+     &            ztr_r = prfl_tr(jl)/(prfl(jl)-zdmfdp)                  ! wvt
+              else                                                       ! wvt
+                ztr_r = 0.0                                              ! wvt
+                if (pqd(jl,jk)+zcond(jl) > 1.0e-20)                    & ! wvt
+     &            ztr_r = pqd_tr(jl,jk)/(pqd(jl,jk)+zcond(jl))           ! wvt
+              endif                                                      ! wvt
+              ztr_r = max(0.0, min(ztr_r, 1.0))                          ! wvt
+              pqd_tr(jl,jk) = max(0.0, pqd_tr(jl,jk)-zcond(jl)*ztr_r)   ! wvt
+              pdmfdp_tr(jl,jk-1) = zdmfdp*ztr_r                          ! wvt
+              prfl_tr(jl) = prfl_tr(jl) + pdmfdp_tr(jl,jk-1)             ! wvt
               pmfdq_tr(jl,jk) = pqd_tr(jl,jk)*pmfd(jl,jk)              ! wvt
             endif                                                        ! wvt
 
@@ -3048,7 +3280,7 @@
      &  ,  pdmfup,   pdmfdp,   pdpmel,   plglac          &
      &  ,  prain,    pmfdde_rate, pmflxr, pmflxs          &              ! wvt
      &  ,  l_tracers, pqenh_tr, pmfuq_tr, pmfdq_tr      &              ! wvt
-     &  ,  pmful_tr, plude_tr, pdmfup_tr, pdmfdp_tr )                   ! wvt
+     &  ,  pmful_tr, plude_tr, pdmfup_tr, pdmfdp_tr, pmflx_tr )         ! wvt
 
 !          m.tiedtke         e.c.m.w.f.     7/86 modif. 12/89                  
                                                                                
@@ -3165,6 +3397,9 @@
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: plude_tr ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfup_tr ! wvt
       real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfdp_tr ! wvt
+!--- wvt: MIRROR - ONE tagged precipitation flux beside pmflxr+pmflxs. Melting only moves water
+!--- wvt: between the rain and snow channels, so the tagged TOTAL needs a single array.
+      real(kind=kind_phys),intent(inout),dimension(klon,klev+1):: pmflx_tr ! wvt
 
 !--- local variables and arrays:
       logical:: llddraf
@@ -3175,6 +3410,7 @@
 
       real(kind=kind_phys):: ztaumel,zcons1a,zcons1,zcons2,zcucov,zcpecons
       real(kind=kind_phys):: zalfaw,zrfl,zdrfl1,zrnew,zrmin,zrfln,zdrfl,zdenom
+      real(kind=kind_phys):: ztr_clp                                     ! wvt
       real(kind=kind_phys):: zpdr,zpds,zzp,zfac,zsnmlt
       real(kind=kind_phys),dimension(klon):: rhevap
 
@@ -3201,12 +3437,23 @@
         end if
       enddo
 
+#ifdef WVT_CLAMP_DIAG
+      if (l_tracers) then
+        do jk = 1, klev
+          do jl = 1, klon
+            wvt_src_err(1) = max(wvt_src_err(1), abs(pdmfup_tr(jl,jk)-pdmfup(jl,jk)))
+            wvt_src_err(2) = max(wvt_src_err(2), abs(pdmfdp_tr(jl,jk)-pdmfdp(jl,jk)))
+          end do
+        end do
+      end if
+#endif
       ktopm2= 2
       do jk=ktopm2,klev
         ikb = min(jk+1,klev)
         do jl=1,klon
           pmflxr(jl,jk) = 0.
           pmflxs(jl,jk) = 0.
+          pmflx_tr(jl,jk) = 0.                                           ! wvt
           pdpmel(jl,jk) = 0.
           if(ldcum(jl).and.jk.ge.kctop(jl)) then
             pmfus(jl,jk)=pmfus(jl,jk)-pmfu(jl,jk)*           &
@@ -3271,6 +3518,7 @@
       do jl=1,klon
         pmflxr(jl,klev+1) = 0.
         pmflxs(jl,klev+1) = 0.
+        pmflx_tr(jl,klev+1) = 0.                                         ! wvt
       end do
       do jl=1,klon
         if(ldcum(jl)) then
@@ -3360,7 +3608,15 @@
      &       (pdmfup(jl,jk)+pdmfdp(jl,jk))+pdpmel(jl,jk)
             pmflxs(jl,jk+1)=pmflxs(jl,jk)+(1.-zalfaw)*          &
      &       (pdmfup(jl,jk)+pdmfdp(jl,jk))-pdpmel(jl,jk)
+!--- wvt: same increment on the tagged total (pdpmel is an internal rain<->snow transfer)
+            if (l_tracers) pmflx_tr(jl,jk+1) = pmflx_tr(jl,jk)      & ! wvt
+     &        + pdmfup_tr(jl,jk) + pdmfdp_tr(jl,jk)                   ! wvt
             if(pmflxr(jl,jk+1)+pmflxs(jl,jk+1).lt.0.0) then
+!--- wvt: the base zeroes the flux and re-derives pdmfdp; mirror both on the tagged side
+              if (l_tracers) then                                     ! wvt
+                pdmfdp_tr(jl,jk) = -(pmflx_tr(jl,jk)+pdmfup_tr(jl,jk))! wvt
+                pmflx_tr(jl,jk+1) = 0.0                               ! wvt
+              endif                                                   ! wvt
               pdmfdp(jl,jk)=-(pmflxr(jl,jk)+pmflxs(jl,jk)+pdmfup(jl,jk))
               pmflxr(jl,jk+1)=0.0
               pmflxs(jl,jk+1)=0.0
@@ -3399,14 +3655,32 @@
      &         +pdpmel(jl,jk)+zdrfl*pmflxr(jl,jk)*zdenom
               pmflxs(jl,jk+1)=pmflxs(jl,jk)+zpds         &
      &         -pdpmel(jl,jk)+zdrfl*pmflxs(jl,jk)*zdenom
+!--- wvt: zdrfl (<=0) is evaporation out of the falling flux; it removes tagged water in
+!--- wvt: proportion to the flux composition, and the SAME amount lands in pdmfup_tr because
+!--- wvt: the base folds it into pdmfup.
+              if (l_tracers) then                                      ! wvt
+                ztr_clp = 0.0                                          ! wvt
+                if (zrfl > 1.e-20) ztr_clp = pmflx_tr(jl,jk)/zrfl      ! wvt
+                ztr_clp = max(0.0, min(ztr_clp, 1.0))                  ! wvt
+                pdmfup_tr(jl,jk) = pdmfup_tr(jl,jk) + zdrfl*ztr_clp    ! wvt
+                pmflx_tr(jl,jk+1) = pmflx_tr(jl,jk) + pdmfdp_tr(jl,jk) & ! wvt
+     &            + zdrfl*ztr_clp                                       ! wvt
+              endif                                                    ! wvt
               pdmfup(jl,jk)=pdmfup(jl,jk)+zdrfl
-!--- wvt: scale tracer precipitation proportionally to evaporation
-              if (l_tracers .and. abs(pdmfup(jl,jk)) .gt. 1.0e-20) then ! wvt
-                pdmfup_tr(jl,jk) = pdmfup_tr(jl,jk) *                 & ! wvt
-     &            (pdmfup(jl,jk) / (pdmfup(jl,jk) - zdrfl + 1.0e-20))  ! wvt
-                pdmfup_tr(jl,jk) = max(0.0, pdmfup_tr(jl,jk))          ! wvt
-              endif                                                      ! wvt
+!--- wvt: DELETED - the old proportional rescale of pdmfup_tr lived here. It was a no-op
+!--- wvt: (pdmfup is 0 below cloud base before the zdrfl above, so it multiplied zero) and a
+!--- wvt: hazard once the tagged flux is carried properly: its denominator collapses to the
+!--- wvt: 1.0e-20 guard, so the ratio explodes. The evaporation is now handled above, on the
+!--- wvt: tagged precipitation flux, at the flux composition.
               if ( pmflxr(jl,jk+1)+pmflxs(jl,jk+1) < 0. ) then
+!--- wvt: MIRROR - the base zeroes a negative flux and books the shortfall into pdmfup.
+!--- wvt: The tagged side must do the same or the tagged and base precipitation chains
+!--- wvt: diverge exactly where the base repairs itself.
+                if (l_tracers) then                                      ! wvt
+                  pdmfup_tr(jl,jk) = pdmfup_tr(jl,jk)                  & ! wvt
+     &              - pmflx_tr(jl,jk+1)                                  ! wvt
+                  pmflx_tr(jl,jk+1) = 0.                                 ! wvt
+                endif                                                    ! wvt
                 pdmfup(jl,jk) = pdmfup(jl,jk)-(pmflxr(jl,jk+1)+pmflxs(jl,jk+1))
                 pmflxr(jl,jk+1) = 0.
                 pmflxs(jl,jk+1) = 0.
@@ -3423,6 +3697,7 @@
               pmflxs(jl,jk+1)=0.0
               pdmfdp(jl,jk)=0.0
               pdpmel(jl,jk)=0.0
+              if (l_tracers) pmflx_tr(jl,jk+1)=0.0                   ! wvt
 !--- wvt: zero tracer downdraft precip when all precip zeroed
               if (l_tracers) then                                        ! wvt
                 pdmfdp_tr(jl,jk) = 0.0                                   ! wvt
@@ -3831,7 +4106,9 @@
      &     pgeo,     pgeoh,    ldcum,   ktype,  klab,  plrain, &
      &     pmfu,     pmfub,    kcbot,   ptu,                   &
      &     pqu,      plu,      puu,     pvu,    pmfus,         &
-     &     pmfuq,    pmful,    pdmfup)
+     &     pmfuq,    pmful,    pdmfup,                             & ! wvt
+     &     l_tracers, pqv_tr, pqu_tr, plu_tr, pmfuq_tr, pmful_tr,  & ! wvt
+     &     pdmfup_tr)                                                ! wvt
       implicit none
 !      m.tiedtke         e.c.m.w.f.     12/89
 !      c.zhang           iprc           05/2012
@@ -3870,6 +4147,13 @@
       real(kind=kind_phys),intent(out),dimension(klon,klev):: plrain
       real(kind=kind_phys),intent(out),dimension(klon,klev):: ptu,pqu,plu
       real(kind=kind_phys),intent(out),dimension(klon,klev):: pmfu,pmfus,pmfuq,pmful
+      logical,intent(in):: l_tracers                                     ! wvt
+      real(kind=kind_phys),intent(in),dimension(klon,klev):: pqv_tr      ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pqu_tr   ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: plu_tr   ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmfuq_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pmful_tr ! wvt
+      real(kind=kind_phys),intent(inout),dimension(klon,klev):: pdmfup_tr ! wvt
       real(kind=kind_phys),intent(out),dimension(klon,klev):: pdmfup
 
 !--- local variables and arrays:
@@ -3896,6 +4180,20 @@
             pmfuq(jl,kk+1)=pmfub(jl)*pqu(jl,kk+1)
             pmful(jl,kk+1)=0.
             pdmfup(jl,kk+1)=0.
+!--- wvt: MIRROR - the mid-level parcel is lifted straight from the environment one level
+!--- wvt: below (pqu = pqen(kk)), so the tagged parcel takes the tagged environment there.
+!--- wvt: This level is NOT re-initialised by cuascn's cloud-base block (which works at
+!--- wvt: kcbot = kk, not kk+1), so without this the mid-level parcel starts untagged.
+            if (l_tracers) then                                          ! wvt
+              pqu_tr(jl,kk+1)=pqv_tr(jl,kk)                              ! wvt
+              plu_tr(jl,kk+1)=0.                                         ! wvt
+              pmfuq_tr(jl,kk+1)=pmfub(jl)*pqu_tr(jl,kk+1)                ! wvt
+              pmful_tr(jl,kk+1)=0.                                       ! wvt
+              pdmfup_tr(jl,kk+1)=0.                                      ! wvt
+#ifdef WVT_CLAMP_DIAG
+              wvt_midlev_hits = wvt_midlev_hits + 1
+#endif
+            endif                                                        ! wvt
             kcbot(jl)=kk
             klab(jl,kk+1)=1
             plrain(jl,kk+1)=0.0
