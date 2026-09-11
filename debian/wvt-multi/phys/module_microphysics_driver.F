@@ -102,6 +102,7 @@ SUBROUTINE microphysics_driver(                                          &
 !NUWRF JJS 20110525 ^^^^^
 !                     ,ccntype                                           & ! for mp_milbrandt2mom
                       ,u,v,w,z                                          &   
+                      ,tr_mpcre,  tr_mpdes, tr_mpred                     & ! wvt
                       ,rainnc,    rainncv,  tr_rainnc                    & ! wvt
                       ,snownc,    snowncv,  tr_snownc                    & ! wvt
                       ,hailnc,    hailncv                                &
@@ -664,6 +665,8 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
          OPTIONAL, INTENT(INOUT) :: tr_block                                                    ! wvt
    REAL, DIMENSION( ims:ime, num_wvt_regions, jms:jme ),           &                            ! wvt
          OPTIONAL, INTENT(INOUT) :: tr_rainnc, tr_snownc, tr_graupelnc                          ! wvt
+   REAL, DIMENSION( ims:, :, jms: ),                                                            & ! wvt
+         OPTIONAL, INTENT(INOUT) :: tr_mpcre, tr_mpdes, tr_mpred                                  ! wvt
 
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                  &
          OPTIONAL,                                                &
@@ -2462,6 +2465,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
 ! wvt: optional WVT tracer arguments
                  ,tr_block=tr_block,num_wvt_regions=num_wvt_regions & ! wvt
                  ,f_tr_qv=flag_tr_qv                                & ! wvt: gates WVT (tracer_opt=4)
+                 ,tr_mpcre=tr_mpcre,tr_mpdes=tr_mpdes,tr_mpred=tr_mpred & ! wvt
                  ,tr_rainnc=tr_rainnc,tr_snownc=tr_snownc           & ! wvt
                  ,tr_graupelnc=tr_graupelnc                         & ! wvt
                  ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &

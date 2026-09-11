@@ -32,6 +32,7 @@
 #endif
                  ,tr_block,num_wvt_regions,f_tr_qv                  & ! wvt
                  ,tr_rainnc,tr_snownc,tr_graupelnc                   & ! wvt
+                 ,tr_mpcre,tr_mpdes,tr_mpred                         & ! wvt
                 )
 !=================================================================================================================
 
@@ -99,6 +100,17 @@
  real(kind=kind_phys),intent(inout),dimension(ims:ime,kms:kme,jms:jme,*),optional:: tr_block ! wvt
  real(kind=kind_phys),intent(inout),dimension(ims:ime,num_wvt_regions,jms:jme),optional:: & ! wvt
     tr_rainnc,tr_snownc,tr_graupelnc                                         ! wvt
+!--- wvt: accumulated cap mass per region (kg m-2). THREE KINDS, deliberately separate:    ! wvt
+!--- wvt:   tr_mpred REDISTRIBUTIVE (condensate -> vapour, total water conserved)          ! wvt
+!--- wvt:   tr_mpdes DESTRUCTIVE    (the vapour rescales; mass discarded)                  ! wvt
+!--- wvt:   tr_mpcre CREATIVE       (max(.,0) floors after sedimentation invent mass)      ! wvt
+!--- wvt: Summing them would add a conservative quantity to a destructive one.             ! wvt
+!--- wvt: ⚠ mp_wsm6_run returns these ALREADY COLUMN-INTEGRATED, so there is no rho*dz     ! wvt
+!--- wvt: loop here and NO kte-k+kts flip. That is the whole point: the cumulus twin       ! wvt
+!--- wvt: integrated in its wrapper, where the orders differ, and shipped a wrong weight.  ! wvt
+ real(kind=kind_phys),intent(inout),dimension(ims:ime,num_wvt_regions,jms:jme),optional:: & ! wvt
+    tr_mpcre,tr_mpdes,tr_mpred                                               ! wvt
+ real(kind=kind_phys),dimension(its:ite,num_wvt_regions):: tr_mpcre_hv,tr_mpdes_hv,tr_mpred_hv ! wvt
  logical,intent(in),optional:: f_tr_qv     ! wvt: WVT active (qv_tr tracer defined ⇒ tracer_opt=4)
 
 !output arguments:
@@ -206,6 +218,7 @@
                  ,tr_rain=tr_rain_hv,tr_snow=tr_snow_hv,tr_graupel=tr_graupel_hv  & ! wvt
                  ,do_tracers=l_do_tracers                                          & ! wvt
                  ,num_wvt_regions=num_wvt_regions                                  & ! wvt
+                 ,tr_mpcre=tr_mpcre_hv,tr_mpdes=tr_mpdes_hv,tr_mpred=tr_mpred_hv   & ! wvt
                     )
     else                                                                     ! wvt
     call mp_wsm6_run(t=t_hv,q=qv_hv,qc=qc_hv,qi=qi_hv,qr=qr_hv,qs=qs_hv,qg=qg_hv, &
@@ -260,6 +273,15 @@
              tr_rainnc(i,n_wvt,j)    = tr_rain_hv(i,n_wvt)                    ! wvt
              tr_snownc(i,n_wvt,j)    = tr_snow_hv(i,n_wvt)                    ! wvt
              tr_graupelnc(i,n_wvt,j) = tr_graupel_hv(i,n_wvt)                 ! wvt
+!--- wvt: mp_wsm6_run returns THIS CALL's cap mass, already column-integrated; accumulate ! wvt
+!--- wvt: across timesteps here, exactly like a precipitation accumulator. No rho*dz and  ! wvt
+!--- wvt: no index flip -- see the declaration comment for why that matters.              ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n_wvt,j) = tr_mpcre(i,n_wvt,j)            & ! wvt
+     &                                                  + tr_mpcre_hv(i,n_wvt)             ! wvt
+             if (present(tr_mpdes)) tr_mpdes(i,n_wvt,j) = tr_mpdes(i,n_wvt,j)            & ! wvt
+     &                                                  + tr_mpdes_hv(i,n_wvt)             ! wvt
+             if (present(tr_mpred)) tr_mpred(i,n_wvt,j) = tr_mpred(i,n_wvt,j)            & ! wvt
+     &                                                  + tr_mpred_hv(i,n_wvt)             ! wvt
              do k = kts,kte                                                  ! wvt
                 tr_block(i,k,j,ib+1) = tr_qv_hv(i,k,n_wvt)                    ! wvt
                 tr_block(i,k,j,ib+2) = tr_qc_hv(i,k,n_wvt)                    ! wvt

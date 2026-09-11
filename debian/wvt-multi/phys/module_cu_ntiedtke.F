@@ -500,10 +500,16 @@
        do i = its,ite                                                                      ! wvt
           tr_pratec(i,n_wvt,j) = tr_pratec_hv(i)                                           ! wvt
           do k = kts,kte                                                                    ! wvt
+!--- wvt: the _hv arrays come back from cu_ntiedtke_run in SCHEME order (index 1 = model top;
+!--- wvt: cu_ntiedtke_pre_run reverses on the way in). rho3d/dz8w are in WRF order. EVERY other
+!--- wvt: _hv crossing in this file applies kte-k+kts (pack :275-277, unpack :369-371); these two
+!--- wvt: lines did not, so each level's cap increment was weighted by its MIRROR level's mass.
+!--- wvt: It does NOT cancel in a column sum -- that holds only for symmetric layer masses, and
+!--- wvt: rho*dz varies ~10x top to bottom. Fixed 2026-09-11 (round wsm6-tag-harness-1, both arms).
              tr_capcre(i,n_wvt,j) = tr_capcre(i,n_wvt,j)                                  & ! wvt
-     &          + tr_capcre_hv(i,k)*rho3d(i,k,j)*dz8w(i,k,j)                                ! wvt
+     &          + tr_capcre_hv(i,kte-k+kts)*rho3d(i,k,j)*dz8w(i,k,j)                        ! wvt
              tr_capdes(i,n_wvt,j) = tr_capdes(i,n_wvt,j)                                  & ! wvt
-     &          + tr_capdes_hv(i,k)*rho3d(i,k,j)*dz8w(i,k,j)                                ! wvt
+     &          + tr_capdes_hv(i,kte-k+kts)*rho3d(i,k,j)*dz8w(i,k,j)                        ! wvt
           enddo                                                                             ! wvt
        enddo                                                                               ! wvt
     endif                                                                                  ! wvt

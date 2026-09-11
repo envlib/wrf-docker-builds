@@ -46,6 +46,8 @@ CONTAINS
                      ,history_interval                                &
                      ,itimestep                                       &
                      ,cu_used, shcu_used, acc_phy_tend                &
+                     ,TR_MPCRE,TR_MPDES,TR_MPRED                       & ! Optional (WVT)
+                     ,I_TR_MPCRE,I_TR_MPDES,I_TR_MPRED                 & ! Optional (WVT)
                      ,TR_RAINC,TR_RAINNC                               & ! Optional (WVT)
                      ,TR_CAPCRE,TR_CAPDES                              & ! Optional (WVT)
                      ,I_TR_RAINC,I_TR_RAINNC                           & ! Optional (WVT)
@@ -206,6 +208,8 @@ CONTAINS
    ! WVT tracer bucketed accumulators (optional, engaged when BUCKET_MM > 0)
    REAL, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: TR_RAINC          ! wvt: per-region (i,n,j)
    REAL, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: TR_CAPCRE, TR_CAPDES ! wvt
+   REAL, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: TR_MPCRE, TR_MPDES, TR_MPRED ! wvt
+   INTEGER, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: I_TR_MPCRE, I_TR_MPDES, I_TR_MPRED ! wvt
    REAL, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: TR_RAINNC          ! wvt: per-region (i,n,j)
    INTEGER, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: I_TR_RAINC      ! wvt: per-region (i,n,j)
    INTEGER, DIMENSION( ims:, :, jms: ), OPTIONAL, INTENT(INOUT) :: I_TR_CAPCRE, I_TR_CAPDES ! wvt
@@ -349,6 +353,43 @@ CONTAINS
           IF (tr_rainnc(i,n_tr,j) .gt. bucket_mm) THEN
             tr_rainnc(i,n_tr,j)   = tr_rainnc(i,n_tr,j) - bucket_mm
             i_tr_rainnc(i,n_tr,j) = i_tr_rainnc(i,n_tr,j) + 1
+          ENDIF
+        ENDDO
+        ENDDO
+        ENDDO
+      ENDIF
+
+!--- wvt: bucket the three MICROPHYSICS cap accumulators. Same treatment as the cumulus pair
+!--- wvt: above; the I_* counter must exist from the FIRST archived frame because cfdb-ingest
+!--- wvt: probes for I_<var> in the first file only and silently drops the bucket term otherwise.
+!--- wvt: The three are bucketed SEPARATELY because they are separate fields -- see the Registry
+!--- wvt: comment for why summing redistributive, destructive and creative mass is meaningless.
+      IF (PRESENT(TR_MPCRE) .AND. PRESENT(I_TR_MPCRE)) THEN
+        IF (xtime .eq. 0.0) THEN
+          DO n_tr=1,SIZE(tr_mpcre,2)
+          DO j=j_start(ij),j_end(ij)
+          DO i=i_start(ij),i_end(ij)
+            i_tr_mpcre(i,n_tr,j) = 0
+            i_tr_mpdes(i,n_tr,j) = 0
+            i_tr_mpred(i,n_tr,j) = 0
+          ENDDO
+          ENDDO
+          ENDDO
+        ENDIF
+        DO n_tr=1,SIZE(tr_mpcre,2)
+        DO j=j_start(ij),j_end(ij)
+        DO i=i_start(ij),i_end(ij)
+          IF (tr_mpcre(i,n_tr,j) .gt. bucket_mm) THEN
+            tr_mpcre(i,n_tr,j)   = tr_mpcre(i,n_tr,j) - bucket_mm
+            i_tr_mpcre(i,n_tr,j) = i_tr_mpcre(i,n_tr,j) + 1
+          ENDIF
+          IF (tr_mpdes(i,n_tr,j) .gt. bucket_mm) THEN
+            tr_mpdes(i,n_tr,j)   = tr_mpdes(i,n_tr,j) - bucket_mm
+            i_tr_mpdes(i,n_tr,j) = i_tr_mpdes(i,n_tr,j) + 1
+          ENDIF
+          IF (tr_mpred(i,n_tr,j) .gt. bucket_mm) THEN
+            tr_mpred(i,n_tr,j)   = tr_mpred(i,n_tr,j) - bucket_mm
+            i_tr_mpred(i,n_tr,j) = i_tr_mpred(i,n_tr,j) + 1
           ENDIF
         ENDDO
         ENDDO

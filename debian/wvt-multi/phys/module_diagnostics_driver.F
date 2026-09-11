@@ -397,6 +397,8 @@ CONTAINS
                 ,acc_phy_tend=grid%acc_phy_tend                      &
       ! WVT tracer bucketed accumulators
                 ,TR_RAINC=grid%tr_rainc, TR_RAINNC=grid%tr_rainnc    &
+                ,TR_MPCRE=grid%tr_mpcre, TR_MPDES=grid%tr_mpdes, TR_MPRED=grid%tr_mpred &
+                ,I_TR_MPCRE=grid%i_tr_mpcre, I_TR_MPDES=grid%i_tr_mpdes, I_TR_MPRED=grid%i_tr_mpred &
                 ,TR_CAPCRE=grid%tr_capcre, TR_CAPDES=grid%tr_capdes  &
                 ,I_TR_RAINC=grid%i_tr_rainc, I_TR_RAINNC=grid%i_tr_rainnc &
                 ,I_TR_CAPCRE=grid%i_tr_capcre, I_TR_CAPDES=grid%i_tr_capdes &

@@ -3976,6 +3976,8 @@ BENCH_START(micro_driver_tim)
       &        , QNDROP_CURR=scalar(ims,kms,jms,P_QNDROP), F_QNDROP=F_QNDROP &
       &        , tr_block=tracer(ims,kms,jms,P_QV_TR), F_TR_QV=F_QV_TR    &  ! wvt: contiguous moisture-tracer block (base=P_QV_TR)
       &        , num_wvt_regions=config_flags%num_wvt_regions             &  ! wvt
+      &        , TR_MPCRE=grid%tr_mpcre, TR_MPDES=grid%tr_mpdes            & ! wvt
+      &        , TR_MPRED=grid%tr_mpred                                     & ! wvt
       &        , TR_RAINNC=grid%tr_rainnc, TR_SNOWNC=grid%tr_snownc       &
       &        , TR_GRAUPELNC=grid%tr_graupelnc                           &
 #if (WRF_CHEM == 1)

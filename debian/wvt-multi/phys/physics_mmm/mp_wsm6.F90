@@ -1,6 +1,79 @@
 !=================================================================================================================
+!--- wvt: WVT clamp/cap instrumentation. DIAGNOSTIC BUILDS ONLY (-DWVT_CLAMP_DIAG), never        ! wvt
+!--- wvt: production: these are module `save` variables and would race under OpenMP. The module   ! wvt
+!--- wvt: itself always compiles so `use mp_wsm6_common` needs no guard; only its contents are    ! wvt
+!--- wvt: conditional. Pattern copied from cu_ntiedtke_common (cu_ntiedtke.F90:2-93).             ! wvt
+!--- wvt:                                                                                          ! wvt
+!--- wvt: THREE KINDS OF CAP, and they must never be summed into one total:                        ! wvt
+!--- wvt:   +1 CREATIVE      a max(.,0) floor invents tag mass                                     ! wvt
+!--- wvt:   -1 DESTRUCTIVE   tr_q <- q*(tr_q/sum) discards the excess outright                     ! wvt
+!--- wvt:    0 REDISTRIBUTIVE the five condensate caps CONSERVE total water while moving it        ! wvt
+!--- wvt:                     BETWEEN SPECIES (condensate -> vapour). A single counter would add   ! wvt
+!--- wvt:                     a conservative quantity to a destructive one and mean nothing.       ! wvt
+!--- wvt: Amounts are kg m-2 (den*delz is in scope at every site, unlike cu_ntiedtke). Counts use  ! wvt
+!--- wvt: a RELATIVE threshold in the unclamped variable's own units, so amount and count are in   ! wvt
+!--- wvt: DIFFERENT units on purpose -- do not divide one by the other.                            ! wvt
+ module mp_wsm6_common                                                                            ! wvt
+ use ccpp_kind_types,only: kind_phys                                                              ! wvt
+ implicit none                                                                                    ! wvt
+ public                                                                                           ! wvt
+ save                                                                                             ! wvt
+#ifdef WVT_CLAMP_DIAG
+!--- wvt: 12 cap sites. 1-5 entry condensate caps (qc,qi,qr,qs,qg), 6 entry vapour rescale,       ! wvt
+!--- wvt: 7-9 post-sedimentation caps (qr,qs,qg), 10 post-sed vapour rescale,                     ! wvt
+!--- wvt: 11 post-ice-sedimentation cap (qi), 12 post-ice vapour rescale.                         ! wvt
+ integer,parameter:: wvt_cap_kind(12) = (/ 0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, -1 /)               ! wvt
+ real(kind=kind_phys):: wvt_cap_amt(12)                                                           ! wvt
+ integer:: wvt_cap_n(12)                                                                          ! wvt
+!--- wvt: negative-value floors that CREATE tag mass, after sedimentation: qr,qs,qg,qi            ! wvt
+ real(kind=kind_phys):: wvt_neg_amt(4)                                                            ! wvt
+ integer:: wvt_neg_n(4)                                                                           ! wvt
+!--- wvt: "padding for small values" orphans: base qc/qi zeroed below qmin with no tagged mirror  ! wvt
+ real(kind=kind_phys):: wvt_orphan_amt(2)                                                         ! wvt
+ integer:: wvt_orphan_n(2)                                                                        ! wvt
+!--- wvt: worst end-of-substep (sum_n tr_X - X)/X per species, order q,qc,qi,qr,qs,qg             ! wvt
+ real(kind=kind_phys):: wvt_excess_max(6)                                                         ! wvt
+!--- wvt: mass CREATED by the positivity floors in the process updates and at routine entry,      ! wvt
+!--- wvt: per species (q,qc,qi,qr,qs,qg). These are the D1 mechanism: the base nets sinks against ! wvt
+!--- wvt: same-step sources via factor=value/source, while the mirror charges sinks to the        ! wvt
+!--- wvt: PRE-EXISTING tag and floors each region independently, so a region can go negative and  ! wvt
+!--- wvt: be floored -- inventing tag mass. Uninstrumented until 2026-09-11 (round wsm6-code-1);  ! wvt
+!--- wvt: the invented mass was then booked to tr_mpred/tr_mpdes a step later and MISLABELLED as  ! wvt
+!--- wvt: conservative redistribution. Kept separate from the sedimentation floors so the two     ! wvt
+!--- wvt: mechanisms stay distinguishable; both feed tr_mpcre, which is the CREATIVE total.       ! wvt
+ real(kind=kind_phys):: wvt_floor_amt(6)                                                          ! wvt
+ integer:: wvt_floor_n(6)                                                                         ! wvt
+#endif
+ contains                                                                                         ! wvt
+ subroutine wvt_diag_reset                                                                        ! wvt
+#ifdef WVT_CLAMP_DIAG
+ wvt_cap_amt = 0. ; wvt_cap_n = 0                                                                 ! wvt
+ wvt_neg_amt = 0. ; wvt_neg_n = 0                                                                 ! wvt
+ wvt_orphan_amt = 0. ; wvt_orphan_n = 0                                                           ! wvt
+ wvt_excess_max = 0.                                                                              ! wvt
+ wvt_floor_amt = 0. ; wvt_floor_n = 0                                                              ! wvt
+#endif
+ end subroutine wvt_diag_reset                                                                    ! wvt
+!--- wvt: worst relative excess of the tag sum over its base species, per species slot.           ! wvt
+!--- wvt: Guarded on the base being meaningfully non-zero: where base -> 0 the ratio diverges     ! wvt
+!--- wvt: and reports 1e15-type values that say nothing about mass. The ABSOLUTE mass is what     ! wvt
+!--- wvt: the cap counters carry; this is the shape diagnostic.                                   ! wvt
+ subroutine wvt_excess(base,tr,slot)                                                              ! wvt
+ real(kind=kind_phys),intent(in):: base                                                           ! wvt
+ real(kind=kind_phys),intent(in):: tr(:)                                                          ! wvt
+ integer,intent(in):: slot                                                                        ! wvt
+#ifdef WVT_CLAMP_DIAG
+ real(kind=kind_phys):: tsum                                                                      ! wvt
+ tsum = sum(tr)                                                                                   ! wvt
+ if (base.gt.1.e-12 .and. tsum.gt.base) &                                                         ! wvt
+   wvt_excess_max(slot) = max(wvt_excess_max(slot),(tsum-base)/base)                              ! wvt
+#endif
+ end subroutine wvt_excess                                                                        ! wvt
+ end module mp_wsm6_common                                                                        ! wvt
+!=================================================================================================================
  module mp_wsm6
  use ccpp_kind_types,only: kind_phys
+ use mp_wsm6_common                                                                               ! wvt
  use module_libmassv,only: vrec,vsqrt
 
  use mp_radar
@@ -222,7 +295,8 @@
                         its,ite,kts,kte,errmsg,errflg,        &
                         tr_q,tr_qc,tr_qi,tr_qr,tr_qs,tr_qg,  & ! wvt
                         tr_rain,tr_snow,tr_graupel,do_tracers, & ! wvt
-                        num_wvt_regions                       & ! wvt
+                        num_wvt_regions,                      & ! wvt
+                        tr_mpcre,tr_mpdes,tr_mpred            & ! wvt
                        )
 !=================================================================================================================!
 !  This code is a 6-class GRAUPEL phase microphyiscs scheme (WSM6) of the
@@ -335,6 +409,21 @@
                                                      tr_graupel     ! wvt
  logical,intent(in),optional:: do_tracers                           ! wvt
  integer,intent(in):: num_wvt_regions                               ! wvt
+!--- wvt: per-region cap mass, ALREADY COLUMN-INTEGRATED (kg m-2), for this call only --   ! wvt
+!--- wvt: the wrapper accumulates them across timesteps. THREE KINDS, never summed:        ! wvt
+!--- wvt:   tr_mpred  REDISTRIBUTIVE  five condensate caps; total water conserved, mass    ! wvt
+!--- wvt:                             moved BETWEEN SPECIES (condensate -> vapour)         ! wvt
+!--- wvt:   tr_mpdes  DESTRUCTIVE     the three tr_q <- q*(tr_q/sum) rescales; discarded   ! wvt
+!--- wvt:   tr_mpcre  CREATIVE        max(.,0) floors after sedimentation invent tag mass  ! wvt
+!--- wvt: ⚠ INTEGRATED HERE, NOT IN THE WRAPPER, and that is on purpose. The cumulus twin  ! wvt
+!--- wvt: integrated in module_cu_ntiedtke.F, where the scheme's vertical order is the     ! wvt
+!--- wvt: REVERSE of rho3d/dz8w -- and it shipped for months multiplying each level's cap  ! wvt
+!--- wvt: increment by the mirror level's mass. Here den/delz and the tags share one index ! wvt
+!--- wvt: convention by construction, so that bug cannot be written.                       ! wvt
+ real(kind=kind_phys),intent(out),dimension(its:,:),optional:: &                           ! wvt
+                                                    tr_mpcre, &                            ! wvt
+                                                    tr_mpdes, &                            ! wvt
+                                                    tr_mpred                               ! wvt
 
 !local variables and arrays:
  real(kind=kind_phys),dimension(its:ite,kts:kte,3)::              &
@@ -436,7 +525,7 @@
 ! --- local tracer variables: ! wvt
  logical:: l_tracers                                               ! wvt
  integer:: nreg                                                    ! wvt: WVT region count (n declared above)
- real(kind=kind_phys):: tr_sum, tr_frac                            ! wvt: cross-region cap sum / share
+ real(kind=kind_phys):: tr_sum, tr_frac, ztr_unc   ! wvt: ztr_unc = pre-floor value                            ! wvt: cross-region cap sum / share
  real(kind=kind_phys),dimension(its:ite,kts:kte,num_wvt_regions):: & ! wvt: per-region rate temps
                                                        tr_pigen,  & ! wvt
                                                        tr_pidep,  & ! wvt
@@ -502,6 +591,9 @@
    if (do_tracers) l_tracers = .true.                              ! wvt
  endif                                                             ! wvt
  nreg = num_wvt_regions                                            ! wvt
+ if (present(tr_mpcre)) tr_mpcre = 0.                              ! wvt
+ if (present(tr_mpdes)) tr_mpdes = 0.                              ! wvt
+ if (present(tr_mpred)) tr_mpred = 0.                              ! wvt
 !
  idim = ite-its+1
  kdim = kte-kts+1
@@ -524,11 +616,59 @@
    do n = 1, nreg                                                  ! wvt
    do k = kts, kte                                                 ! wvt
      do i = its, ite                                               ! wvt
+       if (tr_q(i,k,n).lt.0.) then                                         ! wvt
+         if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) &             ! wvt
+                                              - tr_q(i,k,n)*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_floor_amt(1) = wvt_floor_amt(1) - tr_q(i,k,n)*den(i,k)*delz(i,k) ! wvt
+         wvt_floor_n(1) = wvt_floor_n(1) + 1                      ! wvt
+#endif
+       endif                                                                ! wvt
        tr_q(i,k,n) = max(tr_q(i,k,n),0.0)                         ! wvt
+       if (tr_qc(i,k,n).lt.0.) then                                         ! wvt
+         if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) &             ! wvt
+                                              - tr_qc(i,k,n)*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_floor_amt(2) = wvt_floor_amt(2) - tr_qc(i,k,n)*den(i,k)*delz(i,k) ! wvt
+         wvt_floor_n(2) = wvt_floor_n(2) + 1                      ! wvt
+#endif
+       endif                                                                ! wvt
        tr_qc(i,k,n) = max(tr_qc(i,k,n),0.0)                       ! wvt
+       if (tr_qi(i,k,n).lt.0.) then                                         ! wvt
+         if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) &             ! wvt
+                                              - tr_qi(i,k,n)*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_floor_amt(3) = wvt_floor_amt(3) - tr_qi(i,k,n)*den(i,k)*delz(i,k) ! wvt
+         wvt_floor_n(3) = wvt_floor_n(3) + 1                      ! wvt
+#endif
+       endif                                                                ! wvt
        tr_qi(i,k,n) = max(tr_qi(i,k,n),0.0)                       ! wvt
+       if (tr_qr(i,k,n).lt.0.) then                                         ! wvt
+         if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) &             ! wvt
+                                              - tr_qr(i,k,n)*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_floor_amt(4) = wvt_floor_amt(4) - tr_qr(i,k,n)*den(i,k)*delz(i,k) ! wvt
+         wvt_floor_n(4) = wvt_floor_n(4) + 1                      ! wvt
+#endif
+       endif                                                                ! wvt
        tr_qr(i,k,n) = max(tr_qr(i,k,n),0.0)                       ! wvt
+       if (tr_qs(i,k,n).lt.0.) then                                         ! wvt
+         if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) &             ! wvt
+                                              - tr_qs(i,k,n)*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_floor_amt(5) = wvt_floor_amt(5) - tr_qs(i,k,n)*den(i,k)*delz(i,k) ! wvt
+         wvt_floor_n(5) = wvt_floor_n(5) + 1                      ! wvt
+#endif
+       endif                                                                ! wvt
        tr_qs(i,k,n) = max(tr_qs(i,k,n),0.0)                       ! wvt
+       if (tr_qg(i,k,n).lt.0.) then                                         ! wvt
+         if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) &             ! wvt
+                                              - tr_qg(i,k,n)*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_floor_amt(6) = wvt_floor_amt(6) - tr_qg(i,k,n)*den(i,k)*delz(i,k) ! wvt
+         wvt_floor_n(6) = wvt_floor_n(6) + 1                      ! wvt
+#endif
+       endif                                                                ! wvt
        tr_qg(i,k,n) = max(tr_qg(i,k,n),0.0)                       ! wvt
      enddo                                                         ! wvt
    enddo                                                           ! wvt
@@ -540,47 +680,83 @@
      do i = its, ite                                               ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qc(i,k,n) ; enddo  ! wvt
        if (tr_sum.gt.qc(i,k) .and. tr_sum.gt.0.) then                                 ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_cap_amt(1) = wvt_cap_amt(1) + (tr_sum-qc(i,k))*den(i,k)*delz(i,k)      ! wvt
+         if (tr_sum-qc(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(1)=wvt_cap_n(1)+1 ! wvt
+#endif
          do n = 1, nreg                                            ! wvt
            tr_frac = tr_qc(i,k,n)/tr_sum                           ! wvt
            tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qc(i,k))*tr_frac    ! wvt
+           if (present(tr_mpred)) tr_mpred(i,n) = tr_mpred(i,n) &                  ! wvt
+              + (tr_sum-qc(i,k))*tr_frac*den(i,k)*delz(i,k)                    ! wvt
            tr_qc(i,k,n) = qc(i,k)*tr_frac                          ! wvt
          enddo                                                     ! wvt
        endif                                                       ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qi(i,k,n) ; enddo  ! wvt
        if (tr_sum.gt.qi(i,k) .and. tr_sum.gt.0.) then                                 ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_cap_amt(2) = wvt_cap_amt(2) + (tr_sum-qi(i,k))*den(i,k)*delz(i,k)      ! wvt
+         if (tr_sum-qi(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(2)=wvt_cap_n(2)+1 ! wvt
+#endif
          do n = 1, nreg                                            ! wvt
            tr_frac = tr_qi(i,k,n)/tr_sum                           ! wvt
            tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qi(i,k))*tr_frac    ! wvt
+           if (present(tr_mpred)) tr_mpred(i,n) = tr_mpred(i,n) &                  ! wvt
+              + (tr_sum-qi(i,k))*tr_frac*den(i,k)*delz(i,k)                    ! wvt
            tr_qi(i,k,n) = qi(i,k)*tr_frac                          ! wvt
          enddo                                                     ! wvt
        endif                                                       ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qr(i,k,n) ; enddo  ! wvt
        if (tr_sum.gt.qr(i,k) .and. tr_sum.gt.0.) then                                 ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_cap_amt(3) = wvt_cap_amt(3) + (tr_sum-qr(i,k))*den(i,k)*delz(i,k)      ! wvt
+         if (tr_sum-qr(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(3)=wvt_cap_n(3)+1 ! wvt
+#endif
          do n = 1, nreg                                            ! wvt
            tr_frac = tr_qr(i,k,n)/tr_sum                           ! wvt
            tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qr(i,k))*tr_frac    ! wvt
+           if (present(tr_mpred)) tr_mpred(i,n) = tr_mpred(i,n) &                  ! wvt
+              + (tr_sum-qr(i,k))*tr_frac*den(i,k)*delz(i,k)                    ! wvt
            tr_qr(i,k,n) = qr(i,k)*tr_frac                          ! wvt
          enddo                                                     ! wvt
        endif                                                       ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qs(i,k,n) ; enddo  ! wvt
        if (tr_sum.gt.qs(i,k) .and. tr_sum.gt.0.) then                                 ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_cap_amt(4) = wvt_cap_amt(4) + (tr_sum-qs(i,k))*den(i,k)*delz(i,k)      ! wvt
+         if (tr_sum-qs(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(4)=wvt_cap_n(4)+1 ! wvt
+#endif
          do n = 1, nreg                                            ! wvt
            tr_frac = tr_qs(i,k,n)/tr_sum                           ! wvt
            tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qs(i,k))*tr_frac    ! wvt
+           if (present(tr_mpred)) tr_mpred(i,n) = tr_mpred(i,n) &                  ! wvt
+              + (tr_sum-qs(i,k))*tr_frac*den(i,k)*delz(i,k)                    ! wvt
            tr_qs(i,k,n) = qs(i,k)*tr_frac                          ! wvt
          enddo                                                     ! wvt
        endif                                                       ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qg(i,k,n) ; enddo  ! wvt
        if (tr_sum.gt.qg(i,k) .and. tr_sum.gt.0.) then                                 ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_cap_amt(5) = wvt_cap_amt(5) + (tr_sum-qg(i,k))*den(i,k)*delz(i,k)      ! wvt
+         if (tr_sum-qg(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(5)=wvt_cap_n(5)+1 ! wvt
+#endif
          do n = 1, nreg                                            ! wvt
            tr_frac = tr_qg(i,k,n)/tr_sum                           ! wvt
            tr_q(i,k,n) = tr_q(i,k,n) + (tr_sum-qg(i,k))*tr_frac    ! wvt
+           if (present(tr_mpred)) tr_mpred(i,n) = tr_mpred(i,n) &                  ! wvt
+              + (tr_sum-qg(i,k))*tr_frac*den(i,k)*delz(i,k)                    ! wvt
            tr_qg(i,k,n) = qg(i,k)*tr_frac                          ! wvt
          enddo                                                     ! wvt
        endif                                                       ! wvt
        tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_q(i,k,n) ; enddo   ! wvt
        if (tr_sum.gt.q(i,k) .and. tr_sum.gt.0.) then                                  ! wvt
+#ifdef WVT_CLAMP_DIAG
+         wvt_cap_amt(6) = wvt_cap_amt(6) + (tr_sum-q(i,k))*den(i,k)*delz(i,k)         ! wvt
+         if (tr_sum-q(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(6)=wvt_cap_n(6)+1  ! wvt
+#endif
          do n = 1, nreg                                            ! wvt
+           if (present(tr_mpdes)) tr_mpdes(i,n) = tr_mpdes(i,n) &                  ! wvt
+              + tr_q(i,k,n)*(1.-q(i,k)/tr_sum)*den(i,k)*delz(i,k)                  ! wvt
            tr_q(i,k,n) = q(i,k)*(tr_q(i,k,n)/tr_sum)               ! wvt
          enddo                                                     ! wvt
        endif                                                       ! wvt
@@ -844,8 +1020,28 @@
 !      unpack region n; caps are cross-region (applied after the base unpack below) ! wvt
        do k = kts, kte                                             ! wvt
          do i = its, ite                                           ! wvt
+#ifdef WVT_CLAMP_DIAG
+!--- wvt: these floors CREATE tag mass wherever the tracer PLM reconstruction went negative.     ! wvt
+!--- wvt: nislfv_rain_plm_tr selects its limiter branch on the BASE slopes and tests positivity  ! wvt
+!--- wvt: on the BASE only, so a sharp tracer gradient under a smooth base is unguarded.         ! wvt
+           if (tr_denqrs1(i,k).lt.0.) then                                                       ! wvt
+             wvt_neg_amt(1)=wvt_neg_amt(1)-tr_denqrs1(i,k)*delz(i,k) ; wvt_neg_n(1)=wvt_neg_n(1)+1 ! wvt
+           endif                                                                                 ! wvt
+           if (tr_denqrs2(i,k).lt.0.) then                                                       ! wvt
+             wvt_neg_amt(2)=wvt_neg_amt(2)-tr_denqrs2(i,k)*delz(i,k) ; wvt_neg_n(2)=wvt_neg_n(2)+1 ! wvt
+           endif                                                                                 ! wvt
+           if (tr_denqrs3(i,k).lt.0.) then                                                       ! wvt
+             wvt_neg_amt(3)=wvt_neg_amt(3)-tr_denqrs3(i,k)*delz(i,k) ; wvt_neg_n(3)=wvt_neg_n(3)+1 ! wvt
+           endif                                                                                 ! wvt
+#endif
+           if (present(tr_mpcre) .and. tr_denqrs1(i,k).lt.0.) &                          ! wvt
+             tr_mpcre(i,n) = tr_mpcre(i,n) - tr_denqrs1(i,k)*delz(i,k)                   ! wvt
            tr_qr(i,k,n) = max(tr_denqrs1(i,k)/den(i,k),0.)        ! wvt
+           if (present(tr_mpcre) .and. tr_denqrs2(i,k).lt.0.) &                          ! wvt
+             tr_mpcre(i,n) = tr_mpcre(i,n) - tr_denqrs2(i,k)*delz(i,k)                   ! wvt
            tr_qs(i,k,n) = max(tr_denqrs2(i,k)/den(i,k),0.)        ! wvt
+           if (present(tr_mpcre) .and. tr_denqrs3(i,k).lt.0.) &                          ! wvt
+             tr_mpcre(i,n) = tr_mpcre(i,n) - tr_denqrs3(i,k)*delz(i,k)                   ! wvt
            tr_qg(i,k,n) = max(tr_denqrs3(i,k)/den(i,k),0.)        ! wvt
            trfall(i,k,1,n) = tr_denqrs1(i,k)*workr(i,k)/delz(i,k) ! wvt
            trfall(i,k,2,n) = tr_denqrs2(i,k)*worka(i,k)/delz(i,k) ! wvt
@@ -882,31 +1078,57 @@
        do i = its, ite                                             ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qr(i,k,n) ; enddo   ! wvt
          if (tr_sum.gt.qr(i,k) .and. tr_sum.gt.0.) then                               ! wvt
+#ifdef WVT_CLAMP_DIAG
+           wvt_cap_amt(7) = wvt_cap_amt(7) + (tr_sum-qr(i,k))*den(i,k)*delz(i,k)   ! wvt
+           if (tr_sum-qr(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(7)=wvt_cap_n(7)+1 ! wvt
+#endif
            do n=1,nreg                                             ! wvt
              tr_frac=tr_qr(i,k,n)/tr_sum                           ! wvt
              tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qr(i,k))*tr_frac      ! wvt
+             if (present(tr_mpred)) tr_mpred(i,n) = tr_mpred(i,n) &                  ! wvt
+                + (tr_sum-qr(i,k))*tr_frac*den(i,k)*delz(i,k)                    ! wvt
              tr_qr(i,k,n)=qr(i,k)*tr_frac                          ! wvt
            enddo                                                   ! wvt
          endif                                                     ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qs(i,k,n) ; enddo   ! wvt
          if (tr_sum.gt.qs(i,k) .and. tr_sum.gt.0.) then                               ! wvt
+#ifdef WVT_CLAMP_DIAG
+           wvt_cap_amt(8) = wvt_cap_amt(8) + (tr_sum-qs(i,k))*den(i,k)*delz(i,k)   ! wvt
+           if (tr_sum-qs(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(8)=wvt_cap_n(8)+1 ! wvt
+#endif
            do n=1,nreg                                             ! wvt
              tr_frac=tr_qs(i,k,n)/tr_sum                           ! wvt
              tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qs(i,k))*tr_frac      ! wvt
+             if (present(tr_mpred)) tr_mpred(i,n) = tr_mpred(i,n) &                  ! wvt
+                + (tr_sum-qs(i,k))*tr_frac*den(i,k)*delz(i,k)                    ! wvt
              tr_qs(i,k,n)=qs(i,k)*tr_frac                          ! wvt
            enddo                                                   ! wvt
          endif                                                     ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qg(i,k,n) ; enddo   ! wvt
          if (tr_sum.gt.qg(i,k) .and. tr_sum.gt.0.) then                               ! wvt
+#ifdef WVT_CLAMP_DIAG
+           wvt_cap_amt(9) = wvt_cap_amt(9) + (tr_sum-qg(i,k))*den(i,k)*delz(i,k)   ! wvt
+           if (tr_sum-qg(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(9)=wvt_cap_n(9)+1 ! wvt
+#endif
            do n=1,nreg                                             ! wvt
              tr_frac=tr_qg(i,k,n)/tr_sum                           ! wvt
              tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qg(i,k))*tr_frac      ! wvt
+             if (present(tr_mpred)) tr_mpred(i,n) = tr_mpred(i,n) &                  ! wvt
+                + (tr_sum-qg(i,k))*tr_frac*den(i,k)*delz(i,k)                    ! wvt
              tr_qg(i,k,n)=qg(i,k)*tr_frac                          ! wvt
            enddo                                                   ! wvt
          endif                                                     ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_q(i,k,n) ; enddo    ! wvt
          if (tr_sum.gt.q(i,k) .and. tr_sum.gt.0.) then                                ! wvt
-           do n=1,nreg ; tr_q(i,k,n)=q(i,k)*(tr_q(i,k,n)/tr_sum) ; enddo  ! wvt
+#ifdef WVT_CLAMP_DIAG
+           wvt_cap_amt(10) = wvt_cap_amt(10) + (tr_sum-q(i,k))*den(i,k)*delz(i,k)   ! wvt
+           if (tr_sum-q(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(10)=wvt_cap_n(10)+1 ! wvt
+#endif
+           do n=1,nreg                                                                        ! wvt
+             if (present(tr_mpdes)) tr_mpdes(i,n) = tr_mpdes(i,n) &                          ! wvt
+                + tr_q(i,k,n)*(1.-q(i,k)/tr_sum)*den(i,k)*delz(i,k)                          ! wvt
+             tr_q(i,k,n)=q(i,k)*(tr_q(i,k,n)/tr_sum)                                         ! wvt
+           enddo                                                                             ! wvt
          endif                                                     ! wvt
        enddo                                                       ! wvt
      enddo                                                         ! wvt
@@ -1027,6 +1249,13 @@
                                denqci,delqi,tr_denqci,tr_delqi,dtcld,1,0)      ! wvt
        do k = kts, kte                                             ! wvt
          do i = its, ite                                           ! wvt
+#ifdef WVT_CLAMP_DIAG
+           if (tr_denqci(i,k).lt.0.) then                                                        ! wvt
+             wvt_neg_amt(4)=wvt_neg_amt(4)-tr_denqci(i,k)*delz(i,k) ; wvt_neg_n(4)=wvt_neg_n(4)+1 ! wvt
+           endif                                                                                 ! wvt
+#endif
+           if (present(tr_mpcre) .and. tr_denqci(i,k).lt.0.) &                          ! wvt
+             tr_mpcre(i,n) = tr_mpcre(i,n) - tr_denqci(i,k)*delz(i,k)                   ! wvt
            tr_qi(i,k,n) = max(tr_denqci(i,k)/den(i,k),0.)         ! wvt
          enddo                                                     ! wvt
        enddo                                                       ! wvt
@@ -1050,15 +1279,29 @@
        do i = its, ite                                             ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qi(i,k,n) ; enddo   ! wvt
          if (tr_sum.gt.qi(i,k) .and. tr_sum.gt.0.) then                               ! wvt
+#ifdef WVT_CLAMP_DIAG
+           wvt_cap_amt(11) = wvt_cap_amt(11) + (tr_sum-qi(i,k))*den(i,k)*delz(i,k)   ! wvt
+           if (tr_sum-qi(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(11)=wvt_cap_n(11)+1 ! wvt
+#endif
            do n=1,nreg                                             ! wvt
              tr_frac=tr_qi(i,k,n)/tr_sum                           ! wvt
              tr_q(i,k,n)=tr_q(i,k,n)+(tr_sum-qi(i,k))*tr_frac      ! wvt
+             if (present(tr_mpred)) tr_mpred(i,n) = tr_mpred(i,n) &                  ! wvt
+                + (tr_sum-qi(i,k))*tr_frac*den(i,k)*delz(i,k)                    ! wvt
              tr_qi(i,k,n)=qi(i,k)*tr_frac                          ! wvt
            enddo                                                   ! wvt
          endif                                                     ! wvt
          tr_sum=0. ; do n=1,nreg ; tr_sum=tr_sum+tr_q(i,k,n) ; enddo    ! wvt
          if (tr_sum.gt.q(i,k) .and. tr_sum.gt.0.) then                                ! wvt
-           do n=1,nreg ; tr_q(i,k,n)=q(i,k)*(tr_q(i,k,n)/tr_sum) ; enddo  ! wvt
+#ifdef WVT_CLAMP_DIAG
+           wvt_cap_amt(12) = wvt_cap_amt(12) + (tr_sum-q(i,k))*den(i,k)*delz(i,k)   ! wvt
+           if (tr_sum-q(i,k).gt.1.e-10*max(tr_sum,1.e-30)) wvt_cap_n(12)=wvt_cap_n(12)+1 ! wvt
+#endif
+           do n=1,nreg                                                                        ! wvt
+             if (present(tr_mpdes)) tr_mpdes(i,n) = tr_mpdes(i,n) &                          ! wvt
+                + tr_q(i,k,n)*(1.-q(i,k)/tr_sum)*den(i,k)*delz(i,k)                          ! wvt
+             tr_q(i,k,n)=q(i,k)*(tr_q(i,k,n)/tr_sum)                                         ! wvt
+           enddo                                                                             ! wvt
          endif                                                     ! wvt
        enddo                                                       ! wvt
      enddo                                                         ! wvt
@@ -1761,28 +2004,68 @@
          if (l_tracers) then                                       ! wvt
            do n = 1, nreg                                          ! wvt
            tr_q(i,k,n) = tr_q(i,k,n)+tr_work2(i,k,n)*dtcld       ! wvt
-           tr_qc(i,k,n) = max(tr_qc(i,k,n)-(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
-                       +tr_paacw(i,k,n)+tr_paacw(i,k,n))*dtcld,0.)  ! wvt
-           tr_qr(i,k,n) = max(tr_qr(i,k,n)+(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
+           ztr_unc = tr_qc(i,k,n)-(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
+                       +tr_paacw(i,k,n)+tr_paacw(i,k,n))*dtcld   ! wvt
+           if (ztr_unc.lt.0.) then                                                        ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) - ztr_unc*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+             wvt_floor_amt(2) = wvt_floor_amt(2) - ztr_unc*den(i,k)*delz(i,k)    ! wvt
+             wvt_floor_n(2) = wvt_floor_n(2) + 1                                 ! wvt
+#endif
+           endif                                                                          ! wvt
+           tr_qc(i,k,n) = max(ztr_unc,0.)                                                  ! wvt
+           ztr_unc = tr_qr(i,k,n)+(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
                        +tr_prevp(i,k,n)-tr_piacr(i,k,n)-tr_pgacr(i,k,n) & ! wvt
-                       -tr_psacr(i,k,n))*dtcld,0.)                ! wvt
-           tr_qi(i,k,n) = max(tr_qi(i,k,n)-(tr_psaut(i,k,n)+tr_praci(i,k,n)  & ! wvt
+                       -tr_psacr(i,k,n))*dtcld   ! wvt
+           if (ztr_unc.lt.0.) then                                                        ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) - ztr_unc*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+             wvt_floor_amt(4) = wvt_floor_amt(4) - ztr_unc*den(i,k)*delz(i,k)    ! wvt
+             wvt_floor_n(4) = wvt_floor_n(4) + 1                                 ! wvt
+#endif
+           endif                                                                          ! wvt
+           tr_qr(i,k,n) = max(ztr_unc,0.)                                                  ! wvt
+           ztr_unc = tr_qi(i,k,n)-(tr_psaut(i,k,n)+tr_praci(i,k,n)  & ! wvt
                        +tr_psaci(i,k,n)+tr_pgaci(i,k,n)-tr_pigen(i,k,n) & ! wvt
-                       -tr_pidep(i,k,n))*dtcld,0.)                ! wvt
-           tr_qs(i,k,n) = max(tr_qs(i,k,n)+(tr_psdep(i,k,n)+tr_psaut(i,k,n)  & ! wvt
+                       -tr_pidep(i,k,n))*dtcld   ! wvt
+           if (ztr_unc.lt.0.) then                                                        ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) - ztr_unc*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+             wvt_floor_amt(3) = wvt_floor_amt(3) - ztr_unc*den(i,k)*delz(i,k)    ! wvt
+             wvt_floor_n(3) = wvt_floor_n(3) + 1                                 ! wvt
+#endif
+           endif                                                                          ! wvt
+           tr_qi(i,k,n) = max(ztr_unc,0.)                                                  ! wvt
+           ztr_unc = tr_qs(i,k,n)+(tr_psdep(i,k,n)+tr_psaut(i,k,n)  & ! wvt
                        +tr_paacw(i,k,n)-tr_pgaut(i,k,n)           & ! wvt
                        +tr_piacr(i,k,n)*delta3                    & ! wvt
                        +tr_praci(i,k,n)*delta3+tr_psaci(i,k,n)    & ! wvt
                        -tr_pgacs(i,k,n)                           & ! wvt
                        -tr_pracs(i,k,n)*(1.-delta2)               & ! wvt
-                       +tr_psacr(i,k,n)*delta2)*dtcld,0.)         ! wvt
-           tr_qg(i,k,n) = max(tr_qg(i,k,n)+(tr_pgdep(i,k,n)+tr_pgaut(i,k,n)  & ! wvt
+                       +tr_psacr(i,k,n)*delta2)*dtcld   ! wvt
+           if (ztr_unc.lt.0.) then                                                        ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) - ztr_unc*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+             wvt_floor_amt(5) = wvt_floor_amt(5) - ztr_unc*den(i,k)*delz(i,k)    ! wvt
+             wvt_floor_n(5) = wvt_floor_n(5) + 1                                 ! wvt
+#endif
+           endif                                                                          ! wvt
+           tr_qs(i,k,n) = max(ztr_unc,0.)                                                  ! wvt
+           ztr_unc = tr_qg(i,k,n)+(tr_pgdep(i,k,n)+tr_pgaut(i,k,n)  & ! wvt
                        +tr_piacr(i,k,n)*(1.-delta3)               & ! wvt
                        +tr_praci(i,k,n)*(1.-delta3)               & ! wvt
                        +tr_psacr(i,k,n)*(1.-delta2)               & ! wvt
                        +tr_pracs(i,k,n)*(1.-delta2)               & ! wvt
                        +tr_pgaci(i,k,n)+tr_paacw(i,k,n)          & ! wvt
-                       +tr_pgacr(i,k,n)+tr_pgacs(i,k,n))*dtcld,0.)  ! wvt
+                       +tr_pgacr(i,k,n)+tr_pgacs(i,k,n))*dtcld   ! wvt
+           if (ztr_unc.lt.0.) then                                                        ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) - ztr_unc*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+             wvt_floor_amt(6) = wvt_floor_amt(6) - ztr_unc*den(i,k)*delz(i,k)    ! wvt
+             wvt_floor_n(6) = wvt_floor_n(6) + 1                                 ! wvt
+#endif
+           endif                                                                          ! wvt
+           tr_qg(i,k,n) = max(ztr_unc,0.)                                                  ! wvt
            enddo                                                   ! wvt
          endif                                                     ! wvt
        else
@@ -1878,15 +2161,47 @@
          if (l_tracers) then                                       ! wvt
            do n = 1, nreg                                          ! wvt
            tr_q(i,k,n) = tr_q(i,k,n)+tr_work2(i,k,n)*dtcld       ! wvt
-           tr_qc(i,k,n) = max(tr_qc(i,k,n)-(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
-                       +tr_paacw(i,k,n)+tr_paacw(i,k,n))*dtcld,0.)  ! wvt
-           tr_qr(i,k,n) = max(tr_qr(i,k,n)+(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
+           ztr_unc = tr_qc(i,k,n)-(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
+                       +tr_paacw(i,k,n)+tr_paacw(i,k,n))*dtcld   ! wvt
+           if (ztr_unc.lt.0.) then                                                        ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) - ztr_unc*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+             wvt_floor_amt(2) = wvt_floor_amt(2) - ztr_unc*den(i,k)*delz(i,k)    ! wvt
+             wvt_floor_n(2) = wvt_floor_n(2) + 1                                 ! wvt
+#endif
+           endif                                                                          ! wvt
+           tr_qc(i,k,n) = max(ztr_unc,0.)                                                  ! wvt
+           ztr_unc = tr_qr(i,k,n)+(tr_praut(i,k,n)+tr_pracw(i,k,n)  & ! wvt
                        +tr_prevp(i,k,n)+tr_paacw(i,k,n)+tr_paacw(i,k,n) & ! wvt
-                       -tr_pseml(i,k,n)-tr_pgeml(i,k,n))*dtcld,0.)  ! wvt
-           tr_qs(i,k,n) = max(tr_qs(i,k,n)+(tr_psevp(i,k,n)-tr_pgacs(i,k,n)  & ! wvt
-                       +tr_pseml(i,k,n))*dtcld,0.)                ! wvt
-           tr_qg(i,k,n) = max(tr_qg(i,k,n)+(tr_pgacs(i,k,n)+tr_pgevp(i,k,n)  & ! wvt
-                       +tr_pgeml(i,k,n))*dtcld,0.)                ! wvt
+                       -tr_pseml(i,k,n)-tr_pgeml(i,k,n))*dtcld   ! wvt
+           if (ztr_unc.lt.0.) then                                                        ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) - ztr_unc*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+             wvt_floor_amt(4) = wvt_floor_amt(4) - ztr_unc*den(i,k)*delz(i,k)    ! wvt
+             wvt_floor_n(4) = wvt_floor_n(4) + 1                                 ! wvt
+#endif
+           endif                                                                          ! wvt
+           tr_qr(i,k,n) = max(ztr_unc,0.)                                                  ! wvt
+           ztr_unc = tr_qs(i,k,n)+(tr_psevp(i,k,n)-tr_pgacs(i,k,n)  & ! wvt
+                       +tr_pseml(i,k,n))*dtcld   ! wvt
+           if (ztr_unc.lt.0.) then                                                        ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) - ztr_unc*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+             wvt_floor_amt(5) = wvt_floor_amt(5) - ztr_unc*den(i,k)*delz(i,k)    ! wvt
+             wvt_floor_n(5) = wvt_floor_n(5) + 1                                 ! wvt
+#endif
+           endif                                                                          ! wvt
+           tr_qs(i,k,n) = max(ztr_unc,0.)                                                  ! wvt
+           ztr_unc = tr_qg(i,k,n)+(tr_pgacs(i,k,n)+tr_pgevp(i,k,n)  & ! wvt
+                       +tr_pgeml(i,k,n))*dtcld   ! wvt
+           if (ztr_unc.lt.0.) then                                                        ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) - ztr_unc*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+             wvt_floor_amt(6) = wvt_floor_amt(6) - ztr_unc*den(i,k)*delz(i,k)    ! wvt
+             wvt_floor_n(6) = wvt_floor_n(6) + 1                                 ! wvt
+#endif
+           endif                                                                          ! wvt
+           tr_qg(i,k,n) = max(ztr_unc,0.)                                                  ! wvt
            enddo                                                   ! wvt
          endif                                                     ! wvt
        endif
@@ -1954,7 +2269,15 @@
        if (l_tracers) then                                         ! wvt
          do n = 1, nreg                                            ! wvt
            tr_q(i,k,n) = tr_q(i,k,n)-tr_pcond(i,k,n)*dtcld       ! wvt
-           tr_qc(i,k,n) = max(tr_qc(i,k,n)+tr_pcond(i,k,n)*dtcld,0.)  ! wvt
+           ztr_unc = tr_qc(i,k,n)+tr_pcond(i,k,n)*dtcld            ! wvt
+           if (ztr_unc.lt.0.) then                                                        ! wvt
+             if (present(tr_mpcre)) tr_mpcre(i,n) = tr_mpcre(i,n) - ztr_unc*den(i,k)*delz(i,k) ! wvt
+#ifdef WVT_CLAMP_DIAG
+             wvt_floor_amt(2) = wvt_floor_amt(2) - ztr_unc*den(i,k)*delz(i,k)    ! wvt
+             wvt_floor_n(2) = wvt_floor_n(2) + 1                                 ! wvt
+#endif
+           endif                                                                          ! wvt
+           tr_qc(i,k,n) = max(ztr_unc,0.)                                                  ! wvt
          enddo                                                     ! wvt
        endif                                                       ! wvt
      enddo
@@ -1966,10 +2289,51 @@
 !
    do k = kts, kte
      do i = its, ite
+#ifdef WVT_CLAMP_DIAG
+!--- wvt: M1. The base zeroes qc/qi below qmin with NO tagged mirror, orphaning tr_qc/tr_qi.     ! wvt
+!--- wvt: The entry cap that would reconcile it sits OUTSIDE the substep loop, so the orphan     ! wvt
+!--- wvt: survives to the NEXT call to this routine, where it is converted to tagged VAPOUR --   ! wvt
+!--- wvt: tag mass appearing from a base field that no longer exists. Measured here at           ! wvt
+!--- wvt: production qmin; do NOT raise qmin to amplify it, because qmin also sets               ! wvt
+!--- wvt: value=max(qmin,X) in the conservation factor and the qc>qmin process thresholds, so    ! wvt
+!--- wvt: it changes the BASE regime rather than just the detectability.                         ! wvt
+       if (l_tracers .and. qc(i,k).le.qmin) then                                                 ! wvt
+         tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qc(i,k,n) ; enddo                          ! wvt
+         if (tr_sum.gt.0.) then                                                                  ! wvt
+           wvt_orphan_amt(1)=wvt_orphan_amt(1)+tr_sum*den(i,k)*delz(i,k)                         ! wvt
+           wvt_orphan_n(1)=wvt_orphan_n(1)+1                                                     ! wvt
+         endif                                                                                   ! wvt
+       endif                                                                                     ! wvt
+       if (l_tracers .and. qi(i,k).le.qmin) then                                                 ! wvt
+         tr_sum = 0. ; do n=1,nreg ; tr_sum=tr_sum+tr_qi(i,k,n) ; enddo                          ! wvt
+         if (tr_sum.gt.0.) then                                                                  ! wvt
+           wvt_orphan_amt(2)=wvt_orphan_amt(2)+tr_sum*den(i,k)*delz(i,k)                         ! wvt
+           wvt_orphan_n(2)=wvt_orphan_n(2)+1                                                     ! wvt
+         endif                                                                                   ! wvt
+       endif                                                                                     ! wvt
+#endif
        if(qc(i,k).le.qmin) qc(i,k) = 0.0
        if(qi(i,k).le.qmin) qi(i,k) = 0.0
      enddo
    enddo
+#ifdef WVT_CLAMP_DIAG
+!--- wvt: end-of-substep worst relative excess per species. This is the ONE diagnostic that sees ! wvt
+!--- wvt: D1 (the conservation-factor attribution bias): sinks are charged to the pre-existing   ! wvt
+!--- wvt: tag and floored per region, so sum_n tr_X can exceed X without any cap having fired    ! wvt
+!--- wvt: yet -- the entry cap on the NEXT call is what finally discards it.                     ! wvt
+   if (l_tracers) then                                                                           ! wvt
+     do k = kts, kte                                                                             ! wvt
+       do i = its, ite                                                                           ! wvt
+         call wvt_excess(q(i,k),tr_q(i,k,1:nreg),1)                                              ! wvt
+         call wvt_excess(qc(i,k),tr_qc(i,k,1:nreg),2)                                            ! wvt
+         call wvt_excess(qi(i,k),tr_qi(i,k,1:nreg),3)                                            ! wvt
+         call wvt_excess(qr(i,k),tr_qr(i,k,1:nreg),4)                                            ! wvt
+         call wvt_excess(qs(i,k),tr_qs(i,k,1:nreg),5)                                            ! wvt
+         call wvt_excess(qg(i,k),tr_qg(i,k,1:nreg),6)                                            ! wvt
+       enddo                                                                                     ! wvt
+     enddo                                                                                       ! wvt
+   endif                                                                                         ! wvt
+#endif
  enddo                  ! big loops
 
  if(present(rainprod2d) .and. present(evapprod2d)) then

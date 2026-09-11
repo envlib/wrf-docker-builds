@@ -59,6 +59,27 @@ state    real  TR_CAPCRE          i{wvtreg}j  misc    1         -      rhdu     
 state    real  TR_CAPDES          i{wvtreg}j  misc    1         -      rhdu     "TR_CAPDES"               "ACCUMULATED TAG MASS DESTROYED BY THE CUMULUS ONE-SIDED CAP, per WVT region" "kg m-2"
 state    integer  I_TR_CAPCRE     i{wvtreg}j  misc    1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_CAPCRE"     "BUCKET FOR TR_CAPCRE, per WVT region"     ""
 state    integer  I_TR_CAPDES     i{wvtreg}j  misc    1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_CAPDES"     "BUCKET FOR TR_CAPDES, per WVT region"     ""
+
+# wvt: tag mass the MICROPHYSICS (WSM6) caps move, per region, column-integrated and accumulated
+# wvt: like TR_RAINNC. THREE SEPARATE FIELDS BY DESIGN -- WSM6 has six caps of three different
+# wvt: kinds and summing them would add a conservative quantity to a destructive one:
+# wvt:   TR_MPRED  REDISTRIBUTIVE  the five condensate caps return excess to the VAPOUR tag;
+# wvt:                             total tagged water is conserved, but it moves BETWEEN SPECIES.
+# wvt:                             This is the leading candidate for tagged PRECIPITATION being
+# wvt:                             depleted ~2x harder than tagged column water (2026-09-11).
+# wvt:   TR_MPDES  DESTRUCTIVE     the three tr_q <- q*(tr_q/sum) rescales; the excess is dropped.
+# wvt:   TR_MPCRE  CREATIVE        max(.,0) floors after sedimentation invent tag mass where the
+# wvt:                             tracer PLM reconstruction went negative (defect D2: the limiter
+# wvt:                             branch and the positivity test both key on the BASE field).
+# wvt: ⚠ Column-integrated INSIDE mp_wsm6_run, not in the wrapper. The cumulus twin integrated in
+# wvt: module_cu_ntiedtke.F where the scheme and WRF vertical orders differ, and shipped for months
+# wvt: weighting each level by the mirror level's mass. Here the integral cannot be written wrong.
+state    real  TR_MPCRE           i{wvtreg}j  misc    1         -      rhdu     "TR_MPCRE"                "ACCUMULATED TAG MASS CREATED BY MICROPHYSICS POSITIVITY FLOORS, per WVT region"        "kg m-2"
+state    real  TR_MPDES           i{wvtreg}j  misc    1         -      rhdu     "TR_MPDES"                "ACCUMULATED TAG MASS DESTROYED BY THE MICROPHYSICS VAPOUR CAP, per WVT region"         "kg m-2"
+state    real  TR_MPRED           i{wvtreg}j  misc    1         -      rhdu     "TR_MPRED"                "ACCUMULATED TAG MASS MOVED CONDENSATE->VAPOUR BY THE MICROPHYSICS CAPS, per WVT region" "kg m-2"
+state    integer  I_TR_MPCRE      i{wvtreg}j  misc    1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_MPCRE"      "BUCKET FOR TR_MPCRE, per WVT region"      ""
+state    integer  I_TR_MPDES      i{wvtreg}j  misc    1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_MPDES"      "BUCKET FOR TR_MPDES, per WVT region"      ""
+state    integer  I_TR_MPRED      i{wvtreg}j  misc    1         -      rhd=(interp_fcni)u=(copy_fcni)     "I_TR_MPRED"      "BUCKET FOR TR_MPRED, per WVT region"      ""
 state    real  TRMASK             i{wvtreg}j  misc    1         -      i8rh     "TRMASK"                  "2D SOURCE MASK FOR MOISTURE TRACERS, per WVT region"          ""
 state    real  TRMASK3D          ikj      misc        1         -      i8r      "TRMASK3D"                "3D SOURCE MASK FOR MOISTURE TRACERS "          ""
 state    real  TRMASK3D2         ikj      misc        1         -      i8r      "TRMASK3D2"               "3D SINK MASK FOR MOISTURE TRACERS   "          ""
