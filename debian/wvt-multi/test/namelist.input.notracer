@@ -1,7 +1,7 @@
-! moist_adv_opt = 1 MATCHES PRODUCTION (wrf-auto-runs defaults.py), and deliberately
-! DIFFERS from tracer_adv_opt = 4: moisture uses positive-definite advection while the
-! tracers use WENO-PD. That mismatch is a real term in the untagged floor, so the
-! default harness namelist reproduces it rather than hiding it.
+! moist_adv_opt = 4, the pipeline default since Ruling H (2026-09-13) and what .n12 now carries.
+! tracer_opt = 0 here, so check_a_mundo's moist_adv_opt guard does not apply -- but the tracers-off
+! base must match the tracers-on base for the bit-identity gate to mean anything, so this follows
+! .n12. (Until 2026-09-13 both carried production's 1.)
 &time_control
     adjust_output_times = .true.
     auxinput4_inname = 'wrflowinp_d<domain>'
@@ -105,7 +105,7 @@
     khdif = 0
     km_opt = 5
     kvdif = 0
-    moist_adv_opt = 1
+    moist_adv_opt = 4
     non_hydrostatic = .true.
     scalar_adv_opt = 1
     tracer_opt = 0

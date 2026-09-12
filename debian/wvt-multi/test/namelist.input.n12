@@ -1,7 +1,9 @@
-! moist_adv_opt = 1 MATCHES PRODUCTION (wrf-auto-runs defaults.py), and deliberately
-! DIFFERS from tracer_adv_opt = 4: moisture uses positive-definite advection while the
-! tracers use WENO-PD. That mismatch is a real term in the untagged floor, so the
-! default harness namelist reproduces it rather than hiding it.
+! moist_adv_opt = 4 MATCHES tracer_adv_opt. Until 2026-09-13 this file carried 1 ("matches
+! production") and .n12_matchadv carried 4; the wsm6_caps A/B then showed the mismatch IS the
+! untagged floor (condensate caps 15% -> 0.2% of tagged precip when matched), Ruling H made 4 the
+! pipeline default, and check_a_mundo refuses 1 under tracer_opt=4 from image 2.4 on -- so a
+! harness namelist with 1 could no longer pass real.exe. The two files are now identical except
+! for this header; .n12_matchadv is kept because records cite it by name.
 &time_control
     adjust_output_times = .true.
     auxinput4_inname = 'wrflowinp_d<domain>'
@@ -105,7 +107,7 @@
     khdif = 0
     km_opt = 5
     kvdif = 0
-    moist_adv_opt = 1
+    moist_adv_opt = 4
     non_hydrostatic = .true.
     scalar_adv_opt = 1
     tracer_opt = 4

@@ -1,7 +1,7 @@
-! moist_adv_opt = 4 MATCHES tracer_adv_opt, which production does NOT do. This variant
-! exists only as the control arm for gate 3a: running both isolates the advection-
-! scheme-mismatch contribution to the untagged floor. Measured 2026-09-06 over 3 h:
-! the two differ by ~1e-4 in tagged fraction and move no gate verdict.
+! moist_adv_opt = 4 MATCHES tracer_adv_opt. Originally the control arm for gate 3a against .n12
+! (which carried production's 1; the two differed by ~1e-4 in tagged fraction over 3 h, 2026-09-06).
+! Since 2026-09-13 .n12 also carries 4 (Ruling H; check_a_mundo refuses 1 from image 2.4), so this
+! file is identical to it apart from this header and is kept only because records cite it by name.
 &time_control
     adjust_output_times = .true.
     auxinput4_inname = 'wrflowinp_d<domain>'

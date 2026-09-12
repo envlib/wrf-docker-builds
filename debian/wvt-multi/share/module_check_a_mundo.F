@@ -3104,6 +3104,19 @@
                count_fatal_error = count_fatal_error + 1
             END IF
 
+! wvt: base moisture and its tags must ride the SAME advection limiter. With moist_adv_opt=1
+!      (positive-definite) against tracer_adv_opt=4 (WENO positive-definite), sum_n tr_qX
+!      overshoots qX at every sharp cloud edge and the WSM6 entry caps discard the excess --
+!      measured at 12 regions as 15% of tagged precipitation returned to vapour and 10% of
+!      NZ-land rain left untagged; matching the limiter took those to 0.2% and 1.7%
+!      (wsm6_caps A/B, 2026-09-13; docs/wvt_wsm6_tagging.md in wrf-model-eval). Nothing
+!      downstream can see the mismatch without the TR_MP* diagnostics, so refuse it here.
+            IF ( model_config_rec % moist_adv_opt(i) .NE. 4 ) THEN
+               wrf_err_message = '--- ERROR: tracer_opt=4 (WVT) requires moist_adv_opt=4 (same limiter as tracer_adv_opt)'
+               CALL wrf_message ( wrf_err_message )
+               count_fatal_error = count_fatal_error + 1
+            END IF
+
 ! wvt: number of simultaneous tagged source regions must lie within the compiled
 !      member count (6 species x MAX_WVT_REGIONS=12 registered in Registry.EM).
             IF ( model_config_rec % num_wvt_regions .LT. 1 .OR. &
