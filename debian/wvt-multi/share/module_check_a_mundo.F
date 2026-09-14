@@ -3098,8 +3098,23 @@
                END IF
             END IF
 
+! wvt: WENO-5 with a positive-definite limiter is the scheme the WVT METHOD PRESCRIBES, not a
+!      local preference. Insua-Costa, D. & Miguez-Macho, G. (2018), "A new moisture tagging
+!      capability in the Weather Research and Forecasting model", Earth Syst. Dynam. 9, 167-185
+!      -- the implementation vendored here (modules_tracers_4.3.3.tar) -- section 2:
+!        "Moisture and tracer advection are calculated with the fifth-order weighted essentially
+!         non-oscillatory (WENO) scheme with a positive definite limiter."
+!        "It is important to use an advection numerical scheme that is positive definite, conserves
+!         mass and minimizes numerical diffusion, in order to limit numerical errors in WVT
+!         calculations. Both total moisture and tagged moisture must use the same scheme."
+!      Three criteria. moist/tracer_adv_opt=1 meets the first two and FAILS the third -- it is
+!      5th order horizontally but only v_sca_adv_order (default 3) vertically, while WENO ignores
+!      both order switches and is 5th order in each direction. So option 1 is NOT an equivalent
+!      alternative, and this guard is not merely pinning whatever the runs happened to use.
+!      See also the moist_adv_opt guard below, which enforces the "same scheme" half empirically.
             IF ( model_config_rec % tracer_adv_opt(i) .NE. 4 ) THEN
-               wrf_err_message = '--- ERROR: tracer_opt=4 (WVT) requires tracer_adv_opt=4'
+               wrf_err_message = '--- ERROR: tracer_opt=4 (WVT) requires tracer_adv_opt=4 '// &
+                                 '(WENO-PD; Insua-Costa & Miguez-Macho 2018)'
                CALL wrf_message ( wrf_err_message )
                count_fatal_error = count_fatal_error + 1
             END IF
