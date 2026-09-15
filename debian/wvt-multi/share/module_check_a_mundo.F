@@ -3172,6 +3172,18 @@
                   CALL wrf_message ( wrf_err_message )
                   count_fatal_error = count_fatal_error + 1
                END IF
+! wvt: only New Tiedtke is wired per region. module_cumulus_driver passes tr_tmppratec(:,1,:)
+!      and region 1's tracer vapour to every other cumulus scheme, so with KF/MSKF regions 2..N
+!      get no convective rain-out and no convective depletion of their vapour -- and nothing
+!      else fails. Measured 2026-09-16 (P1 chain arm D, KF, 4 regions): tagged convective rain
+!      exactly 0 for regions 2-4, region 2's tagged rain 35% of the single-region reference.
+               IF ( model_config_rec % cu_physics(i) .NE. 0 .AND. &
+                    model_config_rec % cu_physics(i) .NE. NTIEDTKESCHEME ) THEN
+                  wrf_err_message = '--- ERROR: num_wvt_regions>1 requires cu_physics=16 (NTiedtke) or 0: '// &
+                                    'other cumulus schemes tag region 1 only'
+                  CALL wrf_message ( wrf_err_message )
+                  count_fatal_error = count_fatal_error + 1
+               END IF
             END IF
 
 ! wvt: num_wvt_regions>1 is only valid with WVT active. Without tracer_opt=4 the cumulative
