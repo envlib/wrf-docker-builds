@@ -1,6 +1,6 @@
 services:
   wrf:
-    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:2.5   # 2.5 (2026-09-18): WVT state Registry-packaged (tracer-off runs write no WVT fields) + core-avx2
+    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:2.6   # 2.6 (2026-09-19): the tracer3dsource/3dsink rule no longer refuses tracer2dsource without WVT (2.5's rule broke tracer-off namelists); 2.5 (2026-09-18): WVT state Registry-packaged + core-avx2
     build:
       context: ../
       dockerfile: wrf-wps-intel-wvt/Dockerfile

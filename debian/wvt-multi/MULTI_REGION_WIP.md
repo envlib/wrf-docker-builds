@@ -212,7 +212,9 @@ removed), `module_cumulus_driver.F` (`flag_tr_*` set before the `tr_pratec` copi
 gated on `flag_tr_qv` — the one site invisible to `-check bounds`, verified with an
 AddressSanitizer build), `module_physics_addtendc.F` advance_ppt and `module_diag_misc.F`'s four
 bucket blocks (`P_QV_TR`), `solve_em.F` mask loops (`P_QV_TR`), `gen_wvt_thum.py` S4 (outer
-`p_qv_tr`), and two new `check_a_mundo` rules: source/sink switches require `tracer_opt=4`, and
+`p_qv_tr`), and two new `check_a_mundo` rules: `tracer3dsource`/`tracer3dsink` require `tracer_opt=4`
+(⚠ not `tracer2dsource`: the 2.5 release refused it and broke every tracer-off namelist derived
+from a WVT one, e.g. the P1 timing family's n00 — narrowed 2026-09-19, images 2.6 / 2.10 / 1.2), and
 `tracer_opt=4` must be set on every domain or on none (each side of a nest exchange tests only
 its own array — generated interp and RSL_LITE pack/unpack — so a `4, 0` namelist would pack a
 full parent field the nest never unpacks; stock per-domain `tracer_opt` 1/2/3 stays legal).
@@ -257,11 +259,16 @@ the cap in silence.
 `boundary_faces = []` reproduces the pre-change 8-region build **bit-for-bit** (0 of 1792 variable
 instances, with a determinism control). Shell tagging measured at 0.9955 of vapour.
 
-**SUPERSEDED 2026-09-09** — the current production images are
-`wrf-wps-intel-wvt-ubuntu:2.2` and `wrf-auto-runs-intel-wvt:2.5`, which add the nine New Tiedtke
-tag mirrors and the `TR_CAPCRE`/`TR_CAPDES` diagnostics
-(`wrf-model-eval/docs/wvt_cumulus_tagging.md`). Neither is pushed. The 2.1/2.3 pair below is kept
-as provenance for the 12-region CS1 run that exposed the defects.
+**SUPERSEDED 2026-09-09 → 2026-09-18** — the current images are `wrf-wps-intel-wvt-ubuntu:2.6` +
+`wrf-auto-runs-intel-wvt:2.10` (WVT state Registry-packaged, `-march=core-avx2`; 2.5 / 2.9 of 2026-09-18
+refused tracer-off namelists carrying `tracer2dsource = 1`) and the AVX-512 pair
+`wrf-wps-intel-wvt-ubuntu-avx512:1.2` + `wrf-auto-runs-intel-wvt-avx512:1.2` (1.1 likewise superseded) (same source,
+`-march=skylake-avx512`, Zen 4 / Genoa only) — see "Stage pkg" below; none pushed at the time of
+writing. Between them, 2.2/2.5 (2026-09-09) added the nine New Tiedtke tag mirrors and the
+`TR_CAPCRE`/`TR_CAPDES` diagnostics (`wrf-model-eval/docs/wvt_cumulus_tagging.md`), and 2.4/2.8
+(2026-09-13, pushed — the C1 pilot runs on it) the `moist_adv_opt` guard + default 4 and `PREC_ACC`
+in `wvt_2d`. The 2.1/2.3 pair below is kept as provenance for the 12-region CS1 run that exposed the
+defects.
 
 **Production images built 2026-09-07:** `mullenkamp/wrf-wps-intel-wvt-ubuntu:2.1` (base, full
 Dockerfile — the runtime stage at line 139 is the deployable one, 7.71 GB) and

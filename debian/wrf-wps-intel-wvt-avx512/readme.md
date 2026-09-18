@@ -27,4 +27,12 @@ image without re-baselining.
 **Verify the binary, not the tag:** `objdump -d /WRF/main/wrf.exe | grep -c ymm` is ~130 000 here
 against ~230 in the generic image.
 
+**Versions.** 1.0 (2026-09-18, morning) = `wrf-wps-intel-wvt-ubuntu:2.4`'s source + the flag;
+**1.1 (same day)** = `:2.5`'s source — the WVT state Registry-packaged, so a tracer-off run writes
+no WVT fields (`wrf-model-eval/docs/wvt_registry_packaging.md`) — + the flag; **1.2 (2026-09-19)**
+= `:2.6`'s source: 1.1's new source/sink rule refused tracer-off namelists that still carried
+`tracer2dsource = 1` (the P1 timing n00 configs), narrowed to the 3-D switches. Downstream
+`wrf-auto-runs-intel-wvt-avx512` follows the same numbering. The Hetzner P1 timing family
+defaults to 1.1.
+
 Build: `docker compose build` in this directory. Downstream: `wrf-auto-runs/intel_wvt_avx512/`.

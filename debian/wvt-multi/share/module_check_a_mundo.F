@@ -3195,13 +3195,15 @@
                CALL wrf_message ( wrf_err_message )
                count_fatal_error = count_fatal_error + 1
             END IF
-! wvt (2026-09-18): the WVT state (TRMASK, TRMASK3D/3D2, the TR_* accumulators, ...) is
-!      Registry-packaged on tracer_opt==4. A source/sink switch without tracer_opt=4 would reach
-!      solve_em's mask loops with size-1 dummies; refuse it here, where it is a namelist error.
-            IF ( model_config_rec % tracer2dsource(i) .NE. 0 .OR. &
-                 model_config_rec % tracer3dsource(i) .NE. 0 .OR. &
+! wvt (2026-09-18): TRMASK3D/TRMASK3D2 are Registry-packaged on tracer_opt==4, and solve_em's
+!      3-D source/sink loops were keyed on tracer3dsource/tracer3dsink alone, so those two
+!      switches without tracer_opt=4 are a namelist error. tracer2dsource is deliberately NOT
+!      included: its consumers (the auxinput8 mask read, the surface-flux loop) were always
+!      gated on tracer_opt==4, so a tracer-off namelist that still carries tracer2dsource=1 is a
+!      harmless no-op -- and the P1 timing family's n00 configs rely on that (2026-09-19).
+            IF ( model_config_rec % tracer3dsource(i) .NE. 0 .OR. &
                  model_config_rec % tracer3dsink(i)   .NE. 0 ) THEN
-               wrf_err_message = '--- ERROR: tracer2dsource/tracer3dsource/tracer3dsink require tracer_opt=4 (WVT)'
+               wrf_err_message = '--- ERROR: tracer3dsource/tracer3dsink require tracer_opt=4 (WVT)'
                CALL wrf_message ( wrf_err_message )
                count_fatal_error = count_fatal_error + 1
             END IF

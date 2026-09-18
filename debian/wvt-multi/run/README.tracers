@@ -23,7 +23,8 @@
  ;    RTRQ*CUTEN fields (RTRQV/C/ICUTEN in history, all five in restart, zeros), and
  ;    I_TR_RAINNC/I_TR_RAINC when bucket_mm > 0 (they belong to the stock `bucketropt`
  ;    package beside I_RAINNC/I_RAINC, as before);
- ;  * tracer2dsource/tracer3dsource/tracer3dsink without tracer_opt = 4 is refused;
+ ;  * tracer3dsource/tracer3dsink without tracer_opt = 4 is refused (tracer2dsource without it
+ ;    stays a harmless no-op, as it always was);
  ;  * tracer_opt = 4 must be set on every domain or on none (the packaged fields are per-domain
  ;    and each side of a nest exchange tests only its own array); stock tracer_opt 1/2/3 may
  ;    still differ between domains as before;

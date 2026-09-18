@@ -9,7 +9,7 @@
 #     -v <testdata>:/test_data:ro -v <work>:/work <image> bash /work/run_pkg_gates.sh
 set -uo pipefail
 TAG="${TAG:?set TAG}"; ulimit -s unlimited; GATE_FAIL=0
-for C in ${CONFIGS:-n8 n12 n2 n1 notracer notracer_bucket notracer_kf notracer_ysu bad_3dsource bad_mixed_tracer_opt ok_stock_tracer_opt_2_0}; do
+for C in ${CONFIGS:-n8 n12 n2 n1 notracer notracer_bucket notracer_kf notracer_ysu bad_3dsource bad_mixed_tracer_opt ok_stock_tracer_opt_2_0 ok_2dsource_tracer_off}; do
   d=/run_$C; rm -rf $d; mkdir -p $d && cd $d
   ln -sf /WRF/run/* . 2>/dev/null; rm -f namelist.input trmask_d01
   sed 's/restart_interval = 500000/restart_interval = 180/' /work/namelist.input.$C > namelist.input
@@ -25,7 +25,7 @@ for C in ${CONFIGS:-n8 n12 n2 n1 notracer notracer_bucket notracer_kf notracer_y
   # so is a refusal for a reason other than the rule under test. ok_* namelists must produce no
   # check_a_mundo error line at all (they may still fail later for want of d02 inputs).
   case "$C" in
-    bad_3dsource)          want='tracer2dsource/tracer3dsource/tracer3dsink require tracer_opt=4' ;;
+    bad_3dsource)          want='tracer3dsource/tracer3dsink require tracer_opt=4' ;;
     bad_mixed_tracer_opt)  want='tracer_opt=4 (WVT) must be set on every domain or none' ;;
     *) want='' ;;
   esac

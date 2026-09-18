@@ -5,7 +5,7 @@
 # source + the flag; 1.1 = :2.5's source (WVT state Registry-packaged) + the flag.
 services:
   wrf:
-    image: mullenkamp/wrf-wps-intel-wvt-ubuntu-avx512:1.1   # 1.1 = same source as wrf-wps-intel-wvt-ubuntu:2.5 (Registry packaging), skylake-avx512
+    image: mullenkamp/wrf-wps-intel-wvt-ubuntu-avx512:1.2   # 1.2 = same source as wrf-wps-intel-wvt-ubuntu:2.6; 1.1 = :2.5 (Registry packaging, but its source/sink rule refused tracer-off namelists carrying tracer2dsource=1)
     build:
       context: ../
       dockerfile: wrf-wps-intel-wvt/Dockerfile
