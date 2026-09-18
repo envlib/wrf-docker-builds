@@ -86,10 +86,10 @@ COPY wvt-multi/main/ndown_em.F /WRF/main/ndown_em.F
 COPY wvt-multi/run/README.tracers /WRF/run/
 COPY wvt-multi/run/namelist.input.tracers /WRF/run/
 
-# Optional ISA target for the WRF build. Empty (the default) leaves WRF's stock option-78 flags,
-# which carry no -march at all, i.e. generic x86-64 SSE2 code that runs on any AMD64 host.
-# Set to e.g. skylake-avx512 to build the wrf-wps-intel-wvt-avx512 variant (see that dir's
-# docker-compose.yml). Measured 2026-09-18 on the 99x111 harness: skylake-avx512 -2% at 0 regions,
+# ISA target for the WRF build. Empty leaves WRF's stock option-78 flags, which carry no -march
+# at all, i.e. generic x86-64 SSE2 code (what :2.4 and earlier are). The generic image's compose
+# passes core-avx2 from the next bump on; the wrf-wps-intel-wvt-avx512 compose passes
+# skylake-avx512. Measured 2026-09-18 on the 99x111 harness: skylake-avx512 -2% at 0 regions,
 # -7.4% at 12 regions; core-avx2 -3%. Always -march=, NEVER -x/-ax: those embed a GenuineIntel
 # check and the binary refuses to start on the EPYC nodes. A -march=skylake-avx512 binary needs
 # AVX-512 (every Zen 4 / Genoa node; NOT Milan or pre-2017 Intel) -- hence the separate image name.

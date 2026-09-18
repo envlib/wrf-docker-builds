@@ -6,7 +6,7 @@ Everything in `../wrf-wps-intel-wvt/readme.md` applies.
 
 **Why a separate name.** The binary uses AVX-512 and will not start on a host without it. Every
 Slurm cluster in use (Hetzner AX162 / EPYC 9454P, NeSI genoa / EPYC 9654, UC RCH) is Zen 4 and
-has it; other servers may not. The un-suffixed image stays generic x86-64 for them.
+has it; other servers may not. The un-suffixed image stays on the AVX2 baseline for them (`core-avx2` from the bump after 2.4; 2.4 itself is plain x86-64).
 
 **What it buys.** Measured 2026-09-18 on the 99×111 harness (Ryzen 7900, 4 ranks): −2% step time
 with tracers off, −7.4% at 12 tagged regions. Record:

@@ -4,6 +4,13 @@ services:
     build:
       context: ../
       dockerfile: wrf-wps-intel-wvt/Dockerfile
+      args:
+        # AVX2 baseline (every Intel since 2013, every AMD since Zen): ~3% faster than the stock
+        # no-march build, output identical on the harness. ⚠ NOT yet in :2.4 -- that tag was built
+        # before this line existed (2026-09-18); it takes effect at the next version bump. The
+        # AVX-512 variant lives in ../wrf-wps-intel-wvt-avx512/. Record:
+        # wrf-model-eval/docs/wvt_tracer_cost_assessment.md sec 3.7.
+        WRF_MARCH: core-avx2
     stdin_open: true
     tty: true
     shm_size: '2gb'   # >=2gb required for multi-rank Intel MPI (mpirun -n N); 1gb SIGBUSes
