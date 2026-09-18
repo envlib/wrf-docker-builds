@@ -1,11 +1,11 @@
 # AVX-512 variant of wrf-wps-intel-wvt: SAME Dockerfile and SAME wvt-multi source, built with
 # WRF_MARCH=skylake-avx512. Separate image name because the binary needs AVX-512 (Zen 4 / Genoa:
 # Hetzner AX162, NeSI genoa, UC RCH) and refuses to start elsewhere; the un-suffixed image stays
-# generic x86-64. Version numbering is this image's own (1.0 = built from the same source as
-# wrf-wps-intel-wvt-ubuntu:2.4 plus the flag).
+# on the AVX2 baseline. Version numbering is this image's own: 1.0 = wrf-wps-intel-wvt-ubuntu:2.4's
+# source + the flag; 1.1 = :2.5's source (WVT state Registry-packaged) + the flag.
 services:
   wrf:
-    image: mullenkamp/wrf-wps-intel-wvt-ubuntu-avx512:1.0
+    image: mullenkamp/wrf-wps-intel-wvt-ubuntu-avx512:1.1   # 1.1 = same source as wrf-wps-intel-wvt-ubuntu:2.5 (Registry packaging), skylake-avx512
     build:
       context: ../
       dockerfile: wrf-wps-intel-wvt/Dockerfile

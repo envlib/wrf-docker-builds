@@ -185,10 +185,9 @@ CONTAINS
                   grid%vimf_tr_u(i,n,j) = vimf_tr_u_sum(n) / G_PWAT
                   grid%vimf_tr_v(i,n,j) = vimf_tr_v_sum(n) / G_PWAT
                END DO
-            ELSE
-               grid%pwat_tr(i,:,j)   = 0.0
-               grid%vimf_tr_u(i,:,j) = 0.0
-               grid%vimf_tr_v(i,:,j) = 0.0
+            ! wvt (2026-09-18): no ELSE. With tracers off these fields are Registry-packaged
+            ! out (size-1 dummies, absent from every output stream), so zeroing them here was
+            ! the one site that executed EXACTLY when the field did not exist.
             END IF
 
             ! IVT = magnitude of VIMF vector (cheap convenience scalar).

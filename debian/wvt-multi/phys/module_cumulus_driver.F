@@ -807,6 +807,15 @@ CONTAINS
       adapt_step_flag_pass = adapt_step_flag
    endif
 
+! wvt: the tracer flags are needed BEFORE the tr_pratec copy below (moved up 2026-09-18; they
+!      were set after it, so the copy could only test PRESENT, which is always true).
+  flag_tr_qv = .FALSE. ; IF ( PRESENT( F_TR_QV ) ) flag_tr_qv = F_TR_QV
+  flag_tr_qc = .FALSE. ; IF ( PRESENT( F_TR_QC ) ) flag_tr_qc = F_TR_QC
+  flag_tr_qr = .FALSE. ; IF ( PRESENT( F_TR_QR ) ) flag_tr_qr = F_TR_QR
+  flag_tr_qi = .FALSE. ; IF ( PRESENT( F_TR_QI ) ) flag_tr_qi = F_TR_QI
+  flag_tr_qs = .FALSE. ; IF ( PRESENT( F_TR_QS ) ) flag_tr_qs = F_TR_QS
+  flag_tr_qg = .FALSE. ; IF ( PRESENT( F_TR_QG ) ) flag_tr_qg = F_TR_QG
+
    ! Initialize tmppratec to pratec
 
    if ( PRESENT ( pratec ) ) then
@@ -815,9 +824,12 @@ CONTAINS
       tmppratec(:,:) = 0.
    end if
 
-! wvt: tracer
+! wvt: tracer. tr_pratec is an explicit-shape dummy (ims:ime,num_wvt_regions,jms:jme) and the
+!      actual is a Registry-packaged field: with tracers off it is a SIZE-1 DUMMY, so this
+!      whole-array copy (and the copy-back below) must not run. PRESENT() alone is not a guard --
+!      the actual is always passed. A bounds-checked build cannot see this site (explicit shape).
 
-   if ( PRESENT ( tr_pratec ) ) then  !tracer
+   if ( PRESENT ( tr_pratec ) .AND. flag_tr_qv ) then  !tracer
       tr_tmppratec = tr_pratec
    else
       tr_tmppratec = 0.
@@ -927,16 +939,7 @@ CONTAINS
       !$OMP END PARALLEL DO
       endif
 
-! wvt: tracer
-
-  flag_tr_qv = .FALSE. ; IF ( PRESENT( F_TR_QV ) ) flag_tr_qv = F_TR_QV
-  flag_tr_qc = .FALSE. ; IF ( PRESENT( F_TR_QC ) ) flag_tr_qc = F_TR_QC
-  flag_tr_qr = .FALSE. ; IF ( PRESENT( F_TR_QR ) ) flag_tr_qr = F_TR_QR
-  flag_tr_qi = .FALSE. ; IF ( PRESENT( F_TR_QI ) ) flag_tr_qi = F_TR_QI
-  flag_tr_qs = .FALSE. ; IF ( PRESENT( F_TR_QS ) ) flag_tr_qs = F_TR_QS
-  flag_tr_qg = .FALSE. ; IF ( PRESENT( F_TR_QG ) ) flag_tr_qg = F_TR_QG
-
-! wvt
+! wvt: (flag_tr_* are set above, before the tr_pratec copy)
 
       IF ( cu_physics == G3SCHEME .OR.  cu_physics == GFSCHEME .OR.     &
            cu_physics == KFETASCHEME .OR. cu_physics == MSKFSCHEME) THEN
@@ -1750,7 +1753,7 @@ CONTAINS
       pratec(:,:) = tmppratec(:,:)
    endif
 
-   if (PRESENT(TR_PRATEC)) then   ! wvt
+   if (PRESENT(TR_PRATEC) .AND. flag_tr_qv) then   ! wvt: size-1 dummy with tracers off, see above
       tr_pratec = tr_tmppratec
    endif
 

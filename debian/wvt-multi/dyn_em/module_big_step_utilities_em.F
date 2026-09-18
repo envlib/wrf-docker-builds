@@ -4910,7 +4910,7 @@ END SUBROUTINE pole_point_bc
                              its, ite, jts, jte, kts, kte  )
 
 ! wvt: per-region tracer total-humidity moisture fluxes (region 1 = unsuffixed; 2..N = _0n).
-! Each region sums only its 6 contiguous species [p_qv_tr+(n-1)*6 .. +5]. For N=1 region 1
+! Each region sums only its 6 contiguous species [P_QV_TR+(n-1)*6 .. +5]. For N=1 region 1
 ! spans the whole tracer array -> bit-identical to the original all-species call.
  IF (p_qv_tr .ge. PARAM_FIRST_SCALAR) THEN
    CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+5, p_qv_tr,     &
@@ -4920,93 +4920,97 @@ END SUBROUTINE pole_point_bc
                              ims, ime, jms, jme, kms, kme,     &
                              its, ite, jts, jte, kts, kte  )
  ENDIF
- IF (config_flags%num_wvt_regions .ge. 2) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+11, p_qv_tr+6,     &
-                             tr_thum_u_phy_dt_02, tr_thum_v_phy_dt_02,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
- ENDIF
- IF (config_flags%num_wvt_regions .ge. 3) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+17, p_qv_tr+12,     &
-                             tr_thum_u_phy_dt_03, tr_thum_v_phy_dt_03,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
- ENDIF
- IF (config_flags%num_wvt_regions .ge. 4) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+23, p_qv_tr+18,     &
-                             tr_thum_u_phy_dt_04, tr_thum_v_phy_dt_04,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
- ENDIF
- IF (config_flags%num_wvt_regions .ge. 5) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+29, p_qv_tr+24,     &
-                             tr_thum_u_phy_dt_05, tr_thum_v_phy_dt_05,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
- ENDIF
- IF (config_flags%num_wvt_regions .ge. 6) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+35, p_qv_tr+30,     &
-                             tr_thum_u_phy_dt_06, tr_thum_v_phy_dt_06,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
- ENDIF
- IF (config_flags%num_wvt_regions .ge. 7) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+41, p_qv_tr+36,     &
-                             tr_thum_u_phy_dt_07, tr_thum_v_phy_dt_07,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
- ENDIF
- IF (config_flags%num_wvt_regions .ge. 8) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+47, p_qv_tr+42,     &
-                             tr_thum_u_phy_dt_08, tr_thum_v_phy_dt_08,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
- ENDIF
- IF (config_flags%num_wvt_regions .ge. 9) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+53, p_qv_tr+48,     &
-                             tr_thum_u_phy_dt_09, tr_thum_v_phy_dt_09,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
- ENDIF
- IF (config_flags%num_wvt_regions .ge. 10) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+59, p_qv_tr+54,     &
-                             tr_thum_u_phy_dt_10, tr_thum_v_phy_dt_10,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
- ENDIF
- IF (config_flags%num_wvt_regions .ge. 11) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+65, p_qv_tr+60,     &
-                             tr_thum_u_phy_dt_11, tr_thum_v_phy_dt_11,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
- ENDIF
- IF (config_flags%num_wvt_regions .ge. 12) THEN
-   CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+71, p_qv_tr+66,     &
-                             tr_thum_u_phy_dt_12, tr_thum_v_phy_dt_12,     &
-                             t_phy, p_phy, u_phy, v_phy,       &
-                             ids, ide, jds, jde, kds, kde,     &
-                             ims, ime, jms, jme, kms, kme,     &
-                             its, ite, jts, jte, kts, kte  )
+! wvt: regions 2..N are Registry-packaged on num_wvt_regions>=n (size-1 dummies below that),
+! and the whole block is additionally gated on p_qv_tr: with tracers off nothing here may run.
+ IF (p_qv_tr .ge. PARAM_FIRST_SCALAR) THEN
+   IF (config_flags%num_wvt_regions .ge. 2) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+11, p_qv_tr+6,     &
+                               tr_thum_u_phy_dt_02, tr_thum_v_phy_dt_02,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
+   IF (config_flags%num_wvt_regions .ge. 3) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+17, p_qv_tr+12,     &
+                               tr_thum_u_phy_dt_03, tr_thum_v_phy_dt_03,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
+   IF (config_flags%num_wvt_regions .ge. 4) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+23, p_qv_tr+18,     &
+                               tr_thum_u_phy_dt_04, tr_thum_v_phy_dt_04,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
+   IF (config_flags%num_wvt_regions .ge. 5) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+29, p_qv_tr+24,     &
+                               tr_thum_u_phy_dt_05, tr_thum_v_phy_dt_05,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
+   IF (config_flags%num_wvt_regions .ge. 6) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+35, p_qv_tr+30,     &
+                               tr_thum_u_phy_dt_06, tr_thum_v_phy_dt_06,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
+   IF (config_flags%num_wvt_regions .ge. 7) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+41, p_qv_tr+36,     &
+                               tr_thum_u_phy_dt_07, tr_thum_v_phy_dt_07,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
+   IF (config_flags%num_wvt_regions .ge. 8) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+47, p_qv_tr+42,     &
+                               tr_thum_u_phy_dt_08, tr_thum_v_phy_dt_08,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
+   IF (config_flags%num_wvt_regions .ge. 9) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+53, p_qv_tr+48,     &
+                               tr_thum_u_phy_dt_09, tr_thum_v_phy_dt_09,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
+   IF (config_flags%num_wvt_regions .ge. 10) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+59, p_qv_tr+54,     &
+                               tr_thum_u_phy_dt_10, tr_thum_v_phy_dt_10,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
+   IF (config_flags%num_wvt_regions .ge. 11) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+65, p_qv_tr+60,     &
+                               tr_thum_u_phy_dt_11, tr_thum_v_phy_dt_11,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
+   IF (config_flags%num_wvt_regions .ge. 12) THEN
+     CALL calc_moist_fluxes(   dt, itimestep, tracer, p_qv_tr+71, p_qv_tr+66,     &
+                               tr_thum_u_phy_dt_12, tr_thum_v_phy_dt_12,     &
+                               t_phy, p_phy, u_phy, v_phy,       &
+                               ids, ide, jds, jde, kds, kde,     &
+                               ims, ime, jms, jme, kms, kme,     &
+                               its, ite, jts, jte, kts, kte  )
+   ENDIF
  ENDIF
 
 ! gmm & are

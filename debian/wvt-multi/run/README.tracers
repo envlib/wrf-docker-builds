@@ -14,3 +14,23 @@
  num_wvt_regions     = 1,	    ;number of simultaneous tagged source regions (1..8). 1 = single-region (default, unchanged). >1 reads that many masks and tracks per-region.
  tracer3dsource      = 0,	    ;choose 1 to activate 3D sources (0 no 3D source)
  tracer3dsink        = 0,	    ;choose 1 to activate 3D sinks (0 no 3D sink)
+
+ ;--- Registry packaging (image wrf-wps-intel-wvt-ubuntu:2.5, 2026-09-18) --------------------------
+ ; Every WVT state field except region-1 RTRQ{V,C,R,I,S}CUTEN is Registry-packaged: with
+ ; tracer_opt /= 4 it is neither allocated nor written to wrfout/wrfrst, and region n's named
+ ; members (RTRQ*CUTEN_0n, tr_thum_*_0n) exist only when num_wvt_regions >= n. Consequences:
+ ;  * a tracer_opt = 0 run of this binary writes NO WVT variables, except: the deferred region-1
+ ;    RTRQ*CUTEN fields (RTRQV/C/ICUTEN in history, all five in restart, zeros), and
+ ;    I_TR_RAINNC/I_TR_RAINC when bucket_mm > 0 (they belong to the stock `bucketropt`
+ ;    package beside I_RAINNC/I_RAINC, as before);
+ ;  * tracer2dsource/tracer3dsource/tracer3dsink without tracer_opt = 4 is refused;
+ ;  * tracer_opt = 4 must be set on every domain or on none (the packaged fields are per-domain
+ ;    and each side of a nest exchange tests only its own array); stock tracer_opt 1/2/3 may
+ ;    still differ between domains as before;
+ ;  * RESTART with a LARGER num_wvt_regions than the restart file was written with is NOT
+ ;    supported: the per-region 3-D members of the new regions are absent from the file and
+ ;    start at 0, and every region-dimensioned 2-D field (TR_RAINNC, TR_RAINC, TR_CAP*, TR_MP*,
+ ;    the I_* buckets, TRQFX, PWAT_TR, VIMF_TR_*) is SKIPPED WHOLESALE by the netCDF reader
+ ;    because its wvt_regions length no longer matches (WRF_WARN_READ_PAST_EOF, never checked),
+ ;    so the OLD regions' accumulators restart from zero too -- silently. A smaller count reads
+ ;    a hyperslab and is fine. Keep the region count constant along a chunk chain.

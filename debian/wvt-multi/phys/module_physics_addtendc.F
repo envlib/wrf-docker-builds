@@ -2457,9 +2457,11 @@ SUBROUTINE advance_ppt(RTHCUTEN,RQVCUTEN,RQCCUTEN,RQRCUTEN,           &
    DO J = j_start,j_end
    DO i = i_start,i_end
       RAINC(I,J)  = RAINC(I,J) + PRATEC(I,J)*DT
+      IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) THEN   ! wvt: packaged -> size-1 dummy with tracers off;
       DO N_WVT = 1, SIZE(TR_RAINC,2)   ! wvt: per-region convective precip accumulation
          TR_RAINC(I,N_WVT,J) = TR_RAINC(I,N_WVT,J) + TR_PRATEC(I,N_WVT,J)*DT
-      ENDDO
+      ENDDO                            ! wvt: SIZE() bounds dim 2 only, (I,J) would run off it
+      ENDIF
       RAINSH(I,J) = RAINSH(I,J) + PRATESH(I,J)*DT
       CUPPT(I,J)  = CUPPT(I,J) + (PRATEC(I,J)+PRATESH(I,J))*DT/1000.
    ENDDO

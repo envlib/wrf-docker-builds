@@ -56,6 +56,7 @@ CONTAINS
 !----------------------------------------------------------------------
 
   USE module_dm, ONLY: wrf_dm_sum_real, wrf_dm_maxval
+  USE module_state_description, ONLY: P_QV_TR, PARAM_FIRST_SCALAR   ! wvt: gate for the packaged fields
 
   IMPLICIT NONE
 !======================================================================
@@ -336,6 +337,10 @@ CONTAINS
       ENDDO
       ENDDO
 
+      ! wvt (2026-09-18): the four WVT bucket blocks below index Registry-PACKAGED fields
+      ! that are size-1 dummies with tracers off; SIZE(..,2) bounds only the region axis,
+      ! so the whole set is gated on P_QV_TR (the same test module_diag_wvt_columns uses).
+      IF (P_QV_TR .ge. PARAM_FIRST_SCALAR) THEN
       ! WVT tracer precip bucket wrap — mirrors the RAINC/RAINNC block above.
       IF (PRESENT(TR_RAINNC) .AND. PRESENT(I_TR_RAINNC)) THEN
         IF (xtime .eq. 0.0) THEN
@@ -448,6 +453,7 @@ CONTAINS
         ENDDO
         ENDDO
       ENDIF
+      ENDIF   ! wvt P_QV_TR
 
       IF (xtime .eq. 0.0 .and. bucket_J .gt. 0.0 .and. PRESENT(ACSWUPT))THEN
         DO j=j_start(ij),j_end(ij)

@@ -3189,8 +3189,32 @@
 ! wvt: num_wvt_regions>1 is only valid with WVT active. Without tracer_opt=4 the cumulative
 !      num_wvt_regions==N packages would activate regions 2.. without the tracer_opt-gated
 !      region 1, leaving a non-contiguous active tracer block.
-         ELSE IF ( model_config_rec % num_wvt_regions .GT. 1 ) THEN
-            wrf_err_message = '--- ERROR: num_wvt_regions>1 requires tracer_opt=4 (WVT)'
+         ELSE
+            IF ( model_config_rec % num_wvt_regions .GT. 1 ) THEN
+               wrf_err_message = '--- ERROR: num_wvt_regions>1 requires tracer_opt=4 (WVT)'
+               CALL wrf_message ( wrf_err_message )
+               count_fatal_error = count_fatal_error + 1
+            END IF
+! wvt (2026-09-18): the WVT state (TRMASK, TRMASK3D/3D2, the TR_* accumulators, ...) is
+!      Registry-packaged on tracer_opt==4. A source/sink switch without tracer_opt=4 would reach
+!      solve_em's mask loops with size-1 dummies; refuse it here, where it is a namelist error.
+            IF ( model_config_rec % tracer2dsource(i) .NE. 0 .OR. &
+                 model_config_rec % tracer3dsource(i) .NE. 0 .OR. &
+                 model_config_rec % tracer3dsink(i)   .NE. 0 ) THEN
+               wrf_err_message = '--- ERROR: tracer2dsource/tracer3dsource/tracer3dsink require tracer_opt=4 (WVT)'
+               CALL wrf_message ( wrf_err_message )
+               count_fatal_error = count_fatal_error + 1
+            END IF
+         END IF
+! wvt (2026-09-18): tracer_opt is per domain, and so is the allocation of every packaged WVT
+!      field -- but the two sides of a nest exchange each test only their OWN array size
+!      (generated nest interp/feedback and RSL_LITE pack/unpack), so tracer_opt = 4, 0 would
+!      pack a full parent field that the nest side never unpacks. Require one value on every
+!      domain WHEN WVT IS INVOLVED. Stock tracer_opt (1, 2, 3) is legitimately per-domain and
+!      is left alone (review round wvt-pkg-code-1).
+         IF ( ( model_config_rec % tracer_opt(i) .EQ. 4 .OR. model_config_rec % tracer_opt(1) .EQ. 4 ) .AND. &
+              model_config_rec % tracer_opt(i) .NE. model_config_rec % tracer_opt(1) ) THEN
+            wrf_err_message = '--- ERROR: tracer_opt=4 (WVT) must be set on every domain or none (WVT fields are per-domain packaged)'
             CALL wrf_message ( wrf_err_message )
             count_fatal_error = count_fatal_error + 1
          END IF

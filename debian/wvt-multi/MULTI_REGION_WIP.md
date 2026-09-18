@@ -183,6 +183,64 @@ machinery); **(D)** rejected — single reused storage breaks between-step reuse
 Each stage is implemented, compiled, runtime-checked and independently reviewed before the next
 stage begins.
 
+## Stage pkg — REGISTRY PACKAGING of the WVT state (2026-09-18)
+
+**Why.** A `tracer_opt = 0` run of the WVT binary still allocated and wrote every WVT state field
+as zeros: 60 3-D fields (`RTRQ*CUTEN` ×36, `tr_thum_*` ×24) plus the region-dimensioned 2-D set,
+≈1.1 GB per production history frame, every frame and every restart. Only the 4-D tracer members
+were packaged. Plan + dual-blind review (round `wvt-pkg-plan-2`): `wrf-model-eval`
+(`~/.claude/plans/...` → `docs/`), backlog item in `OPEN_WORK.md`.
+
+**What.** Registry packages, same mechanism as the tracer members:
+- `wvt_cuten_nrN` / `wvt_thum_nrN` (`num_wvt_regions==N`, cumulative, N=2..12) — emitted by
+  `gen_wvt_cuten.py` SECTION 9 and `gen_wvt_thum.py` SECTION 6 (each generator owns its own
+  lines; only the package NAME must be unique, several lines may share a condition).
+- `wvt_state` (`tracer_opt==4`) — emitted by `gen_wvt_tracers.py`: `RTRQ*BLTEN`, `tr_thum_*`
+  (region 1), `TRMASK3D(2)`, `TRQFX`, `TR_CAP*` + `I_TR_CAP*`, `TR_MP*` + `I_TR_MP*`, `TRMASK`,
+  `TR_RAIN*`, `TR_PRATEC`, `PWAT_TR`, `VIMF_TR_*`. **Not `I_TR_RAINNC` / `I_TR_RAINC`:** the
+  original port listed those two in the STOCK package `bucketropt bucketr_opt==1` beside
+  `I_RAINC/I_RAINNC`, and WRF ORs packages — listing them in `wvt_state` too made them active
+  with tracers off whenever `bucket_mm > 0` (measured). They stay governed by `bucketr_opt`
+  alone, i.e. exactly as before: two zero integer 2-D fields in a tracer-off bucketed run.
+- **DEFERRED (Stage 2b):** region-1 `RTRQ{V,C,R,I,S}CUTEN` — their only unguarded writers are
+  KF/MSKF explicit-shape sites (`module_cu_kfeta.F:3660, 545-581`, `module_cu_mskf.F:7733,
+  4009-4042`, `module_physics_addtendc.F:2548`) that a bounds-checked build cannot see.
+
+**An inactive package field is a SIZE-1 DUMMY, not absent.** The consumer audit found nine
+sites that would index it; the guards added: `module_diag_wvt_columns.F` (ELSE zeroing
+removed), `module_cumulus_driver.F` (`flag_tr_*` set before the `tr_pratec` copies, which are now
+gated on `flag_tr_qv` — the one site invisible to `-check bounds`, verified with an
+AddressSanitizer build), `module_physics_addtendc.F` advance_ppt and `module_diag_misc.F`'s four
+bucket blocks (`P_QV_TR`), `solve_em.F` mask loops (`P_QV_TR`), `gen_wvt_thum.py` S4 (outer
+`p_qv_tr`), and two new `check_a_mundo` rules: source/sink switches require `tracer_opt=4`, and
+`tracer_opt=4` must be set on every domain or on none (each side of a nest exchange tests only
+its own array — generated interp and RSL_LITE pack/unpack — so a `4, 0` namelist would pack a
+full parent field the nest never unpacks; stock per-domain `tracer_opt` 1/2/3 stays legal).
+⚠ Restart with a LARGER `num_wvt_regions` is unsupported: the region-dimensioned 2-D fields are
+skipped wholesale by the netCDF reader (`WRF_WARN_READ_PAST_EOF`, never checked), so every
+region's accumulators restart from zero, silently. Code review round `wvt-pkg-code-1` (two arms)
+after implementation: eleven findings, all in the checks and the namelist rules, folded in —
+record `wrf-model-eval/docs/wvt_registry_packaging.md`.
+
+**Registry facts that shaped it (verified by running `tools/registry`):** names in `state:`
+lists are case-INSENSITIVE (the parser lower-cases every line) but a misspelled name is a
+WARNING only and leaves the field un-gated; lines are read with `fgets(…,7000)` and truncated
+silently past 6999 chars. `check_generators.sh` now asserts every packaged name is declared,
+every WVT state field is packaged or on the DEFERRED list, and no registry line exceeds 6000
+chars — each shown to fail against its defect.
+
+**Gates (`test/`):** `wvt_expected_absent.py` derives the per-stream expected-absent set from
+the registry flags; `compare_gate0.py --expect-absent --stream` is two-sided (an unlisted
+disappearance and a listed survivor both fail); `check_notracer.py` adds "no WVT-named variable
+left except the deferred set"; `run_pkg_gates.sh` runs the family (n8, n12, n2, n1, four
+tracer-off variants, two negatives) in a builder image. Arm A is a same-flags throwaway build of
+the pre-change overlay so A and B differ only by this change.
+
+**Downstream:** `wrf-auto-runs` prunes WVT-only names from the `ncks -v` list when
+`tracer_opt != 4` (`utils.prune_for_tracer_opt`, `defaults.WVT_ONLY_VARIABLES`) and refuses a
+non-uniform per-domain `tracer_opt` (`set_params.validate_tracer_opt_uniform`); without the prune
+a tracer-off run with a WVT preset would abort in `monitor_wrf.py` once the fields are gone.
+
 ## Stage bdy-tags — LATERAL-BOUNDARY TAGS — DONE, COMPILES, RUNS at 12 regions (2026-09-07)
 
 **Implemented, built and run.** `MAX_WVT_REGIONS` raised 8 → 12 (regenerate with

@@ -9,14 +9,31 @@ means the cap raise changed something it should not have.
 import glob, os, sys
 import h5netcdf, numpy as np
 
-A = sys.argv[1] if len(sys.argv) > 1 else '/tmp/wvt_rt_test/g0_base'
-B = sys.argv[2] if len(sys.argv) > 2 else '/tmp/wvt_rt_test/g0_new'
-fa = sorted(glob.glob(os.path.join(A, 'wrfout_d01_*')))
-fb = sorted(glob.glob(os.path.join(B, 'wrfout_d01_*')))
+import argparse
+ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+ap.add_argument('A', nargs='?', default='/tmp/wvt_rt_test/g0_base')
+ap.add_argument('B', nargs='?', default='/tmp/wvt_rt_test/g0_new')
+ap.add_argument('--stream', default='wrfout', choices=['wrfout', 'wrfrst'],
+                help='which files to compare (default wrfout)')
+ap.add_argument('--expect-absent', metavar='FILE',
+                help='names (one per line, case-insensitive) that the NEW build must NOT write: '
+                     'Registry-packaged fields inactive for this namelist, from '
+                     'wvt_expected_absent.py. Every listed name must be present in A and absent '
+                     'from B; any OTHER variable missing from B is still a FAIL.')
+args = ap.parse_args()
+A, B = args.A, args.B
+fa = sorted(glob.glob(os.path.join(A, f'{args.stream}_d01_*')))
+fb = sorted(glob.glob(os.path.join(B, f'{args.stream}_d01_*')))
 if not fa or len(fa) != len(fb):
     sys.exit(f'FAIL: file count differs: {len(fa)} vs {len(fb)}')
 
 EXPECTED_NONZERO_EXTRAS = {'TRMASK'}
+# 2026-09-18: a build that PACKAGES fields legitimately stops writing them. The list is
+# generated from the Registry (wvt_expected_absent.py), never typed; and the check is two-sided:
+# a listed name that is still written is as much a failure as an unlisted one that vanished.
+expect_absent = set()
+if args.expect_absent:
+    expect_absent = {l.strip().lower() for l in open(args.expect_absent) if l.strip()}
 
 worst, worst_var, nvars, ndiff = 0.0, None, 0, 0
 problems = []
@@ -31,8 +48,21 @@ for pa, pb in zip(fa, fb):
         # A variable the new build DROPPED is a regression, not a note. Previously these were
         # printed and the run still reported OK -- a bad Registry merge losing QVAPOR would
         # have passed (both arms, round wvt-bdytags-code-2).
-        if only_a:
-            problems.append(f'{tag}: variables MISSING from the new build: {only_a}')
+        only_a_l = {v.lower() for v in only_a}
+        unexpected_missing = sorted(v for v in only_a if v.lower() not in expect_absent)
+        if unexpected_missing:
+            problems.append(f'{tag}: variables MISSING from the new build: {unexpected_missing}')
+        still_written = sorted(n for n in expect_absent
+                               if n not in only_a_l and n in {v.lower() for v in B_.variables})
+        if still_written:
+            problems.append(f'{tag}: expected-absent variables STILL WRITTEN by the new build: {still_written}')
+        not_in_a = sorted(n for n in expect_absent if n not in {v.lower() for v in A_.variables})
+        if not_in_a:
+            # Not a failure: some packaged fields are also namelist-conditional in the OLD build
+            # (the I_* bucket counters are only written when bucket_mm > 0). A list for the wrong
+            # stream or namelist shows up as unexpected-missing / still-written instead.
+            print(f'{tag}: note -- {len(not_in_a)} expected-absent name(s) the old build never wrote '
+                  f'for this namelist: {not_in_a}')
 
         # Extras are expected (regions 9-12 declared but inactive) -- but only if they are
         # identically zero. "I checked that by hand" is not a gate.
@@ -77,7 +107,8 @@ for pa, pb in zip(fa, fb):
                 if m > worst:
                     worst, worst_var = m, f'{tag}:{v}'
     print(f'{tag}: {len(shared)} shared'
-          + (f'  MISSING={only_a}' if only_a else '')
+          + (f'  absent-as-expected={len(only_a)}' if only_a and not unexpected_missing else '')
+          + (f'  MISSING={unexpected_missing}' if unexpected_missing else '')
           + (f'  extra={len(only_b)} (checked zero)' if only_b else ''))
 
 print(f'\ncompared {nvars} numeric variable instances; {ndiff} differ')
@@ -88,4 +119,5 @@ if problems or worst_var:
     for x in problems:
         print('  ' + x)
     sys.exit(1)
-print('\nOK: gate 0 -- bit-for-bit identical at 8 regions')
+print(f'\nOK: gate 0 -- bit-for-bit identical on every shared variable ({args.stream}); '
+      f'{len(expect_absent)} expected-absent names verified absent')

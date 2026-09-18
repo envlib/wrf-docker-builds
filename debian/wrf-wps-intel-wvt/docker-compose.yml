@@ -1,15 +1,14 @@
 services:
   wrf:
-    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:2.4
+    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:2.5   # 2.5 (2026-09-18): WVT state Registry-packaged (tracer-off runs write no WVT fields) + core-avx2
     build:
       context: ../
       dockerfile: wrf-wps-intel-wvt/Dockerfile
       args:
         # AVX2 baseline (every Intel since 2013, every AMD since Zen): ~3% faster than the stock
-        # no-march build, output identical on the harness. ⚠ NOT yet in :2.4 -- that tag was built
-        # before this line existed (2026-09-18); it takes effect at the next version bump. The
-        # AVX-512 variant lives in ../wrf-wps-intel-wvt-avx512/. Record:
-        # wrf-model-eval/docs/wvt_tracer_cost_assessment.md sec 3.7.
+        # no-march build, output identical on the harness. In effect from :2.5 (2026-09-18); :2.4
+        # and earlier are plain x86-64. The AVX-512 variant lives in ../wrf-wps-intel-wvt-avx512/.
+        # Record: wrf-model-eval/docs/wvt_tracer_cost_assessment.md sec 3.7.
         WRF_MARCH: core-avx2
     stdin_open: true
     tty: true
