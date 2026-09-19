@@ -260,11 +260,11 @@ the cap in silence.
 instances, with a determinism control). Shell tagging measured at 0.9955 of vapour.
 
 **SUPERSEDED 2026-09-09 → 2026-09-18** — the current images are `wrf-wps-intel-wvt-ubuntu:2.6` +
-`wrf-auto-runs-intel-wvt:2.10` (WVT state Registry-packaged, `-march=core-avx2`; 2.5 / 2.9 of 2026-09-18
+`wrf-auto-runs-intel-wvt:2.11` (2.10 = the packaging release, 2.11 a pipeline-only bump the same day; WVT state Registry-packaged, `-march=core-avx2`; 2.5 / 2.9 of 2026-09-18
 refused tracer-off namelists carrying `tracer2dsource = 1`) and the AVX-512 pair
 `wrf-wps-intel-wvt-ubuntu-avx512:1.2` + `wrf-auto-runs-intel-wvt-avx512:1.2` (1.1 likewise superseded) (same source,
-`-march=skylake-avx512`, Zen 4 / Genoa only) — see "Stage pkg" below; none pushed at the time of
-writing. Between them, 2.2/2.5 (2026-09-09) added the nine New Tiedtke tag mirrors and the
+`-march=skylake-avx512`, Zen 4 / Genoa only) — see "Stage pkg" below; the AVX-512 pair was pushed
+2026-09-19 for the Hetzner P1 timing family. Between them, 2.2/2.5 (2026-09-09) added the nine New Tiedtke tag mirrors and the
 `TR_CAPCRE`/`TR_CAPDES` diagnostics (`wrf-model-eval/docs/wvt_cumulus_tagging.md`), and 2.4/2.8
 (2026-09-13, pushed — the C1 pilot runs on it) the `moist_adv_opt` guard + default 4 and `PREC_ACC`
 in `wvt_2d`. The 2.1/2.3 pair below is kept as provenance for the 12-region CS1 run that exposed the
