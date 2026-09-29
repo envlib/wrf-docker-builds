@@ -259,7 +259,9 @@ the cap in silence.
 `boundary_faces = []` reproduces the pre-change 8-region build **bit-for-bit** (0 of 1792 variable
 instances, with a determinism control). Shell tagging measured at 0.9955 of vapour.
 
-**SUPERSEDED 2026-09-09 → 2026-09-18** — the current images are `wrf-wps-intel-wvt-ubuntu:2.6` +
+**2026-09-29: base `wrf-wps-intel-wvt-ubuntu:2.7` / `-avx512:1.3` / `wrf-wps-wvt-mr-debian:1.1`** — `dyn_em/start_em.F` passes DRY theta (`th_phy_m_t0`) to the init-time `pld`/`zld` calls. Before, it passed `t_2`, which is moist theta under `use_theta_m = 1`, so the first p/z-level frame of every run and every restart had `T_PL`/`RH_PL`/`TD_PL` warm by (1 + 1.61 qv), ~2 K at 850 hPa. A stock-WRF bug; the same edit is in `~/git/wrf-repos/WRF-WVT` for upstream. Model state does not read these fields, so a p-levels-off run must be bit-identical to 2.6's (the W1 gate). Found by review round `plev-autoruns-plan-1`; record `wrf-model-eval/docs/pressure_level_archive.md`.
+
+**SUPERSEDED 2026-09-09 → 2026-09-18** — the images below were current until 2026-09-29: `wrf-wps-intel-wvt-ubuntu:2.6` +
 `wrf-auto-runs-intel-wvt:2.11` (2.10 = the packaging release, 2.11 a pipeline-only bump the same day; WVT state Registry-packaged, `-march=core-avx2`; 2.5 / 2.9 of 2026-09-18
 refused tracer-off namelists carrying `tracer2dsource = 1`) and the AVX-512 pair
 `wrf-wps-intel-wvt-ubuntu-avx512:1.2` + `wrf-auto-runs-intel-wvt-avx512:1.2` (1.1 likewise superseded) (same source,

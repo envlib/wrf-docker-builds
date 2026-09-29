@@ -1,6 +1,6 @@
 services:
   wrf:
-    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:2.6   # 2.6 (2026-09-19): the tracer3dsource/3dsink rule no longer refuses tracer2dsource without WVT (2.5's rule broke tracer-off namelists); 2.5 (2026-09-18): WVT state Registry-packaged + core-avx2
+    image: mullenkamp/wrf-wps-intel-wvt-ubuntu:2.7   # 2.7 (2026-09-29): start_em's init-time pld/zld get DRY theta (th_phy_m_t0), so the first p/z-level frame of a run (cold start t=0, every restart 0h) is no longer warm-biased; 2.6 (2026-09-19): the tracer3dsource/3dsink rule no longer refuses tracer2dsource without WVT (2.5's rule broke tracer-off namelists); 2.5 (2026-09-18): WVT state Registry-packaged + core-avx2
     build:
       context: ../
       dockerfile: wrf-wps-intel-wvt/Dockerfile

@@ -2010,12 +2010,18 @@ DEALLOCATE(dz8w)
 
    IF (config_flags%p_lev_diags == PRESS_DIAGS ) THEN
     CALL wrf_debug ( 200 , ' PLD: pressure level diags' )
+    !  t must be DRY perturbation theta, as module_diag_pld.F assumes and as the per-step call in
+    !  phys/module_diagnostics_driver.F passes (th_phy_m_t0). grid%t_2 is MOIST theta under
+    !  use_theta_m = 1 (the default), which made every run's first p-level frame -- the cold-start
+    !  t=0 frame and each restart's 0h frame -- warm by a factor (1 + Rv/Rd qv), ~2 K at 850 hPa.
+    !  th_phy_m_t0 is dry theta - t0 here: real.exe sets it before converting t_2 to moist, and it
+    !  is in the input and restart streams (Registry "t", irhd). wrf-model-eval, 2026-09-29.
     CALL pld (                                  &
                  !  Input data for computing
                   U=grid%u_2                    &
                  ,V=grid%v_2                    &
                  ,W=grid%w_2                    &
-                 ,t=grid%t_2                    &
+                 ,t=grid%th_phy_m_t0            &
                  ,qv=moist(:,:,:,P_QV)          &
                  ,zp=grid%ph_2                  &
                  ,zb=grid%phb                   &
@@ -2057,12 +2063,13 @@ DEALLOCATE(dz8w)
 
    IF (config_flags%z_lev_diags == Z_DIAGS ) THEN
      CALL wrf_debug ( 200 , ' ZLD: height level and AGL diags' )
+     !  Dry theta, for the same reason as the pld call above.
      CALL zld (                                  &
                  !  Input data for computing
                   U=grid%u_2                    &
                  ,V=grid%v_2                    &
                  ,W=grid%w_2                    &
-                 ,t=grid%t_2                    &
+                 ,t=grid%th_phy_m_t0            &
                  ,qv=moist(:,:,:,P_QV)          &
                  ,zp=grid%ph_2                  &
                  ,zb=grid%phb                   &
