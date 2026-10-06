@@ -36,18 +36,18 @@ For ARM64 cross-compilation on amd64: install `qemu-user-static` and enable Dock
 ```
 wrf-base (Debian 13 + gfortran + mpich + HDF5 + NetCDF + tools)
 ├── wrf-debian                  — WRF only
-├── wrf-wps-debian:1.2          — WRF 4.7.1 + WPS 4.6.0 (gfortran, dmpar)                   [no-WVT]
-├── wrf-wps-wvt-debian:1.3      — + single-region WVT  (overlay debian/wvt-single/)         [SR]
-├── wrf-wps-wvt-mr-debian:1.1   — + multi-region WVT   (overlay debian/wvt-multi/)          [MR] NEW
+├── wrf-wps-debian:1.3          — WRF 4.7.1 + WPS 4.6.0 (gfortran, dmpar)                   [no-WVT]
+├── wrf-wps-wvt-debian:1.5      — + single-region WVT  (overlay debian/wvt-single/)         [SR]
+├── wrf-wps-wvt-mr-debian:1.2   — + multi-region WVT   (overlay debian/wvt-multi/)          [MR] NEW
 ├── wrf-wps-wvt-ref-debian:1.0  — WRF 4.3.3 + original WVT (frozen ref; debian/wvt-ref/ + FREEZE.md)
 ├── wrf-wps-hydro-coupled       — WRF 4.7.1 + WPS 4.6.0 + WRF-Hydro 5.4.0
 └── wrf-hydro-sa                — WRF-Hydro 5.4.0 standalone
 
 intel/oneapi-hpckit (multi-stage — builder + runtime)
-├── wrf-wps-intel-ubuntu:1.0         — WRF 4.7.1 + WPS 4.6.0 (Intel oneAPI)                 [no-WVT]
-├── wrf-wps-intel-wvt-sr-ubuntu:1.0  — + single-region WVT  (overlay debian/wvt-single/)    [SR] NEW
-├── wrf-wps-intel-wvt-ubuntu:2.7     — + multi-region WVT   (overlay debian/wvt-multi/)      [MR]
-└── wrf-wps-intel-wvt-ubuntu-avx512:1.3 — same source, -march=skylake-avx512 (build arg)    [MR]
+├── wrf-wps-intel-ubuntu:1.1         — WRF 4.7.1 + WPS 4.6.0 (Intel oneAPI)                 [no-WVT]
+├── wrf-wps-intel-wvt-sr-ubuntu:1.1  — + single-region WVT  (overlay debian/wvt-single/)    [SR] NEW
+├── wrf-wps-intel-wvt-ubuntu:2.8     — + multi-region WVT   (overlay debian/wvt-multi/)      [MR]
+└── wrf-wps-intel-wvt-ubuntu-avx512:1.4 — same source, -march=skylake-avx512 (build arg)    [MR]
 
 wps-geog-nz (separate, no base dependency) — WPS geographical static data
 ```
@@ -61,12 +61,12 @@ single-region images are kept as a **frozen, independent** reference. WVT source
 
 | Variant | Compiler | Base image (here) | Base context | Pipeline image (wrf-auto-runs) | Pipeline context |
 |---|---|---|---|---|---|
-| no-WVT | gfortran | `wrf-wps-debian:1.2` | `debian/wrf-wps/` | `wrf-auto-runs` | `gfortran_wrf/` ✦ |
-| no-WVT | Intel | `wrf-wps-intel-ubuntu:1.0` | `debian/wrf-wps-intel/` | `wrf-auto-runs-intel` | `intel_wrf/` |
-| single-region | gfortran | `wrf-wps-wvt-debian:1.3` | `debian/wrf-wps-wvt/` | `wrf-auto-runs-wvt` | `gfortran_wvt/` |
-| single-region | Intel | `wrf-wps-intel-wvt-sr-ubuntu:1.0` ✦ | `debian/wrf-wps-intel-wvt-sr/` | `wrf-auto-runs-intel-wvt-sr` ✦ | `intel_wvt_sr/` ✦ |
-| multi-region | gfortran | `wrf-wps-wvt-mr-debian:1.1` ✦ | `debian/wrf-wps-wvt-mr/` | `wrf-auto-runs-wvt-mr` ✦ | `gfortran_wvt_mr/` ✦ |
-| multi-region | Intel | `wrf-wps-intel-wvt-ubuntu:2.7` (avx512 twin `:1.3`) | `debian/wrf-wps-intel-wvt/` | `wrf-auto-runs-intel-wvt:2.13` (avx512 `:1.6`) | `intel_wvt/` |
+| no-WVT | gfortran | `wrf-wps-debian:1.3` | `debian/wrf-wps/` | `wrf-auto-runs` | `gfortran_wrf/` ✦ |
+| no-WVT | Intel | `wrf-wps-intel-ubuntu:1.1` | `debian/wrf-wps-intel/` | `wrf-auto-runs-intel` | `intel_wrf/` |
+| single-region | gfortran | `wrf-wps-wvt-debian:1.5` | `debian/wrf-wps-wvt/` | `wrf-auto-runs-wvt` | `gfortran_wvt/` |
+| single-region | Intel | `wrf-wps-intel-wvt-sr-ubuntu:1.1` ✦ | `debian/wrf-wps-intel-wvt-sr/` | `wrf-auto-runs-intel-wvt-sr` ✦ | `intel_wvt_sr/` ✦ |
+| multi-region | gfortran | `wrf-wps-wvt-mr-debian:1.2` ✦ | `debian/wrf-wps-wvt-mr/` | `wrf-auto-runs-wvt-mr` ✦ | `gfortran_wvt_mr/` ✦ |
+| multi-region | Intel | `wrf-wps-intel-wvt-ubuntu:2.8` (avx512 twin `:1.4`) | `debian/wrf-wps-intel-wvt/` | `wrf-auto-runs-intel-wvt:2.15` (avx512 `:1.8`) | `intel_wvt/` |
 | reference (4.3.3) | gfortran | `wrf-wps-wvt-ref-debian:1.0` | `debian/wrf-wps-wvt-ref/` | `wrf-auto-runs-wvt-ref` | `gfortran_wvt_ref/` |
 
 ✦ = **new scaffolding — build + validate on demand**. The gfortran multi-region build is the higher-risk
@@ -169,8 +169,8 @@ When upgrading WPS or modifying these Dockerfiles, **preserve the heap-arrays in
 - **debian/wrf-wps-wvt/Dockerfile**: gfortran WRF + WPS + WVT (water vapor tracer) modifications layered on top
 - **debian/wrf-wps-intel/Dockerfile**: Multi-stage Intel oneAPI build (builder stage compiles WRF+WPS, runtime stage strips to oneapi-runtime base for size). Builds HDF5/NetCDF-C/NetCDF-Fortran from source with Intel compilers.
 - **debian/wrf-wps-intel-wvt/Dockerfile**: Same multi-stage pattern with WVT overlay.
-- **debian/wrf-wps/output_module.F**: Custom WPS Fortran module patched into WPS builds for NZ domain support.
-- **debian/wrf-wps/GEOGRID.TBL.nz, METGRID.TBL.nz**: Custom geogrid/metgrid tables for New Zealand domains.
+- **debian/patches/output_module.F**: Custom WPS Fortran module patched into WPS builds for NZ domain support.
+- **debian/patches/GEOGRID.TBL.nz, METGRID.TBL.nz**: Custom geogrid/metgrid tables for New Zealand domains. `HGT_M` has two entries: the LINZ DEM inside NZ (priority 2) and GMTED2010 everywhere else (priority 1). Before 2026-10-05 it had only LINZ, so every land cell outside NZ was 0 m (record: wrf-model-eval `docs/terrain_fallback.md`).
 - **geog/make_wps_geog.sh**: Downloads and packages WPS static geographical data with zstd compression.
 - **debian/wrf/testing/**: Test input data (wrfinput, wrfbdy, wrflowinp) at 1km and 3km resolutions for nested domain simulations.
 
@@ -191,7 +191,7 @@ After rebuilding a WPS image, verify the heap-arrays flag actually made it into 
 
 ```bash
 # gfortran (dmpar metgrid):
-docker run --rm mullenkamp/wrf-wps-wvt-debian:1.3 \
+docker run --rm mullenkamp/wrf-wps-wvt-debian:1.5 \
     bash -c "ldd /WPS/metgrid.exe | grep -i mpi && grep -E '^(FFLAGS|F77FLAGS) *=' /WPS/configure.wps"
 # Expect: libmpich + libmpichfort, FFLAGS containing -fno-stack-arrays
 

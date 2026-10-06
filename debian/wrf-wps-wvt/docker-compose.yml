@@ -3,7 +3,7 @@ services:
     build:
       context: ../
       dockerfile: wrf-wps-wvt/Dockerfile
-    image: mullenkamp/wrf-wps-wvt-debian:1.3
+    image: mullenkamp/wrf-wps-wvt-debian:1.5   # 1.5 (2026-10-05): GEOGRID.TBL HGT_M falls back to GMTED2010 outside the LINZ DEM (before: 0 m on every land cell outside NZ). 1.4 skipped: a stray local build of that tag exists
     stdin_open: true
     tty: true
     shm_size: '1gb'

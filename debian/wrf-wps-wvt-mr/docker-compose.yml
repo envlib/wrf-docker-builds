@@ -3,7 +3,7 @@ services:
     build:
       context: ../
       dockerfile: wrf-wps-wvt-mr/Dockerfile
-    image: mullenkamp/wrf-wps-wvt-mr-debian:1.1   # 1.1 (2026-09-29): init-time p/z-level diags use dry theta (start_em.F)
+    image: mullenkamp/wrf-wps-wvt-mr-debian:1.2   # 1.2 (2026-10-05): GEOGRID.TBL HGT_M falls back to GMTED2010 outside the LINZ DEM (before: 0 m on every land cell outside NZ); 1.1 (2026-09-29): init-time p/z-level diags use dry theta (start_em.F)
     stdin_open: true
     tty: true
     shm_size: '2gb'   # multi-region multi-rank runs want >=2gb shared memory (more tracers per rank)

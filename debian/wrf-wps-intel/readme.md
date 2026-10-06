@@ -15,7 +15,7 @@ docker compose build
 chmod +x test.sh
 ./test.sh
 # Or with custom paths:
-./test.sh --image mullenkamp/wrf-wps-intel-ubuntu:1.0 \
+./test.sh --image mullenkamp/wrf-wps-intel-ubuntu:1.1 \
           --geog-path ~/WPS_GEOG \
           --test-data ~/data/wrf/test_data
 ```

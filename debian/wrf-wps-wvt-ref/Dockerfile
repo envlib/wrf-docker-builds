@@ -69,7 +69,9 @@ RUN rm /WPS/namelist.wps && rm /WRF/run/namelist.input
 
 WORKDIR /WPS/geogrid
 
-COPY patches/GEOGRID.TBL.nz .
+# FROZEN copy of the geogrid table this image was built with (431adc3, LINZ-only HGT_M). Not the shared
+# patches/ file: that one changed on 2026-10-05, and a rebuild must reproduce 1.0. See FREEZE.md.
+COPY wrf-wps-wvt-ref/GEOGRID.TBL.nz.frozen GEOGRID.TBL.nz
 
 RUN ln -sf GEOGRID.TBL.nz GEOGRID.TBL
 

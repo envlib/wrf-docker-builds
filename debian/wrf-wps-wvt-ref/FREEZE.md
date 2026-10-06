@@ -22,6 +22,18 @@ this image was never rebuilt against fixes that predated it.
 | `run_geogrid.py` | taken wholesale: domain bbox from the full `XLAT_M`/`XLONG_M` rather than the four corner attributes | the corner-bbox fix | On a Lambert domain the extreme latitudes sit *between* corners. Measured on this domain: corners give −51.848, the true grid reaches **−52.305**. ERA5 was requested short, and metgrid died with `Missing values encountered in interpolated fields` at (i,j)=(170,1) and (189,1) — lat −52.14 and −52.26, both inside that 0.46° gap. |
 | `run_metgrid.py` | the three stack lines only | `84c610d` | metgrid exhausted the default 8 MB stack. ⚠ That commit **also** switched metgrid to `mpirun -n n_cores_metgrid`; deliberately **not** taken — WPS is serial in this image and this pipeline has no such setting. |
 
+### 1.4 of the pipeline image (2026-10-05): a third forward-port, the geogrid table
+
+| file | change | why |
+|---|---|---|
+| `GEOGRID.TBL.nz` (pipeline image only, vendored at `gfortran_wvt_ref/pipeline/`) | `HGT_M` falls back to GMTED2010 30″ wherever the LINZ DEM has no data | The table this base was built with reads `HGT_M` from the NZ-only LINZ DEM with no fallback, so geogrid wrote **0 m on every land cell outside NZ** (eastern Australia, Tasmania, New Caledonia, Fiji). Every arm of the P1 chain must share one terrain. |
+
+The **base image stays 1.0 and stays frozen**: its Dockerfile now copies `wrf-wps-wvt-ref/GEOGRID.TBL.nz.frozen`
+(the LINZ-only table it was built with, `431adc3`) instead of the shared `debian/patches/GEOGRID.TBL.nz`, which
+changed. Without that, a rebuild of "frozen" 1.0, including the Zenodo procedure below, would silently have taken
+the new table. The corrected table is layered on in the pipeline image, where `check_image_versions.sh` asserts
+it equals the canonical one. Record: wrf-model-eval `docs/terrain_fallback.md`.
+
 **Nothing else was taken.** A straight rebuild against current `wrf-auto-runs` is not possible and
 should not be attempted: `set_params.py` emits `num_wvt_regions` / `num_wvt_bdy_regions` whenever
 `tracer_opt = 4`, and neither exists in the authors' registry, so WRF would reject the namelist;
@@ -48,7 +60,9 @@ configs use.
 - The original WVT overlay `debian/wvt-ref/modules_tracers_4.3.3.tar` ("unmodified 4.3.3 tar from the
   authors"), untarred over the WRF source tree.
 - Base: Debian 11 (GCC 10) — WRF 4.3.3 does not compile cleanly with GCC 13+.
-- Pipeline image: `wrf-auto-runs-wvt-ref` (build context `wrf-auto-runs/gfortran_wvt_ref/`).
+- Pipeline image: `wrf-auto-runs-wvt-ref`, built from the wrf-auto-runs repo ROOT as context
+  (`docker build -f gfortran_wvt_ref/Dockerfile -t mullenkamp/wrf-auto-runs-wvt-ref:<ver> .`): its `COPY` paths are
+  root-relative. Its compose file has no `build:` block.
 
 ## Provenance
 - Original online WVT method: **Insua-Costa, D. and Miguez-Macho, G. (2018)**, "A new moisture tagging

@@ -1,6 +1,6 @@
 services:
   wrf:
-    image: mullenkamp/wrf-wps-intel-wvt-sr-ubuntu:1.0
+    image: mullenkamp/wrf-wps-intel-wvt-sr-ubuntu:1.1   # 1.1 (2026-10-05): GEOGRID.TBL HGT_M falls back to GMTED2010 outside the LINZ DEM (before: 0 m on every land cell outside NZ)
     build:
       context: ../
       dockerfile: wrf-wps-intel-wvt-sr/Dockerfile

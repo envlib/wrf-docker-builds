@@ -5,7 +5,7 @@ services:
     build:
       context: ../
       dockerfile: wrf-wps/Dockerfile
-    image: mullenkamp/wrf-wps-debian:1.2
+    image: mullenkamp/wrf-wps-debian:1.3   # 1.3 (2026-10-05): GEOGRID.TBL HGT_M falls back to GMTED2010 outside the LINZ DEM (before: 0 m on every land cell outside NZ)
     stdin_open: true # docker run -i
     tty: true        # docker run -t
     shm_size: '1gb'

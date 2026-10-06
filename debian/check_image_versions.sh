@@ -67,6 +67,31 @@ while IFS= read -r df; do
 done < <(find "$here" "$autoruns" -name Dockerfile -not -path '*/.git/*' 2>/dev/null)
 [[ $checked -eq 0 ]] && ylw "  note: no FROM pin referenced a locally-built image -- nothing cross-checked"
 
+# --- vendored geogrid tables must equal the canonical one ------------------------------------
+# A frozen image vendors files instead of taking them from the working tree, and a test family binds its own copy;
+# each is a second copy of one fact, so the agreement is asserted rather than hoped for. The REQUIRED copy is named
+# here (a missing one is a failure, not "all copies agree"); any other file named like a geogrid table inside
+# wrf-auto-runs is checked too. wrf-runs is not searched: it may legitimately archive the table a past run used, and
+# the terrain test family no longer vendors one (its fixed arms run image 1.8). The frozen reference base's own OLD table
+# (debian/wrf-wps-wvt-ref/GEOGRID.TBL.nz.frozen) is deliberately different and lives here, outside both.
+echo "--- vendored GEOGRID.TBL* copies vs debian/patches/GEOGRID.TBL.nz ---"
+required=("$autoruns/gfortran_wvt_ref/pipeline/GEOGRID.TBL.nz")
+declare -A seen_tbl=()
+while IFS= read -r tbl; do seen_tbl["$tbl"]=1; done < <(
+    printf '%s\n' "${required[@]}"
+    find "$autoruns" -name 'GEOGRID.TBL*' \( -type f -o -type l \) -not -path '*/.git/*' -not -path '*/.venv/*' 2>/dev/null)
+for tbl in "${!seen_tbl[@]}"; do
+    if [[ ! -e "$tbl" ]]; then
+        red "  MISSING  ${tbl/#$HOME/\~} (set WVT_AUTORUNS if the checkout lives elsewhere)"
+        fail=1
+    elif cmp -s "$tbl" "$here/patches/GEOGRID.TBL.nz"; then
+        printf '    ok  %s\n' "${tbl/#$HOME/\~}"
+    else
+        red "  DIFFERS  ${tbl/#$HOME/\~} is not debian/patches/GEOGRID.TBL.nz"
+        fail=1
+    fi
+done
+
 # --- optional: the declared tag actually exists ---------------------------------------------
 if [[ $require_built -eq 1 ]]; then
     echo "--- declared tags exist locally ---"

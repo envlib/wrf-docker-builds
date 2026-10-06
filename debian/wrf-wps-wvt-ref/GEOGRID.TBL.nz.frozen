@@ -1,27 +1,11 @@
 # See options.txt for a (somewhat up to date) list of the 
 # options that may be specified here.
-# HGT_M has TWO entries (2026-10-05). Geogrid fills a field from its highest-priority entry first,
-# then lets each lower priority fill only the cells still missing (process_tile_module.F calc_field).
-#   priority 2: the LINZ 64 m DEM, NZ only (165.68-179.60E, 47.69-33.96S; its ocean is missing).
-#   priority 1: GMTED2010 30 arc-seconds, global, for every cell LINZ leaves missing.
-# Without the second entry every land cell outside NZ was written as 0 m (wrf-docker-builds 431adc3).
-# dest_type, smooth_option and fill_missing are per FIELD and resolve from the first entry in FILE
-# order that sets them, so they are set once, in the first entry. Smoothing runs once on the merged
-# field. The geo_em HGT_M units and description attributes come from the priority-1 source.
-# Record: wrf-model-eval docs/terrain_fallback.md
-===============================
-name = HGT_M
-        priority = 2
-        dest_type = continuous
-        smooth_option = smth-desmth_special; smooth_passes=1
-        fill_missing=0.
-        interp_option =       default:average_gcell(4.0)+four_pt+average_4pt
-        interp_option =       linz_3s:average_gcell(4.0)+four_pt+average_4pt
-        rel_path =       default:linz_64m_dem/
-        rel_path =       linz_3s:linz_64m_dem/
 ===============================
 name = HGT_M
         priority = 1
+        dest_type = continuous
+        smooth_option = smth-desmth_special; smooth_passes=1
+        fill_missing=0.
         interp_option = gmted2010_30s:average_gcell(4.0)+four_pt+average_4pt
         interp_option =     gtopo_30s:average_gcell(4.0)+four_pt+average_4pt
         interp_option =      gtopo_2m:four_pt
@@ -29,13 +13,15 @@ name = HGT_M
         interp_option =     gtopo_10m:four_pt
         interp_option =        lowres:average_gcell(4.0)+four_pt
         interp_option =       default:average_gcell(4.0)+four_pt+average_4pt
+        interp_option =       linz_3s:average_gcell(4.0)+four_pt+average_4pt
+        rel_path =       linz_3s:linz_64m_dem/
         rel_path = gmted2010_30s:topo_gmted2010_30s/
         rel_path =     gtopo_30s:topo_30s/
         rel_path =      gtopo_2m:topo_2m/
         rel_path =      gtopo_5m:topo_5m/
         rel_path =     gtopo_10m:topo_10m/
         rel_path =        lowres:topo_gmted2010_5m/
-        rel_path =       default:topo_gmted2010_30s/
+        rel_path =       default:linz_64m_dem/
 ===============================
 name=LANDUSEF
         priority=1
